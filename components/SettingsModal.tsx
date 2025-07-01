@@ -15,6 +15,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   const [formSettings, setFormSettings] = useState<AppSettings>(settings);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showSDKey, setShowSDKey] = useState(false);
+  const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
 
   useEffect(() => {
     setFormSettings(settings);
@@ -129,6 +130,32 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                         {showSDKey ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                  </div>
+
+                  {/* ElevenLabs API Key */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ElevenLabs API キー
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showElevenLabsKey ? 'text' : 'password'}
+                        value={formSettings.elevenLabsApiKey}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, elevenLabsApiKey: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
+                        placeholder="sk_..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowElevenLabsKey(!showElevenLabsKey)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showElevenLabsKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      🎤 高品質音声合成用（月10,000文字まで無料）
+                    </p>
                   </div>
                 </div>
               </section>
@@ -390,6 +417,91 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <p className="text-xs text-gray-500 mt-1">
                       Stable Diffusion用のLORA設定を入力してください
                     </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* 音声設定 */}
+              <section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">音声設定</h3>
+                <div className="space-y-4">
+                  {/* 音声を有効化 */}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="voiceEnabled"
+                      checked={formSettings.voiceEnabled}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, voiceEnabled: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="voiceEnabled" className="text-sm font-medium text-gray-700">
+                      音声を有効化
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      🎤 AIの返答を音声で読み上げ
+                    </span>
+                  </div>
+
+                  {/* 自動再生 */}
+                  <div className={`flex items-center space-x-3 ${!formSettings.voiceEnabled ? 'opacity-50' : ''}`}>
+                    <input
+                      type="checkbox"
+                      id="voiceAutoPlay"
+                      checked={formSettings.voiceAutoPlay}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, voiceAutoPlay: e.target.checked }))}
+                      disabled={!formSettings.voiceEnabled}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="voiceAutoPlay" className="text-sm font-medium text-gray-700">
+                      自動再生
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      🔄 AI返答完了時に自動で音声再生
+                    </span>
+                  </div>
+
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!formSettings.voiceEnabled ? 'opacity-50' : ''}`}>
+                    {/* 音声速度 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        音声速度: {formSettings.voiceSpeed}x
+                      </label>
+                      <input
+                        type="range"
+                        min="0.25"
+                        max="2"
+                        step="0.25"
+                        value={formSettings.voiceSpeed}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSpeed: parseFloat(e.target.value) }))}
+                        disabled={!formSettings.voiceEnabled}
+                        className="w-full slider"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0.25x</span>
+                        <span>2.0x</span>
+                      </div>
+                    </div>
+
+                    {/* 音量 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        音量: {Math.round(formSettings.voiceVolume * 100)}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={formSettings.voiceVolume}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, voiceVolume: parseFloat(e.target.value) }))}
+                        disabled={!formSettings.voiceEnabled}
+                        className="w-full slider"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0%</span>
+                        <span>100%</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
