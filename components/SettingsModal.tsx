@@ -338,6 +338,23 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
               <section>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">UI設定</h3>
                 <div className="space-y-4">
+                  {/* チャット完了通知音 */}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="chatNotificationSound"
+                      checked={formSettings.chatNotificationSound}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, chatNotificationSound: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="chatNotificationSound" className="text-sm font-medium text-gray-700">
+                      チャット完了通知音
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      🔔 AIの返答完了時に優しい通知音を再生
+                    </span>
+                  </div>
+
                   {/* 吹き出し透過率 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

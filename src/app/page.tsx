@@ -23,6 +23,12 @@ import ThemeModal from '../../components/ThemeModal';
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
+import { MemoManager } from '../../lib/memoryManager';
+import { Typewriter } from '../../components/Typewriter';
+import { MemoModal } from '../../components/MemoModal';
+import { MemoListModal } from '../../components/MemoListModal';
+import { formatMessageContent } from '../../lib/markdown';
+import { defaultVoiceSettings } from '../../lib/voiceManager';
 
 interface Message {
   id: string;
@@ -76,8 +82,6 @@ export default function ChatPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const { memos } = useChatStore();
-
-
 
   // 会話要約生成
   const handleGenerateSummary = async () => {
@@ -147,8 +151,8 @@ export default function ChatPage() {
     voiceVolume: 0.8,
     model: 'gemini-2.5-flash',
     enableImageGeneration: true,
+    chatNotificationSound: true,
   });
-
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -326,6 +330,11 @@ export default function ChatPage() {
         
         setMessages(prev => [...prev, aiResponse]);
 
+        // チャット完了通知音を再生
+        if (settings.chatNotificationSound) {
+          VoiceManager.playNotificationSound(true, 0.3);
+        }
+
         // 自動音声再生
         if (settings.voiceEnabled && settings.voiceAutoPlay) {
           const voiceSettings = {
@@ -460,6 +469,11 @@ export default function ChatPage() {
         };
         
         setMessages(prev => [...prev, aiResponse]);
+
+        // チャット完了通知音を再生
+        if (settings.chatNotificationSound) {
+          VoiceManager.playNotificationSound(true, 0.3);
+        }
 
         // 画像生成
         if (settings.enableImageGeneration) {
@@ -605,6 +619,11 @@ export default function ChatPage() {
       if (data.success) {
         const aiMsg: Message = { id: Date.now().toString(), role: 'assistant', content: data.content, timestamp: Date.now() };
         setMessages(prev => [...prev, aiMsg]);
+
+        // チャット完了通知音を再生
+        if (settings.chatNotificationSound) {
+          VoiceManager.playNotificationSound(true, 0.3);
+        }
       }
     } catch (e) {
       console.error(e);

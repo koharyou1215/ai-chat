@@ -331,6 +331,66 @@ export class VoiceManager {
     const previewSettings = { ...settings, voiceId };
     return await this.playAudio(previewText, previewSettings);
   }
+
+  /**
+   * 軽量なチャット完了通知音を再生
+   * @param enabled 通知音が有効かどうか
+   * @param volume 音量 (0.0 - 1.0)
+   */
+  static playNotificationSound(enabled: boolean = true, volume: number = 0.3): void {
+    if (!enabled) return;
+
+    try {
+      // Web Audio APIで軽量なビープ音を生成
+      const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) {
+        console.warn('Web Audio APIがサポートされていません');
+        return;
+      }
+      
+      const audioContext = new AudioContextClass();
+      
+      // 優しい2音のチャイム（Cメジャーコード）
+      const frequencies = [523.25, 659.25]; // C5, E5
+      const duration = 0.15; // 各音150ms
+      const totalDuration = duration * frequencies.length + 0.1; // 少し間隔を開ける
+      
+      frequencies.forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // オシレーターの設定（サイン波で優しい音）
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+        
+        // 音量とエンベロープ設定
+        const startTime = audioContext.currentTime + (index * (duration + 0.05));
+        const endTime = startTime + duration;
+        
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(volume * 0.8, startTime + 0.02); // 短いアタック
+        gainNode.gain.exponentialRampToValueAtTime(0.001, endTime); // 緩やかなディケイ
+        
+        // 接続
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // 再生
+        oscillator.start(startTime);
+        oscillator.stop(endTime);
+      });
+      
+      // AudioContextを自動的にクリーンアップ
+      setTimeout(() => {
+        audioContext.close().catch(console.warn);
+      }, totalDuration * 1000 + 100);
+      
+      console.log('チャット完了通知音を再生しました');
+      
+    } catch (error) {
+      console.warn('通知音の再生に失敗しました:', error);
+    }
+  }
 }
 
 /**

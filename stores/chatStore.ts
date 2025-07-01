@@ -66,7 +66,8 @@ const defaultSettings: AppSettings = {
   voiceSpeed: 1.0,
   voiceVolume: 0.8,
   model: 'gemini-2.5-flash',
-  enableImageGeneration: true
+  enableImageGeneration: true,
+  chatNotificationSound: true
 };
 
 export const useChatStore = create<ChatStore>()(

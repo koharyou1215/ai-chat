@@ -177,4 +177,5 @@ export interface AppSettings {
   voiceVolume: number;
   model: string;
   enableImageGeneration: boolean;
+  chatNotificationSound: boolean;
 } 
