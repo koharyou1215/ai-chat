@@ -23,12 +23,6 @@ import ThemeModal from '../../components/ThemeModal';
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
-import { MemoManager } from '../../lib/memoryManager';
-import { Typewriter } from '../../components/Typewriter';
-import { MemoModal } from '../../components/MemoModal';
-import { MemoListModal } from '../../components/MemoListModal';
-import { formatMessageContent } from '../../lib/markdown';
-import { defaultVoiceSettings } from '../../lib/voiceManager';
 
 interface Message {
   id: string;
