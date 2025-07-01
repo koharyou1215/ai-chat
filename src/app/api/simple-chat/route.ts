@@ -6,11 +6,7 @@ import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 
 // NOTE: セキュリティのため API キーはハードコードしない
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
-
-if (!GEMINI_API_KEY) {
-  console.warn('[simple-chat] GEMINI_API_KEY が設定されていません');
-}
+const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +38,18 @@ export async function POST(request: NextRequest) {
       console.log('Fallback to default character:', character?.name);
     }
     
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    // APIキーを決定（クライアントから送信された設定を優先、次にサーバー環境変数）
+    const apiKey = settings?.geminiApiKey || SERVER_GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY が設定されていません');
+      return NextResponse.json({
+        success: false,
+        error: 'Gemini APIキーが設定されていません'
+      }, { status: 500 });
+    }
+    
+    const genAI = new GoogleGenerativeAI(apiKey);
     
     // モデル設定を適用
     const modelConfig = {
@@ -60,21 +67,22 @@ export async function POST(request: NextRequest) {
     let basePrompt = '';
     
     if (character) {
-      basePrompt = `あなたは「${character.name}」です。以下の設定に従って行動してください。
+      basePrompt = `あなたは{{char}}です。以下の設定に従って{{char}}として行動してください。
 
 【キャラクター設定】
-名前: ${character.name}
-性格: ${character.personality}
-外見: ${character.appearance}
-話し方: ${character.speaking_style}
-シナリオ: ${character.scenario}
+{{char}}の名前: ${character.name}
+{{char}}の性格: ${character.personality}
+{{char}}の外見: ${character.appearance}
+{{char}}の話し方: ${character.speaking_style}
+{{char}}のシナリオ: ${character.scenario}
 
-${character.example_dialogue ? `【会話例】\n${character.example_dialogue.map((ex: ExampleDialogue) => `ユーザー: ${ex.user}\n${character.name}: ${ex.char}`).join('\n\n')}` : ''}
+${character.example_dialogue ? `【会話例】\n${character.example_dialogue.map((ex: ExampleDialogue) => `{{user}}: ${ex.user}\n{{char}}: ${ex.char}`).join('\n\n')}` : ''}
 
-上記の設定を厳密に守り、${character.name}として一貫した返答をしてください。`;
+上記の設定を厳密に守り、{{char}}として一貫した返答をしてください。
+{{user}}は会話相手を指します。{{char}}は${character.name}を指します。`;
     } else {
       // 完全なフォールバック
-      basePrompt = `あなたは「ナミ」という名前の航海士です。明るく親しみやすい関西弁で話してください。`;
+      basePrompt = `あなたは{{char}}（ナミ）という名前の航海士です。明るく親しみやすい関西弁で話してください。{{user}}は会話相手を指します。`;
     }
     
     // メモリ情報を追加
@@ -88,22 +96,22 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     
     // Persona情報を追加
     if (persona && persona.name) {
-      let personaInfo = `\n\n【ユーザー情報】\n`;
-      personaInfo += `- ユーザーのタイプ: ${persona.name}\n`;
+      let personaInfo = `\n\n【{{user}}の情報】\n`;
+      personaInfo += `- {{user}}のタイプ: ${persona.name}\n`;
       
       if (persona.likes && persona.likes.length > 0) {
-        personaInfo += `- 好きなもの: ${persona.likes.join(', ')}\n`;
+        personaInfo += `- {{user}}の好きなもの: ${persona.likes.join(', ')}\n`;
       }
       
       if (persona.dislikes && persona.dislikes.length > 0) {
-        personaInfo += `- 嫌いなもの: ${persona.dislikes.join(', ')}\n`;
+        personaInfo += `- {{user}}の嫌いなもの: ${persona.dislikes.join(', ')}\n`;
       }
       
       if (persona.other_settings) {
-        personaInfo += `- その他の特徴: ${persona.other_settings}\n`;
+        personaInfo += `- {{user}}のその他の特徴: ${persona.other_settings}\n`;
       }
       
-      personaInfo += `\n上記のユーザー情報を考慮して、相手に合わせた返答をしてください。`;
+      personaInfo += `\n上記の{{user}}情報を考慮して、{{char}}として{{user}}に合わせた返答をしてください。`;
       basePrompt += personaInfo;
     }
     
@@ -141,14 +149,14 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       : [];
 
     let historyText = filteredConversation.map((msg: { role: string; content: string }) => {
-      const speaker = msg.role === 'user' ? 'ユーザー' : character.name;
+      const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
       return `${speaker}: ${msg.content}`;
     }).join('\n');
 
     // ユーザー行（continue 時は追加しない）
-    const userLine = doContinue ? '' : `ユーザー: ${message}\n`;
+    const userLine = doContinue ? '' : `{{user}}: ${message}\n`;
 
-    let fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}${character.name}:`;
+    let fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
     
     // プロンプト長が30,000文字を超える場合は古い履歴から削除
     const MAX_PROMPT_CHARS = 30000;
@@ -158,10 +166,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       while (fullPrompt.length > MAX_PROMPT_CHARS && filteredConversation.length > 0) {
         filteredConversation.shift();
         historyText = filteredConversation.map((msg: { role: string; content: string }) => {
-          const speaker = msg.role === 'user' ? 'ユーザー' : character.name;
+          const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
           return `${speaker}: ${msg.content}`;
         }).join('\n');
-        fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}${character.name}:`;
+        fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
       }
     }
     
@@ -181,10 +189,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       console.warn('Geminiから空の応答。履歴を短縮してリトライします');
       const reducedHistory = filteredConversation.slice(-10); // 直近10件だけ
       historyText = reducedHistory.map((msg: { role: string; content: string }) => {
-        const speaker = msg.role === 'user' ? 'ユーザー' : character.name;
+        const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
         return `${speaker}: ${msg.content}`;
       }).join('\n');
-      fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}${character.name}:`;
+      fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
 
       try {
         text = await callGemini();
@@ -196,7 +204,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // それでも空ならフォールバックメッセージを設定
     if (!text || text.trim().length === 0) {
       console.warn('Geminiが依然として空応答。フォールバックメッセージを返します');
-      text = `${character.name}: …ごめんね、ちょっと言葉に詰まっちゃったみたい。もう一度質問してくれる？`;
+      text = `{{char}}: …ごめんね、ちょっと言葉に詰まっちゃったみたい。もう一度質問してくれる？`;
     }
     
     return NextResponse.json({

@@ -19,14 +19,20 @@ export class ImagePromptGenerator {
     // 基本キャラクター情報
     const baseCharacter = this.buildBaseCharacterPrompt(character);
     
-    // 感情分析
+    // 感情分析（より詳細に）
     const emotion = this.analyzeEmotion(aiResponse);
     
-    // シチュエーション分析
+    // シチュエーション分析（文脈を重視）
     const scenario = this.analyzeScenario(aiResponse, conversationContext);
     
+    // アクション分析（何をしているか）
+    const action = this.analyzeAction(aiResponse);
+    
+    // 表情と仕草の詳細分析
+    const expression = this.analyzeDetailedExpression(aiResponse);
+    
     // 最終プロンプトを構築
-    const prompt = this.buildFinalPrompt(baseCharacter, emotion, scenario);
+    const prompt = this.buildEnhancedPrompt(baseCharacter, emotion, scenario, action, expression);
     
     // ネガティブプロンプト
     const negativePrompt = this.buildNegativePrompt();
@@ -189,7 +195,151 @@ export class ImagePromptGenerator {
   }
 
   /**
-   * 最終的な画像プロンプトを構築
+   * アクション分析（何をしているか）
+   */
+  private static analyzeAction(text: string): { name: string; prompt: string } {
+    const actions = [
+      {
+        keywords: ['手を振', '挨拶', 'おはよう', 'こんにちは', 'こんばんは'],
+        name: '挨拶',
+        prompt: 'waving hand, greeting gesture, friendly pose'
+      },
+      {
+        keywords: ['食べ', '飲み', 'お茶', 'コーヒー', '食事'],
+        name: '食事',
+        prompt: 'eating, drinking, holding cup, dining'
+      },
+      {
+        keywords: ['歩', '走', '移動', '向かう'],
+        name: '移動',
+        prompt: 'walking, running, dynamic pose, movement'
+      },
+      {
+        keywords: ['考え', '悩み', 'うーん', '思考'],
+        name: '思考',
+        prompt: 'thinking pose, hand on chin, contemplating'
+      },
+      {
+        keywords: ['笑', '微笑', 'にこ', 'くすくす'],
+        name: '笑顔',
+        prompt: 'smiling, laughing, cheerful expression'
+      },
+      {
+        keywords: ['見', '眺め', '観察', 'じっと'],
+        name: '観察',
+        prompt: 'looking, gazing, observing, focused attention'
+      },
+      {
+        keywords: ['座', '椅子', 'ソファ'],
+        name: '座る',
+        prompt: 'sitting, seated pose, relaxed posture'
+      },
+      {
+        keywords: ['立', '起立', 'まっすぐ'],
+        name: '立つ',
+        prompt: 'standing, upright posture, confident stance'
+      }
+    ];
+
+    for (const action of actions) {
+      if (action.keywords.some(keyword => text.includes(keyword))) {
+        return action;
+      }
+    }
+
+    return { name: '自然', prompt: 'natural pose, casual stance' };
+  }
+
+  /**
+   * 表情と仕草の詳細分析
+   */
+  private static analyzeDetailedExpression(text: string): { name: string; prompt: string } {
+    const expressions = [
+      {
+        keywords: ['ウィンク', 'ぱちり', '片目'],
+        name: 'ウィンク',
+        prompt: 'winking, one eye closed, playful expression'
+      },
+      {
+        keywords: ['頷', 'うん', 'そうだね'],
+        name: '頷き',
+        prompt: 'nodding, agreeing gesture, understanding look'
+      },
+      {
+        keywords: ['首をかしげ', '？', 'はて', '疑問'],
+        name: '首かしげ',
+        prompt: 'tilting head, questioning look, curious expression'
+      },
+      {
+        keywords: ['指差', 'あっち', 'そっち', 'こっち'],
+        name: '指差し',
+        prompt: 'pointing, directional gesture, indicating'
+      },
+      {
+        keywords: ['抱きしめ', 'ぎゅっ', 'ハグ'],
+        name: '抱擁',
+        prompt: 'hugging, embracing, affectionate gesture'
+      },
+      {
+        keywords: ['手をひら', 'ストップ', '待って'],
+        name: '制止',
+        prompt: 'stop gesture, hand raised, halt motion'
+      }
+    ];
+
+    for (const expression of expressions) {
+      if (expression.keywords.some(keyword => text.includes(keyword))) {
+        return expression;
+      }
+    }
+
+    return { name: '自然', prompt: 'natural facial expression, relaxed features' };
+  }
+
+  /**
+   * 強化された画像プロンプトを構築
+   */
+  private static buildEnhancedPrompt(
+    baseCharacter: string,
+    emotion: { name: string; prompt: string },
+    scenario: { name: string; prompt: string },
+    action: { name: string; prompt: string },
+    expression: { name: string; prompt: string }
+  ): string {
+    const qualityTags = [
+      'masterpiece',
+      'best quality',
+      'highly detailed',
+      'beautiful lighting',
+      'anime style',
+      'high resolution',
+      '8k',
+      'perfect anatomy',
+      'detailed face',
+      'expressive eyes'
+    ].join(', ');
+
+    // 環境要因を追加
+    const lighting = this.getTimeBasedLighting();
+    const season = this.getSeasonalEnvironment();
+
+    // プロンプトの構成要素を結合（重要度順）
+    const components = [
+      baseCharacter,
+      emotion.prompt,
+      expression.prompt,
+      action.prompt,
+      scenario.prompt,
+      lighting,
+      season,
+      qualityTags
+    ].filter(component => component && component.trim() !== '');
+
+    return components.join(', ');
+  }
+
+  /**
+   * 最終的な画像プロンプトを構築（後方互換性のため残す）
    */
   private static buildFinalPrompt(
     baseCharacter: string,

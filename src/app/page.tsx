@@ -4,7 +4,7 @@
 import '../../lib/uuidPolyfill';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play } from 'lucide-react';
+import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -20,6 +20,7 @@ import CharacterImportExport from '../../components/CharacterImportExport';
 import { MessageMemoButton, MemoListButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
 import ThemeModal from '../../components/ThemeModal';
+import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
 
@@ -71,9 +72,12 @@ export default function ChatPage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [currentSummary, setCurrentSummary] = useState<ChatSummary | null>(null);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const { memos } = useChatStore();
+
+
 
   // 会話要約生成
   const handleGenerateSummary = async () => {
@@ -648,9 +652,21 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen theme-background">
+    <div className="flex h-screen theme-background relative">
+      {/* モバイル用オーバーレイ */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      
       {/* サイドバー */}
-      <div className={`${isSidebarOpen ? 'w-80' : 'w-0'} theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 overflow-hidden relative`}>
+      <div className={`
+        ${isSidebarOpen ? 'w-80' : 'w-0'} 
+        theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 overflow-hidden
+        ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
+      `}>
         <div className="min-w-80 flex flex-col h-full">
           {/* Persona選択 */}
           <div className="flex-shrink-0">
@@ -872,6 +888,13 @@ export default function ChatPage() {
 
           <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2">
             <button 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+            >
+              <Cloud size={16} />
+              クラウド同期
+            </button>
+            <button 
               onClick={() => setIsThemeModalOpen(true)}
               className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
             >
@@ -891,7 +914,7 @@ export default function ChatPage() {
       </div>
 
       {/* メインチャットエリア */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* ヘッダー */}
         <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4">
           <div className="flex items-center gap-3">
@@ -1214,6 +1237,22 @@ export default function ChatPage() {
         currentTheme={settings.currentTheme}
         customBackground={settings.customBackground}
         onThemeChange={handleThemeChange}
+      />
+
+      {/* 認証・クラウド同期モーダル */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onDataSync={(syncedData) => {
+          // 同期されたデータを反映
+          setAllCharacters(syncedData.characters)
+          setAllPersonas(syncedData.personas)
+          setSettings(syncedData.settings)
+          // メモデータも反映（chatStoreを使用）
+          localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
+          localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
+          localStorage.setItem('ai-chat-settings', JSON.stringify(syncedData.settings))
+        }}
       />
     </div>
   );
