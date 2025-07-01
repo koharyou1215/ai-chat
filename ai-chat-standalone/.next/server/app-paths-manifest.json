@@ -1,0 +1,11 @@
+{
+  "/api/chat/route": "app/api/chat/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/generate-image/route": "app/api/generate-image/route.js",
+  "/api/simple-chat/route": "app/api/simple-chat/route.js",
+  "/api/test-gemini/route": "app/api/test-gemini/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/test/route": "app/api/test/route.js",
+  "/api/summarize-chat/route": "app/api/summarize-chat/route.js",
+  "/page": "app/page.js"
+}

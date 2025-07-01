@@ -1,0 +1,11 @@
+{
+  "/api/chat/route": "/api/chat",
+  "/_not-found/page": "/_not-found",
+  "/api/generate-image/route": "/api/generate-image",
+  "/api/simple-chat/route": "/api/simple-chat",
+  "/api/test-gemini/route": "/api/test-gemini",
+  "/favicon.ico/route": "/favicon.ico",
+  "/api/test/route": "/api/test",
+  "/api/summarize-chat/route": "/api/summarize-chat",
+  "/page": "/"
+}
