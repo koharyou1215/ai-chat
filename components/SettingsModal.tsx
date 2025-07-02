@@ -19,6 +19,16 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
   const [voiceList, setVoiceList] = useState<ElevenLabsVoice[]>([]);
 
+  // ユーザー指定のカスタム音声プリセット
+  const customVoices: ElevenLabsVoice[] = [
+    { voice_id: '4lOQ7A2l7HPuG7UIHiKA', name: 'アニボ2', category: 'custom' },
+    { voice_id: '8EkOjt4xTPGMclNlh1pk', name: 'アニポ1', category: 'custom' },
+    { voice_id: 'rbsFyUZnrPQVns8cpVRF', name: '優しく温かみのある日本人女性', category: 'custom' },
+    { voice_id: 'XMdATmXVAFIlBM5jzss7', name: '種崎明るい', category: 'custom' },
+    { voice_id: 'U4ogK8bgSusDpge7RLA2', name: 'morioki', category: 'custom' },
+    { voice_id: 'mtbZa13Y8veKZNZ2Qixj', name: 'kyoko', category: 'custom' },
+  ];
+
   useEffect(() => {
     setFormSettings(settings);
   }, [settings]);
@@ -30,7 +40,9 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
         if (formSettings.elevenLabsApiKey) {
           VoiceManager.setApiKey(formSettings.elevenLabsApiKey);
           const voices = await VoiceManager.getAvailableVoices();
-          setVoiceList(voices);
+          // APIから取得した音声とカスタムをマージ（重複除外）
+          const merged = [...customVoices, ...voices.filter(v => !customVoices.some(c => c.voice_id === v.voice_id))];
+          setVoiceList(merged);
         }
       } catch (e) {
         console.warn('音声リスト取得失敗:', e);
