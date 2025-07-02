@@ -784,7 +784,7 @@ export default function ChatPage() {
         </div>
 
         {/* チャット履歴 */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="p-4 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="theme-text-primary font-semibold flex items-center gap-2">
