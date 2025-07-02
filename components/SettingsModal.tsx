@@ -558,7 +558,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
           </div>
 
           {/* フッター */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
             <button
               onClick={handleReset}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"

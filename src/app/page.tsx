@@ -1054,7 +1054,7 @@ export default function ChatPage() {
         </div>
 
         {/* 入力エリア */}
-        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10">
+        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
               <textarea
