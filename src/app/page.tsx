@@ -677,7 +677,7 @@ export default function ChatPage() {
       {/* サイドバー */}
       <div className={`
         ${isSidebarOpen ? 'w-80' : 'w-0'} 
-        theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 overflow-hidden
+        theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto
         ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
       `}>
         <div className="min-w-80 flex flex-col h-full">

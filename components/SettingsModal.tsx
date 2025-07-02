@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
 import { AppSettings } from '../types/character';
+import { VoiceManager, ElevenLabsVoice } from '../lib/voiceManager';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -16,10 +17,27 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showSDKey, setShowSDKey] = useState(false);
   const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
+  const [voiceList, setVoiceList] = useState<ElevenLabsVoice[]>([]);
 
   useEffect(() => {
     setFormSettings(settings);
   }, [settings]);
+
+  // ElevenLabsの音声リストを取得
+  useEffect(() => {
+    const fetchVoices = async () => {
+      try {
+        if (formSettings.elevenLabsApiKey) {
+          VoiceManager.setApiKey(formSettings.elevenLabsApiKey);
+          const voices = await VoiceManager.getAvailableVoices();
+          setVoiceList(voices);
+        }
+      } catch (e) {
+        console.warn('音声リスト取得失敗:', e);
+      }
+    };
+    fetchVoices();
+  }, [formSettings.elevenLabsApiKey]);
 
   const handleSave = () => {
     onSave(formSettings);
@@ -503,6 +521,25 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       </div>
                     </div>
                   </div>
+
+                  {/* ElevenLabsボイス選択 */}
+                  {voiceList.length > 0 && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        ElevenLabs 音声プリセット
+                      </label>
+                      <select
+                        value={formSettings.voiceId}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, voiceId: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      >
+                        {voiceList.map(v => (
+                          <option key={v.voice_id} value={v.voice_id}>{v.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">ElevenLabs で利用可能な音声を選択</p>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
