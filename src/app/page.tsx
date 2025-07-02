@@ -158,7 +158,7 @@ export default function ChatPage() {
         const savedSettings = localStorage.getItem('ai-chat-settings');
         if (savedSettings) {
           const parsedSettings = JSON.parse(savedSettings);
-          setSettings(parsedSettings);
+          setSettings(prev => ({ ...prev, ...parsedSettings }));
           
           // 音声APIキーを設定
           if (parsedSettings.elevenLabsApiKey) {
@@ -1144,9 +1144,18 @@ export default function ChatPage() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={(newSettings) => {
-          setSettings(newSettings);
+          // 不足しているプロパティを補完しつつ更新
+          setSettings(prev => ({ ...prev, ...newSettings }));
+
+          const mergedSettings = { ...settings, ...newSettings };
+
           // ローカルストレージに保存
-          localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
+          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSettings));
+
+          // ElevenLabs APIキーを即座に設定
+          if (mergedSettings.elevenLabsApiKey) {
+            VoiceManager.setApiKey(mergedSettings.elevenLabsApiKey);
+          }
         }}
       />
 
