@@ -783,6 +783,31 @@ export default function ChatPage() {
         />
         </div>
 
+        {/* モバイル用クイック操作（設定・テーマ・同期） */}
+        <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2 md:hidden">
+          <button 
+            onClick={() => setIsAuthModalOpen(true)}
+            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+          >
+            <Cloud size={16} />
+            クラウド同期
+          </button>
+          <button 
+            onClick={() => setIsThemeModalOpen(true)}
+            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+          >
+            <Palette size={16} />
+            テーマ
+          </button>
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+          >
+            <Settings size={16} />
+            設定
+          </button>
+        </div>
+
         {/* チャット履歴 */}
         <div className="flex-1 flex flex-col min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="p-4 border-b border-white/10 flex-shrink-0">
@@ -899,7 +924,7 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2">
+          <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2 hidden md:block">
             <button 
               onClick={() => setIsAuthModalOpen(true)}
               className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
