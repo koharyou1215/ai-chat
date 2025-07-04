@@ -4,7 +4,7 @@ import Replicate from 'replicate';
 
 export async function POST(request: NextRequest) {
   try {
-    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed } = await request.json();
+    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, imageEngine } = await request.json();
     
     // 新しいプロンプトジェネレータを使用
     const promptResult = ImagePromptGenerator.generateImagePrompt(
@@ -36,8 +36,19 @@ export async function POST(request: NextRequest) {
     // ① ローカル Stable Diffusion WebUI が使えるかチェック
     //    - 環境変数 USE_LOCAL_SD が 'true' のとき、または LOCAL_SD_URL が存在するときに有効
     //    - LOCAL_SD_URL が無い場合は既定 URL "http://127.0.0.1:7860" を使用
-    const forceLocal = process.env.FORCE_LOCAL_SD === 'true';
-    const localSdEnabled = forceLocal || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL;
+    const forceLocalEnv = process.env.FORCE_LOCAL_SD === 'true';
+    // クライアント指定があれば優先
+    let selectedEngine: 'sd' | 'replicate';
+    if (imageEngine === 'sd' || imageEngine === 'replicate') {
+      selectedEngine = imageEngine;
+    } else {
+      selectedEngine = forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL ? 'sd' : 'replicate';
+    }
+
+    // Flag retained for backward-compat; may be used in future
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const forceLocal = selectedEngine === 'sd';
+    const localSdEnabled = selectedEngine === 'sd';
     const localSdBaseUrl = (process.env.LOCAL_SD_URL || 'http://127.0.0.1:7860').replace(/\/$/, '');
 
     if (localSdEnabled) {
@@ -85,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Replicate APIキーが設定されている場合は実際のAI画像生成
-    const useReplicate = process.env.REPLICATE_API_TOKEN && !forceLocal;
+    const useReplicate = process.env.REPLICATE_API_TOKEN && selectedEngine === 'replicate';
     if (useReplicate) {
       console.log('Using Replicate API for image generation');
 

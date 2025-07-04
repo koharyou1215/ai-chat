@@ -465,6 +465,24 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       画像生成時に自動付与されるネガティブプロンプトに追加されます
                     </p>
                   </div>
+
+                  {/* 画像生成エンジン */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      画像生成エンジン
+                    </label>
+                    <select
+                      value={formSettings.imageEngine}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, imageEngine: e.target.value as 'replicate' | 'sd' }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    >
+                      <option value="replicate">Replicate (クラウド)</option>
+                      <option value="sd">Stable Diffusion (ローカル/URL)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Replicate はトークン必須、Stable Diffusion は環境変数 LOCAL_SD_URL を設定してください
+                    </p>
+                  </div>
                 </div>
               </section>
 

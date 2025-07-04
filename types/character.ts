@@ -182,4 +182,8 @@ export interface AppSettings {
   model: string;
   enableImageGeneration: boolean;
   chatNotificationSound: boolean;
+  /**
+   * 画像生成エンジン (replicate = Replicate API / sd = Stable Diffusion)
+   */
+  imageEngine: 'replicate' | 'sd';
 } 

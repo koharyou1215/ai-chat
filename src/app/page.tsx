@@ -148,6 +148,7 @@ export default function ChatPage() {
     model: 'gemini-2.5-flash',
     enableImageGeneration: true,
     chatNotificationSound: true,
+    imageEngine: 'replicate',
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -370,6 +371,7 @@ export default function ChatPage() {
               steps: currentCharacter?.imageSteps,
               cfg_scale: currentCharacter?.imageCfgScale,
               sampler: currentCharacter?.imageSampler,
+              imageEngine: settings.imageEngine,
             }),
           });
 
@@ -500,6 +502,7 @@ export default function ChatPage() {
               steps: currentCharacter?.imageSteps,
               cfg_scale: currentCharacter?.imageCfgScale,
               sampler: currentCharacter?.imageSampler,
+              imageEngine: settings.imageEngine,
             }),
           });
 
@@ -660,6 +663,7 @@ export default function ChatPage() {
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
+          imageEngine: settings.imageEngine,
         })
       });
 
