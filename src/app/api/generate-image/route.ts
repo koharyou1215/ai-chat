@@ -100,7 +100,8 @@ export async function POST(request: NextRequest) {
           // 例: "black-forest-labs/flux-kontext-pro" または version を付与した識別子
           const identifier = modelVersion ? `${modelName}:${modelVersion}` : modelName;
 
-          const output: unknown = await replicate.run(identifier, {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const output: unknown = await replicate.run(identifier as any, {
             input: {
               prompt: finalPrompt,
               negative_prompt: finalNegativePrompt,
