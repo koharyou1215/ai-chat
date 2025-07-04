@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImagePromptGenerator } from '../../../../lib/imagePromptGenerator';
-// @ts-expect-error - replicate lacks its own type declarations
 import Replicate from 'replicate';
 
 export async function POST(request: NextRequest) {
