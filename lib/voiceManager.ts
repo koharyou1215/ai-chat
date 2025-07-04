@@ -148,6 +148,12 @@ export class VoiceManager {
 
           // Audio要素を作成して再生
           this.currentAudio = new Audio(audioUrl);
+          // iOS Safari ではフルスクリーン再生に切り替わると再生が失敗する場合があるため、
+          // 明示的に `playsinline` 属性を付与してインライン再生を強制します。
+          // ついでに preload/autoplay も設定して出来るだけスムーズに再生できるようにします。
+          this.currentAudio.setAttribute('playsinline', 'true');
+          this.currentAudio.setAttribute('autoplay', 'true');
+          this.currentAudio.setAttribute('preload', 'auto');
           this.currentAudio.volume = settings.volume;
           this.currentAudio.playbackRate = settings.speed;
 
@@ -162,7 +168,13 @@ export class VoiceManager {
           };
 
           this.isPlaying = true;
-          await this.currentAudio.play();
+          try {
+            await this.currentAudio.play();
+          } catch (playError) {
+            // iOS の自動再生制限などで reject される場合がある
+            console.error('audio.play() 失敗:', playError);
+            throw playError;
+          }
           console.log('ElevenLabs音声再生成功');
           return true;
         }

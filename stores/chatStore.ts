@@ -49,6 +49,7 @@ const defaultSettings: AppSettings = {
   stableDiffusionApiKey: '',
   elevenLabsApiKey: '',
   loraSettings: '',
+  negativePrompt: '',
   systemPrompt: '',
   jailbreakPrompt: '',
   responseFormat: 'normal',

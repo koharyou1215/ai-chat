@@ -3,7 +3,7 @@ import { ImagePromptGenerator } from '../../../../lib/imagePromptGenerator';
 
 export async function POST(request: NextRequest) {
   try {
-    const { aiResponse, character, conversationContext, loraSettings, seed } = await request.json();
+    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed } = await request.json();
     
     // 新しいプロンプトジェネレータを使用
     const promptResult = ImagePromptGenerator.generateImagePrompt(
@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
       finalPrompt = `${loraSettings}, ${finalPrompt}`;
     }
 
+    // ユーザー指定のネガティブプロンプトを追加
+    let finalNegativePrompt = promptResult.negativePrompt;
+    if (extraNegativePrompt && typeof extraNegativePrompt === 'string' && extraNegativePrompt.trim().length > 0) {
+      finalNegativePrompt = `${promptResult.negativePrompt}, ${extraNegativePrompt}`;
+    }
+
     console.log('Generated prompt result:', {
       emotion: promptResult.emotion,
       scenario: promptResult.scenario,
@@ -26,8 +32,60 @@ export async function POST(request: NextRequest) {
     
     const characterName = character?.name || 'キャラクター';
     
+    // ① ローカル Stable Diffusion WebUI が使えるかチェック
+    //    - 環境変数 USE_LOCAL_SD が 'true' のとき、または LOCAL_SD_URL が存在するときに有効
+    //    - LOCAL_SD_URL が無い場合は既定 URL "http://127.0.0.1:7860" を使用
+    const forceLocal = process.env.FORCE_LOCAL_SD === 'true';
+    const localSdEnabled = forceLocal || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL;
+    const localSdBaseUrl = (process.env.LOCAL_SD_URL || 'http://127.0.0.1:7860').replace(/\/$/, '');
+
+    if (localSdEnabled) {
+      try {
+        console.log('Using local Stable Diffusion WebUI for image generation →', localSdBaseUrl);
+
+        const sdResponse = await fetch(`${localSdBaseUrl}/sdapi/v1/txt2img`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: finalPrompt,
+            negative_prompt: finalNegativePrompt,
+            width: character?.imageWidth || 512,
+            height: character?.imageHeight || 768,
+            steps: character?.imageSteps || 28,
+            cfg_scale: character?.imageCfgScale || 8,
+            sampler_name: character?.imageSampler || 'DPM++ 2M Karras',
+            seed: typeof seed === 'number' && seed >= 0 ? seed : -1,
+            batch_size: 1,
+            n_iter: 1,
+          }),
+        });
+
+        if (!sdResponse.ok) {
+          throw new Error(`Local SD API error: ${sdResponse.status}`);
+        }
+
+        const sdData = await sdResponse.json();
+
+        if (sdData.images && sdData.images.length > 0) {
+          const base64Png = sdData.images[0];
+          const dataUri = `data:image/png;base64,${base64Png}`;
+          return NextResponse.json({
+            image: dataUri,
+            success: true,
+            message: 'ローカル Stable Diffusion で生成しました',
+          });
+        }
+      } catch (localSdError) {
+        console.error('Local Stable Diffusion error:', localSdError);
+        // フォールスルーして Replicate / プレースホルダー処理へ
+      }
+    }
+    
     // Replicate APIキーが設定されている場合は実際のAI画像生成
-    if (process.env.REPLICATE_API_TOKEN) {
+    const useReplicate = process.env.REPLICATE_API_TOKEN && !forceLocal;
+    if (useReplicate) {
       console.log('Using Replicate API for image generation');
       
       try {
@@ -41,7 +99,7 @@ export async function POST(request: NextRequest) {
             version: 'ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4', // SDXL
             input: {
               prompt: finalPrompt,
-              negative_prompt: promptResult.negativePrompt,
+              negative_prompt: finalNegativePrompt,
               width: character?.imageWidth || 512,
               height: character?.imageHeight || 768,
               num_inference_steps: character?.imageSteps || 28,

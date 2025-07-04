@@ -159,6 +159,10 @@ export interface AppSettings {
   stableDiffusionApiKey: string;
   elevenLabsApiKey: string;
   loraSettings: string;
+  /**
+   * 追加のネガティブプロンプト（Stable Diffusion用）
+   */
+  negativePrompt: string;
   systemPrompt: string;
   jailbreakPrompt: string;
   responseFormat: string;

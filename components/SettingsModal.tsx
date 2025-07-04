@@ -442,10 +442,27 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       onChange={(e) => setFormSettings(prev => ({ ...prev, loraSettings: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       rows={3}
-                      placeholder="例: &lt;lora:character_name:0.8&gt;"
+                      placeholder="例: <lora:character_name:0.8>"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Stable Diffusion用のLORA設定を入力してください
+                    </p>
+                  </div>
+
+                  {/* ネガティブプロンプト */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      追加ネガティブプロンプト
+                    </label>
+                    <textarea
+                      value={formSettings.negativePrompt}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, negativePrompt: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      rows={2}
+                      placeholder="例: lowres, bad anatomy, blurry"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      画像生成時に自動付与されるネガティブプロンプトに追加されます
                     </p>
                   </div>
                 </div>

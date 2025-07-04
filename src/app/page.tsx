@@ -4,7 +4,7 @@
 import '../../lib/uuidPolyfill';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud } from 'lucide-react';
+import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud, ChevronDown, ChevronUp } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -74,6 +74,7 @@ export default function ChatPage() {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
 
   const { memos } = useChatStore();
 
@@ -127,6 +128,7 @@ export default function ChatPage() {
     stableDiffusionApiKey: '',
     elevenLabsApiKey: '',
     loraSettings: '',
+    negativePrompt: '',
     systemPrompt: '',
     jailbreakPrompt: '',
     responseFormat: 'normal',
@@ -361,6 +363,7 @@ export default function ChatPage() {
               character: currentCharacter,
               conversationContext: recentMessages,
               loraSettings: settings.loraSettings,
+              negativePrompt: settings.negativePrompt,
               seed: currentCharacter?.imageSeed,
               width: currentCharacter?.imageWidth,
               height: currentCharacter?.imageHeight,
@@ -411,7 +414,7 @@ export default function ChatPage() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
       handleSend();
     }
@@ -485,6 +488,7 @@ export default function ChatPage() {
               character: currentCharacter,
               conversationContext: recentMessages,
               loraSettings: settings.loraSettings,
+              negativePrompt: settings.negativePrompt,
               seed: currentCharacter?.imageSeed,
               width: currentCharacter?.imageWidth,
               height: currentCharacter?.imageHeight,
@@ -644,6 +648,7 @@ export default function ChatPage() {
           character: currentCharacter,
           conversationContext: recentMessages,
           loraSettings: settings.loraSettings,
+          negativePrompt: settings.negativePrompt,
           seed: Math.floor(Math.random() * 2 ** 32),
           width: currentCharacter?.imageWidth,
           height: currentCharacter?.imageHeight,
@@ -1085,11 +1090,18 @@ export default function ChatPage() {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder="メッセージを入力..."
-                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[40px] max-h-32"
-                rows={1}
+                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[40px] max-h-64"
+                rows={isInputExpanded ? 4 : 1}
               />
+              <button
+                onClick={() => setIsInputExpanded(!isInputExpanded)}
+                className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"
+                title={isInputExpanded ? '入力欄を縮小' : '入力欄を拡大'}
+              >
+                {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
+              </button>
               <button
                 onClick={handleSend}
                 disabled={!message.trim() || isLoading}
