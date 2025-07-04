@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImagePromptGenerator } from '../../../../lib/imagePromptGenerator';
+// @ts-expect-error - replicate lacks its own type declarations
+import Replicate from 'replicate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,16 +89,19 @@ export async function POST(request: NextRequest) {
     const useReplicate = process.env.REPLICATE_API_TOKEN && !forceLocal;
     if (useReplicate) {
       console.log('Using Replicate API for image generation');
-      
+
+      const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN! });
+      const modelName = process.env.REPLICATE_MODEL_NAME || '';
+      const modelVersion = process.env.REPLICATE_MODEL_VERSION;
+
       try {
-        const response = await fetch('https://api.replicate.com/v1/predictions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            version: 'ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4', // SDXL
+        let imageUrl: string | undefined;
+
+        if (modelName) {
+          // 例: "black-forest-labs/flux-kontext-pro" または version を付与した識別子
+          const identifier = modelVersion ? `${modelName}:${modelVersion}` : modelName;
+
+          const output: unknown = await replicate.run(identifier, {
             input: {
               prompt: finalPrompt,
               negative_prompt: finalNegativePrompt,
@@ -105,35 +110,68 @@ export async function POST(request: NextRequest) {
               num_inference_steps: character?.imageSteps || 28,
               guidance_scale: character?.imageCfgScale || 8,
               seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-            }
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Replicate API error: ${response.status}`);
-        }
-
-        const prediction = await response.json();
-        
-        // 予測が完了するまで待機（最大30秒）
-        let result = prediction;
-        let attempts = 0;
-        while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 15) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
-            headers: {
-              'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
             },
           });
-          
-          result = await statusResponse.json();
-          attempts++;
+
+          if (Array.isArray(output)) {
+            imageUrl = output[0] as string;
+          } else if (typeof output === 'string') {
+            imageUrl = output;
+          } else if (output && typeof (output as { url?: () => string }).url === 'function') {
+            imageUrl = (output as { url: () => string }).url();
+          }
+        } else {
+          // モデル名が指定されていない場合は従来どおり version ハッシュで呼び出し
+          const response = await fetch('https://api.replicate.com/v1/predictions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              version: process.env.REPLICATE_MODEL_VERSION || 'ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4', // 既定 SDXL
+              input: {
+                prompt: finalPrompt,
+                negative_prompt: finalNegativePrompt,
+                width: character?.imageWidth || 512,
+                height: character?.imageHeight || 768,
+                num_inference_steps: character?.imageSteps || 28,
+                guidance_scale: character?.imageCfgScale || 8,
+                seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Replicate API error: ${response.status}`);
+          }
+
+          const prediction = await response.json();
+
+          // 予測が完了するまで待機（最大30秒）
+          let result = prediction;
+          let attempts = 0;
+          while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 15) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
+              headers: {
+                'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+              },
+            });
+
+            result = await statusResponse.json();
+            attempts++;
+          }
+
+          if (result.status === 'succeeded' && result.output && result.output[0]) {
+            imageUrl = result.output[0];
+          }
         }
-        
-        if (result.status === 'succeeded' && result.output && result.output[0]) {
+
+        if (imageUrl) {
           return NextResponse.json({
-            image: result.output[0],
+            image: imageUrl,
             success: true,
           });
         }

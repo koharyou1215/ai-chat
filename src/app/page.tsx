@@ -438,7 +438,12 @@ export default function ChatPage() {
       const lastUserMessage = messagesWithoutLast.filter(m => m.role === 'user').pop();
       if (!lastUserMessage) return;
 
-      // APIを呼び出して新しい応答を生成
+      // 会話履歴から最後のユーザーメッセージを除外してコンテキストを作成
+      const conversationContext = messagesWithoutLast
+        .filter((m) => m.id !== lastUserMessage.id)
+        .slice(-20); // 直近20件
+
+      // APIを呼び出して新しい応答を生成（重複送信を防止）
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: {
@@ -451,7 +456,7 @@ export default function ChatPage() {
           characterId: currentCharacter?.name,
           character: currentCharacter,
           memos: memos,
-          conversation: [...messagesWithoutLast, lastUserMessage].slice(-20) // 直近20件
+          conversation: conversationContext
         }),
       });
 
