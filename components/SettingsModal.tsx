@@ -432,6 +432,20 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </div>
                   </div>
 
+                  {/* 吹き出しぼかし効果 */}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="bubbleBlur"
+                      checked={formSettings.bubbleBlur}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, bubbleBlur: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="bubbleBlur" className="text-sm font-medium text-gray-700">
+                      吹き出しをぼかす (すりガラス)
+                    </label>
+                  </div>
+
                   {/* LORA設定 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

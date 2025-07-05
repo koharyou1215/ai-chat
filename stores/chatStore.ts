@@ -69,7 +69,8 @@ const defaultSettings: AppSettings = {
   model: 'gemini-2.5-flash',
   enableImageGeneration: true,
   chatNotificationSound: true,
-  imageEngine: 'replicate'
+  imageEngine: 'replicate',
+  bubbleBlur: true
 };
 
 export const useChatStore = create<ChatStore>()(

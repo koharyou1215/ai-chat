@@ -186,4 +186,6 @@ export interface AppSettings {
    * 画像生成エンジン (replicate = Replicate API / sd = Stable Diffusion)
    */
   imageEngine: 'replicate' | 'sd';
+  /** 吹き出しに backdrop-blur を適用するか */
+  bubbleBlur: boolean;
 } 

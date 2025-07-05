@@ -149,6 +149,7 @@ export default function ChatPage() {
     enableImageGeneration: true,
     chatNotificationSound: true,
     imageEngine: 'replicate',
+    bubbleBlur: true,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1015,7 +1016,7 @@ export default function ChatPage() {
                   
                   {/* メッセージバブル */}
                   <div 
-                    className="relative z-10 backdrop-blur-sm rounded-2xl p-4 shadow-lg"
+                    className="relative z-10 rounded-2xl p-4 shadow-lg"
                     style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
                   >
                     <div 
@@ -1075,8 +1076,8 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div className="max-w-lg">
-                  <div 
-                    className="backdrop-blur-sm text-white rounded-2xl p-4 shadow-lg relative"
+                  <div
+                    className={`relative z-10 rounded-2xl p-4 shadow-lg ${settings.bubbleBlur ? 'backdrop-blur-sm' : ''}`}
                     style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                   >
                                           <div 
