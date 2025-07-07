@@ -1003,9 +1003,9 @@ export default function ChatPage() {
                           <Image
                             src={msg.image}
                             alt="Character"
-                            layout="fill"
-                            objectFit="cover"
-                            className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl"
+                            width={512}
+                            height={768}
+                            className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl object-cover"
                           />
                         )}
                         {isGeneratingImage && !msg.image && (
