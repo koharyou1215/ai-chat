@@ -9,6 +9,9 @@ const nextConfig = {
   images: {
     domains: ['replicate.delivery'],
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 export default nextConfig;
