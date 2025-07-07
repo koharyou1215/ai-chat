@@ -23,6 +23,7 @@ import ThemeModal from '../../components/ThemeModal';
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
+import Image from 'next/image';
 
 interface Message {
   id: string;
@@ -999,10 +1000,12 @@ export default function ChatPage() {
                     <div className="mb-3">
                       <div className="relative">
                         {msg.image && (
-                          <img
+                          <Image
                             src={msg.image}
                             alt="Character"
-                            className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 object-cover rounded-lg shadow-2xl"
+                            layout="fill"
+                            objectFit="cover"
+                            className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl"
                           />
                         )}
                         {isGeneratingImage && !msg.image && (

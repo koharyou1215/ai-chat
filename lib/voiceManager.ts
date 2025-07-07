@@ -82,27 +82,46 @@ export class VoiceManager {
         },
       };
 
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${settings.voiceId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': this.apiKey,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      // ===== cache handling =====
+      const hashBuffer = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text))
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      const key = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+      const cache = 'caches' in self ? await caches.open('elevenlabs-tts') : null
+      if (cache) {
+        const cachedResp = await cache.match(key)
+        if (cachedResp) {
+          return await cachedResp.arrayBuffer()
+        }
       }
 
-      return await response.arrayBuffer();
-    } catch (error) {
-      console.error('音声生成エラー:', error);
-      return null;
+      const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${settings.voiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey,
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+    }
+
+    const buf = await response.arrayBuffer()
+    if (cache) {
+      cache.put(key, new Response(buf, {
+        headers: { 'Cache-Control': 'public,max-age=86400' }
+      }))
+    }
+    return buf
+    } catch (err) {
+      console.error('ElevenLabs fetch/cache error:', err)
+      return null
     }
   }
 

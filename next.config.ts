@@ -1,12 +1,14 @@
-import type { NextConfig } from "next";
+// next.config.ts
+const isProd = process.env.NODE_ENV === 'production'
 
-const nextConfig: NextConfig = {
-  /* config options here */
-  eslint: {
-    ignoreDuringBuilds: true,
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    turbo: isProd ? { loaders: {} } : {},
   },
-  // スタンドアロンビルド設定
-  output: 'standalone',
-};
+  images: {
+    domains: ['replicate.delivery'],
+  },
+}
 
 export default nextConfig;
