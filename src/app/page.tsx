@@ -103,6 +103,9 @@ export default function ChatPage() {
   } | null>(null);
   const [showEnhancementModal, setShowEnhancementModal] = useState(false);
 
+  // Personaインポート/エクスポート
+  const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
+
   const { memos } = useChatStore();
 
   // 会話要約生成
@@ -922,6 +925,7 @@ export default function ChatPage() {
               }
             }
           }}
+          onImportExport={() => setIsPersonaImportExportOpen(true)}
         />
         </div>
 
@@ -1664,6 +1668,31 @@ export default function ChatPage() {
         onClose={() => {
           setShowUserInspiration(false);
           setUserInspirationCandidates([]);
+        }}
+      />
+
+      {/* Personaインポート/エクスポートモーダル */}
+      <PersonaImportExport
+        isOpen={isPersonaImportExportOpen}
+        onClose={() => setIsPersonaImportExportOpen(false)}
+        allPersonas={allPersonas}
+        onImport={(importedPersonas) => {
+          // インポートされたPersonaを追加
+          const updatedPersonas = [...allPersonas];
+          importedPersonas.forEach(importedPersona => {
+            // 既存のPersonaと重複チェック（IDまたは名前）
+            const existingIndex = updatedPersonas.findIndex(p => p.id === importedPersona.id || p.name === importedPersona.name);
+            if (existingIndex >= 0) {
+              // 既存のPersonaを更新
+              updatedPersonas[existingIndex] = importedPersona;
+            } else {
+              // 新しいPersonaを追加
+              updatedPersonas.push(importedPersona);
+            }
+          });
+          
+          setAllPersonas(updatedPersonas);
+          localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
         }}
       />
     </div>
