@@ -28,8 +28,12 @@ export async function POST(request: NextRequest) {
     // キャラクター設定からシステムプロンプトを構築
     const systemPrompt = buildSystemPrompt(character);
     
-    // 会話履歴を構築
-    const conversationHistory = (messages as ChatHistoryMsg[])
+    // プロンプト短縮: 直近10件、assistant 長文省略
+    const recentMessages = (messages as ChatHistoryMsg[])
+      .slice(-10)
+      .filter((m) => m.role === 'user' || m.content.length < 250);
+
+    const conversationHistory = recentMessages
       .map((msg) => {
         const role = msg.role === 'user' ? 'ユーザー' : character.name;
         return `${role}: ${msg.content}`;

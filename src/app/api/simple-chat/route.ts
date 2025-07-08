@@ -9,6 +9,15 @@ import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 // NOTE: セキュリティのため API キーはハードコードしない
 const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
 
+// --- インスタンスキャッシュ（APIキーごと） ---
+const genAiCache = new Map<string, GoogleGenerativeAI>();
+function getGenAI(key: string) {
+  if (!genAiCache.has(key)) {
+    genAiCache.set(key, new GoogleGenerativeAI(key));
+  }
+  return genAiCache.get(key)!;
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Simple chat API called');
@@ -50,7 +59,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = getGenAI(apiKey);
 
     // モデル設定を適用
     const modelConfig = {
@@ -148,8 +157,13 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     }
     
     // 会話履歴をテキスト化（空文字やundefinedを除外）
+    // ---- プロンプト短縮 ----
+    // 1) 空行除去 2) 直近10件 3) assistant 長文 (>250文字) はスキップ
     const filteredConversation = (conversation && Array.isArray(conversation))
-      ? conversation.filter((msg: { role: string; content: string }) => msg && msg.content && msg.content.trim().length > 0)
+      ? conversation
+          .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
+          .slice(-10) // 直近10件だけ
+          .filter((msg: { role: string; content: string }) => msg.role === 'user' || msg.content.length < 250)
       : [];
 
     let historyText = filteredConversation.map((msg: { role: string; content: string }) => {
@@ -179,37 +193,37 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     
     console.log('Final prompt:', fullPrompt);
     
-    // ---------- ストリーミング応答 ----------
-    const responseStream = await model.generateContentStream({
+    // ---------- インスピレーション返信 (候補3つ) ----------
+    const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+      generationConfig: {
+        ...modelConfig.generationConfig,
+        candidateCount: 3
+      }
     });
-    const encoder = new TextEncoder();
+
+    const response = await result.response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const candidatesData = (response as any).candidates || [];
+    
+    const candidates = candidatesData.map((c: any) => {
+      try {
+        return c?.content?.parts?.[0]?.text || '';
+      } catch {
+        return '';
+      }
+    }).filter((text: string) => text.length > 0);
+
+    // プレースホルダ置換を各候補に適用
     const userName = persona?.name || 'あなた';
+    const replaced = candidates.map((t: string) => 
+      t.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
+    );
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of responseStream.stream) {
-            const partText = chunk?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            if (partText) {
-              const replaced = partText
-                .replace(/\{\{char}}/g, character.name)
-                .replace(/\{\{user}}/g, userName);
-              controller.enqueue(encoder.encode(replaced));
-            }
-          }
-        } catch (e) {
-          console.error('Streaming error:', e);
-        } finally {
-          controller.close();
-        }
-      }
-    });
-
-    return new NextResponse(stream, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8'
-      }
+    return NextResponse.json({
+      success: true,
+      content: replaced[0] || 'エラーが発生しました',
+      candidates: replaced
     });
     
   } catch (error) {

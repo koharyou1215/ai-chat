@@ -3,7 +3,7 @@
 // crypto.randomUUID ポリフィル
 import '../../lib/uuidPolyfill';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud, ChevronDown, ChevronUp } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
@@ -24,6 +24,8 @@ import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
 import Image from 'next/image';
+import { InspirationModal } from '../../components/InspirationModal';
+import { UserInspirationModal } from '../../components/UserInspirationModal';
 
 interface Message {
   id: string;
@@ -76,6 +78,29 @@ export default function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
+
+  // インスピレーション関連
+  const [showInspiration, setShowInspiration] = useState(false);
+  const [inspirationCandidates, setInspirationCandidates] = useState<string[]>([]);
+  const [showUserInspiration, setShowUserInspiration] = useState(false);
+  const [userInspirationCandidates, setUserInspirationCandidates] = useState<string[]>([]);
+  const [isLoadingUserInspiration, setIsLoadingUserInspiration] = useState(false);
+
+  // ユーザー文章強化機能
+  const [isEnhancingUserText, setIsEnhancingUserText] = useState(false);
+
+  // 文章強化機能
+  const [selectedText, setSelectedText] = useState('');
+  const [selectedMessageId, setSelectedMessageId] = useState('');
+  const [showEnhanceButton, setShowEnhanceButton] = useState(false);
+  const [enhanceButtonPosition, setEnhanceButtonPosition] = useState({ x: 0, y: 0 });
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancementResult, setEnhancementResult] = useState<{
+    originalText: string;
+    enhancedText: string;
+    messageId: string;
+  } | null>(null);
+  const [showEnhancementModal, setShowEnhancementModal] = useState(false);
 
   const { memos } = useChatStore();
 
@@ -321,10 +346,20 @@ export default function ChatPage() {
       const contentType = chatResponse.headers.get('Content-Type') || '';
 
       if (contentType.includes('application/json')) {
-        // 旧形式のJSON
+        // JSON形式（通常 or インスピレーション）
         const chatData = await chatResponse.json();
         if (chatData.success) {
-          aiContent = chatData.content;
+          if (chatData.candidates && chatData.candidates.length > 1) {
+            // インスピレーション候補がある場合
+            setInspirationCandidates(chatData.candidates);
+            setShowInspiration(true);
+            setIsLoading(false);
+            // AI返信は追加せず、候補選択を待つ
+            setMessages(prev => prev.slice(0, -1)); // 追加した空のAI返信を削除
+            return;
+          } else {
+            aiContent = chatData.content;
+          }
         }
       } else {
         // ストリーム読み取り
@@ -358,46 +393,7 @@ export default function ChatPage() {
         
         // 画像生成（非同期）
         if (settings.enableImageGeneration) {
-        try {
-          // 過去数回の会話を文脈として提供
-          const recentMessages = messages.slice(-5).map(m => m.content);
-          
-          const imageResponse = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              aiResponse: aiContent,
-              character: currentCharacter,
-              conversationContext: recentMessages,
-              loraSettings: settings.loraSettings,
-              negativePrompt: settings.negativePrompt,
-              seed: currentCharacter?.imageSeed,
-              width: currentCharacter?.imageWidth,
-              height: currentCharacter?.imageHeight,
-              steps: currentCharacter?.imageSteps,
-              cfg_scale: currentCharacter?.imageCfgScale,
-              sampler: currentCharacter?.imageSampler,
-              imageEngine: settings.imageEngine,
-            }),
-          });
-
-          const imageData = await imageResponse.json();
-          
-          if (imageData.success) {
-            // 画像を追加
-            setMessages(prev => prev.map(msg => 
-              msg.id === aiResponse.id 
-                ? { ...msg, image: imageData.image }
-                : msg
-            ));
-          }
-        } catch (imageError) {
-          console.error('Image generation failed:', imageError);
-        } finally {
-          setIsGeneratingImage(false);
-        }
+          handleImageGeneration(aiResponse, aiContent);
         }
       } else {
         // エラー時のフォールバック
@@ -422,6 +418,208 @@ export default function ChatPage() {
       setIsLoading(false);
     }
   };
+
+  // 画像生成処理を共通化
+  const handleImageGeneration = async (aiResponse: Message, aiContent: string) => {
+    if (!settings.enableImageGeneration || !currentCharacter) return;
+    
+    try {
+      setIsGeneratingImage(true);
+      const recentMessages = messages.slice(-5).map(m => m.content);
+      
+      const imageResponse = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          aiResponse: aiContent,
+          character: currentCharacter,
+          conversationContext: recentMessages,
+          loraSettings: settings.loraSettings,
+          negativePrompt: settings.negativePrompt,
+          seed: currentCharacter?.imageSeed,
+          width: currentCharacter?.imageWidth,
+          height: currentCharacter?.imageHeight,
+          steps: currentCharacter?.imageSteps,
+          cfg_scale: currentCharacter?.imageCfgScale,
+          sampler: currentCharacter?.imageSampler,
+          imageEngine: settings.imageEngine,
+        }),
+      });
+
+      const imageData = await imageResponse.json();
+      
+      if (imageData.success) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiResponse.id 
+            ? { ...msg, image: imageData.image }
+            : msg
+        ));
+      }
+    } catch (imageError) {
+      console.error('Image generation failed:', imageError);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // ユーザーインスピレーション機能
+  const handleUserInspiration = async () => {
+    if (!currentCharacter || isLoadingUserInspiration) return;
+    
+    setIsLoadingUserInspiration(true);
+    try {
+      const response = await fetch('/api/user-inspiration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character: currentCharacter,
+          persona: currentPersona,
+          conversation: messages.slice(-8), // 直近8件
+          settings
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success && data.candidates.length > 0) {
+        setUserInspirationCandidates(data.candidates);
+        setShowUserInspiration(true);
+      }
+    } catch (error) {
+      console.error('User inspiration error:', error);
+    } finally {
+      setIsLoadingUserInspiration(false);
+    }
+  };
+
+  // ユーザー文章強化実行
+  const handleUserTextEnhancement = async () => {
+    if (!message.trim() || !currentCharacter) return;
+    
+    setIsEnhancingUserText(true);
+    
+    try {
+      const response = await fetch('/api/enhance-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedText: message,
+          fullMessage: message, // ユーザーの場合は同じ
+          character: currentCharacter,
+          conversationContext: messages.slice(-5),
+          settings,
+          isUserText: true // ユーザー文章であることを示すフラグ
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setMessage(data.enhancedText);
+      }
+    } catch (error) {
+      console.error('User text enhancement error:', error);
+    } finally {
+      setIsEnhancingUserText(false);
+    }
+  };
+
+  // 文章選択ハンドラー
+  const handleTextSelection = (messageId: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      setShowEnhanceButton(false);
+      return;
+    }
+
+    const selectedText = selection.toString().trim();
+    if (selectedText.length < 5 || selectedText.length > 200) {
+      setShowEnhanceButton(false);
+      return;
+    }
+
+    // 選択位置を取得
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    
+    setSelectedText(selectedText);
+    setSelectedMessageId(messageId);
+    setEnhanceButtonPosition({
+      x: rect.right + 10,
+      y: rect.top + window.scrollY - 10
+    });
+    setShowEnhanceButton(true);
+  };
+
+  // 文章強化実行
+  const handleTextEnhancement = async () => {
+    if (!selectedText || !selectedMessageId || !currentCharacter) return;
+    
+    setIsEnhancing(true);
+    setShowEnhanceButton(false);
+    
+    try {
+      const targetMessage = messages.find(m => m.id === selectedMessageId);
+      if (!targetMessage) return;
+
+      const response = await fetch('/api/enhance-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedText,
+          fullMessage: targetMessage.content,
+          character: currentCharacter,
+          conversationContext: messages.slice(-5),
+          settings
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setEnhancementResult({
+          originalText: data.originalText,
+          enhancedText: data.enhancedText,
+          messageId: selectedMessageId
+        });
+        setShowEnhancementModal(true);
+      }
+    } catch (error) {
+      console.error('Enhancement error:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
+  // 強化された文章を適用
+  const applyEnhancement = () => {
+    if (!enhancementResult) return;
+    
+    setMessages(prev => prev.map(msg => 
+      msg.id === enhancementResult.messageId 
+        ? { 
+            ...msg, 
+            content: msg.content.replace(
+              enhancementResult.originalText, 
+              enhancementResult.enhancedText
+            ) 
+          }
+        : msg
+    ));
+    
+    setShowEnhancementModal(false);
+    setEnhancementResult(null);
+  };
+
+  // 選択解除ハンドラー
+  const handleDocumentClick = () => {
+    setShowEnhanceButton(false);
+  };
+
+  // ドキュメントクリックイベント登録
+  useEffect(() => {
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.ctrlKey) {
@@ -456,78 +654,54 @@ export default function ChatPage() {
       // APIを呼び出して新しい応答を生成（重複送信を防止）
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: lastUserMessage.content,
-          settings: settings,
+          settings,
           persona: currentPersona,
           characterId: currentCharacter?.name,
           character: currentCharacter,
-          memos: memos,
+          memos,
           conversation: conversationContext
         }),
       });
 
-      const chatData = await chatResponse.json();
+      let aiContent = '';
+      const aiResponse: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, aiResponse]);
 
-      if (chatData.success) {
-        const aiResponse: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: chatData.content,
-          timestamp: Date.now()
-        };
-        
-        setMessages(prev => [...prev, aiResponse]);
+      const contentType = chatResponse.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) {
+        const json = await chatResponse.json();
+        if (json.success) aiContent = json.content;
+      } else {
+        const reader = chatResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            aiContent += decoder.decode(value, { stream: true });
+            setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+          }
+        }
+      }
 
-        // チャット完了通知音を再生
+      setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+
+      if (aiContent) {
         if (settings.chatNotificationSound) {
           VoiceManager.playNotificationSound(true, 0.3);
         }
 
         // 画像生成
         if (settings.enableImageGeneration) {
-        try {
-          // 過去数回の会話を文脈として提供
-          const recentMessages = messagesWithoutLast.slice(-5).map(m => m.content);
-          
-          const imageResponse = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              aiResponse: chatData.content,
-              character: currentCharacter,
-              conversationContext: recentMessages,
-              loraSettings: settings.loraSettings,
-              negativePrompt: settings.negativePrompt,
-              seed: currentCharacter?.imageSeed,
-              width: currentCharacter?.imageWidth,
-              height: currentCharacter?.imageHeight,
-              steps: currentCharacter?.imageSteps,
-              cfg_scale: currentCharacter?.imageCfgScale,
-              sampler: currentCharacter?.imageSampler,
-              imageEngine: settings.imageEngine,
-            }),
-          });
-
-          const imageData = await imageResponse.json();
-          
-          if (imageData.success) {
-            setMessages(prev => prev.map(msg => 
-              msg.id === aiResponse.id 
-                ? { ...msg, image: imageData.image }
-                : msg
-            ));
-          }
-        } catch (imageError) {
-          console.error('Image generation failed:', imageError);
-        } finally {
-          setIsGeneratingImage(false);
-        }
+          handleImageGeneration(aiResponse, aiContent);
         }
       }
     } catch (error) {
@@ -629,15 +803,32 @@ export default function ChatPage() {
           conversation: messages.slice(-20)
         })
       });
-      const data = await chatResponse.json();
-      if (data.success) {
-        const aiMsg: Message = { id: Date.now().toString(), role: 'assistant', content: data.content, timestamp: Date.now() };
-        setMessages(prev => [...prev, aiMsg]);
 
-        // チャット完了通知音を再生
-        if (settings.chatNotificationSound) {
-          VoiceManager.playNotificationSound(true, 0.3);
+      let aiContent = '';
+      const aiMsg: Message = { id: Date.now().toString(), role: 'assistant', content: '', timestamp: Date.now() };
+      setMessages(prev => [...prev, aiMsg]);
+
+      const contentType = chatResponse.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) {
+        const json = await chatResponse.json();
+        if (json.success) aiContent = json.content;
+      } else {
+        const reader = chatResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            aiContent += decoder.decode(value, { stream: true });
+            setMessages(prev => prev.map(m => (m.id === aiMsg.id ? { ...m, content: aiContent } : m)));
+          }
         }
+      }
+
+      setMessages(prev => prev.map(m => (m.id === aiMsg.id ? { ...m, content: aiContent } : m)));
+
+      if (aiContent && settings.chatNotificationSound) {
+        VoiceManager.playNotificationSound(true, 0.3);
       }
     } catch (e) {
       console.error(e);
@@ -1032,7 +1223,11 @@ export default function ChatPage() {
                       className="absolute -top-2 left-6 w-4 h-4 rotate-45"
                       style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
                     ></div>
-                     <div className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute">
+                     <div 
+                       className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute"
+                       onMouseUp={() => handleTextSelection(msg.id)}
+                       style={{ userSelect: 'text' }}
+                     >
                        <FormattedText md={msg.content} />
                      </div>
                      <div className="flex justify-end mt-2 gap-1">
@@ -1122,6 +1317,22 @@ export default function ChatPage() {
                 {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
               </button>
               <button
+                onClick={handleUserInspiration}
+                disabled={isLoadingUserInspiration || !currentCharacter}
+                className="text-yellow-400 hover:text-yellow-300 p-2 rounded-full transition-colors disabled:opacity-50"
+                title="返信候補を提案"
+              >
+                {isLoadingUserInspiration ? <Loader size={16} className="animate-spin" /> : '💡'}
+              </button>
+              <button
+                onClick={handleUserTextEnhancement}
+                disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
+                className="text-purple-400 hover:text-purple-300 p-2 rounded-full transition-colors disabled:opacity-50"
+                title="文章を強化"
+              >
+                {isEnhancingUserText ? <Loader size={16} className="animate-spin" /> : '✨'}
+              </button>
+              <button
                 onClick={handleSend}
                 disabled={!message.trim() || isLoading}
                 className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white p-3 rounded-full transition-colors"
@@ -1193,6 +1404,79 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* 浮動強化ボタン */}
+      {showEnhanceButton && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleTextEnhancement();
+          }}
+          className="fixed z-50 bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg shadow-lg text-sm flex items-center gap-2"
+          style={{
+            left: enhanceButtonPosition.x,
+            top: enhanceButtonPosition.y
+          }}
+          disabled={isEnhancing}
+        >
+          {isEnhancing ? <Loader size={14} className="animate-spin" /> : '✨'}
+          強化
+        </button>
+      )}
+
+      {/* 文章強化結果モーダル */}
+      {showEnhancementModal && enhancementResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                ✨ 文章強化結果
+              </h2>
+              <button
+                onClick={() => setShowEnhancementModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  元の文章
+                </h3>
+                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded border">
+                  {enhancementResult.originalText}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  強化された文章
+                </h3>
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded border border-purple-200 dark:border-purple-700">
+                  {enhancementResult.enhancedText}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowEnhancementModal(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={applyEnhancement}
+                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
+              >
+                適用
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 設定モーダル */}
       <SettingsModal
@@ -1330,6 +1614,53 @@ export default function ChatPage() {
           localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
           localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
           localStorage.setItem('ai-chat-settings', JSON.stringify(syncedData.settings))
+        }}
+      />
+
+      {/* インスピレーション候補選択モーダル */}
+      <InspirationModal
+        isOpen={showInspiration}
+        candidates={inspirationCandidates}
+        onSelect={(selectedText) => {
+          // 選択した候補をキャラクターの返信として確定
+          const aiResponse: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: selectedText,
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, aiResponse]);
+          setShowInspiration(false);
+          setInspirationCandidates([]);
+          
+          // 通知音を再生
+          if (settings.chatNotificationSound) {
+            VoiceManager.playNotificationSound(true, 0.3);
+          }
+          
+          // 画像生成（必要な場合）
+          if (settings.enableImageGeneration) {
+            handleImageGeneration(aiResponse, selectedText);
+          }
+        }}
+        onClose={() => {
+          setShowInspiration(false);
+          setInspirationCandidates([]);
+        }}
+      />
+
+      {/* ユーザーインスピレーション候補選択モーダル */}
+      <UserInspirationModal
+        isOpen={showUserInspiration}
+        candidates={userInspirationCandidates}
+        onSelect={(selectedText) => {
+          setMessage(selectedText);
+          setShowUserInspiration(false);
+          setUserInspirationCandidates([]);
+        }}
+        onClose={() => {
+          setShowUserInspiration(false);
+          setUserInspirationCandidates([]);
         }}
       />
     </div>

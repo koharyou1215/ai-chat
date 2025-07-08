@@ -17,9 +17,9 @@
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "replicate": "^0.25.0",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.6",
-    "replicate": "^0.25.0"
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
