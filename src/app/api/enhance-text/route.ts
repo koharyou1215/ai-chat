@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       selectedText,
       fullMessage,
       character,
+      persona,
       conversationContext,
       settings,
       isUserText
@@ -60,6 +61,9 @@ export async function POST(req: NextRequest) {
 名前: ${character.name}
 設定: ${character.character_definition || character.description || ''}
 
+【ユーザー情報】
+${persona ? `名前: ${persona.name}\n説明: ${persona.description}\n好きなもの: ${persona.likes?.join(', ') || 'なし'}\n嫌いなもの: ${persona.dislikes?.join(', ') || 'なし'}\nその他設定: ${persona.other_settings || 'なし'}` : '一般的なユーザー'}
+
 【会話の流れ】
 ${recentContext}
 
@@ -70,10 +74,11 @@ ${recentContext}
 1. ユーザー視点での自然な表現に拡張
 2. 元の意図・感情を保持しつつ詳細化
 3. ${character.name}への感情や反応を含める
-4. 200-300文字程度に拡張
-5. 自然な日本語の話し言葉
-6. 過度に文学的にならず、親しみやすい表現
-7. 相手との関係性を意識した言葉選び
+4. ユーザーの性格・好み・口調を反映
+5. 200-300文字程度に拡張
+6. 自然な日本語の話し言葉
+7. 過度に文学的にならず、親しみやすい表現
+8. 相手との関係性を意識した言葉選び
 
 以下の形式で出力してください：
 

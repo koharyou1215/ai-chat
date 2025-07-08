@@ -26,6 +26,7 @@ import FormattedText from '../../components/FormattedText';
 import Image from 'next/image';
 import { InspirationModal } from '../../components/InspirationModal';
 import { UserInspirationModal } from '../../components/UserInspirationModal';
+import PersonaImportExport from '../../components/PersonaImportExport';
 
 interface Message {
   id: string;
@@ -507,6 +508,7 @@ export default function ChatPage() {
           selectedText: message,
           fullMessage: message, // ユーザーの場合は同じ
           character: currentCharacter,
+          persona: currentPersona,
           conversationContext: messages.slice(-5),
           settings,
           isUserText: true // ユーザー文章であることを示すフラグ
@@ -569,6 +571,7 @@ export default function ChatPage() {
           selectedText,
           fullMessage: targetMessage.content,
           character: currentCharacter,
+          persona: currentPersona,
           conversationContext: messages.slice(-5),
           settings
         })

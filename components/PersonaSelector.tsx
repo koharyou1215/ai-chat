@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { User, Plus, Edit, Trash2, ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { UserPersona } from '../types/character';
 
 interface PersonaSelectorProps {
@@ -11,6 +11,7 @@ interface PersonaSelectorProps {
   onAddPersona: () => void;
   onEditPersona: (persona: UserPersona) => void;
   onDeletePersona: (persona: UserPersona) => void;
+  onImportExport: () => void;
 }
 
 export default function PersonaSelector({
@@ -19,7 +20,8 @@ export default function PersonaSelector({
   onSelectPersona,
   onAddPersona,
   onEditPersona,
-  onDeletePersona
+  onDeletePersona,
+  onImportExport
 }: PersonaSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -34,13 +36,22 @@ export default function PersonaSelector({
           <User size={18} />
           Persona設定
         </button>
-        <button
-          onClick={onAddPersona}
-          className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
-          title="Persona追加"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={onImportExport}
+            className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+            title="インポート/エクスポート"
+          >
+            <Download size={16} />
+          </button>
+          <button
+            onClick={onAddPersona}
+            className="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+            title="Persona追加"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {isExpanded && (
