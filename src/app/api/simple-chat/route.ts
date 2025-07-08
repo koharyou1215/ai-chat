@@ -5,8 +5,6 @@ import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 
-// Edge ランタイムで実行（高速起動）
-export const runtime = 'edge';
 
 // NOTE: セキュリティのため API キーはハードコードしない
 const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
@@ -181,7 +179,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     console.log('Final prompt:', fullPrompt);
     
     // ---------- ストリーミング応答 ----------
-    const responseStream = await model.generateContentStream(fullPrompt);
+    const responseStream = await model.generateContentStream({
+      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+    });
     const encoder = new TextEncoder();
     const userName = persona?.name || 'あなた';
 
