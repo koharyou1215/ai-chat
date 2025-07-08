@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
 
 if (!GEMINI_API_KEY) {
@@ -43,16 +44,25 @@ export async function POST(request: NextRequest) {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
         maxOutputTokens: settings?.maxTokens || 2048,
+        // 同じ語句の繰り返しを抑制するためのペナルティ
+        presencePenalty: settings?.presencePenalty ?? 0.6,
+        frequencyPenalty: settings?.frequencyPenalty ?? 0.4,
       },
     });
     
     const response = await result.response;
     const text = response.text();
-    
+
+    // プレースホルダ置換 {{char}}, {{user}}
+    const userName = 'あなた';
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const finalizedText = text.replace(/\{\{char}}/g, (character as {name:string}).name)
+                              .replace(/\{\{user}}/g, userName);
+
     console.log('Gemini API response:', text);
     
     return NextResponse.json({ 
-      content: text,
+      content: finalizedText,
       success: true 
     });
     

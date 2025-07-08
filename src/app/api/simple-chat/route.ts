@@ -5,6 +5,9 @@ import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 
+// Edge ランタイムで実行（高速起動）
+export const runtime = 'edge';
+
 // NOTE: セキュリティのため API キーはハードコードしない
 const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
 
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);
-    
+
     // モデル設定を適用
     const modelConfig = {
       model: settings?.model || 'gemini-2.5-flash',
@@ -58,9 +61,11 @@ export async function POST(request: NextRequest) {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
         maxOutputTokens: settings?.maxTokens || 2048,
+        // 連続した同一表現を減らすためのペナルティ設定
+        presencePenalty: settings?.presencePenalty ?? 0.6,
+        frequencyPenalty: settings?.frequencyPenalty ?? 0.4,
       }
     };
-    
     const model = genAI.getGenerativeModel(modelConfig);
     
     // キャラクター情報からプロンプトを生成
@@ -175,41 +180,35 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     
     console.log('Final prompt:', fullPrompt);
     
-    // Gemini呼び出しを1回リトライできるように関数化
-    const callGemini = async (): Promise<string> => {
-      const result = await model.generateContent(fullPrompt);
-      const response = await result.response;
-      return response.text();
-    };
+    // ---------- ストリーミング応答 ----------
+    const responseStream = await model.generateContentStream(fullPrompt);
+    const encoder = new TextEncoder();
+    const userName = persona?.name || 'あなた';
 
-    let text = await callGemini();
-
-    // 返答が空の場合は履歴を半分にして再試行
-    if (!text || text.trim().length === 0) {
-      console.warn('Geminiから空の応答。履歴を短縮してリトライします');
-      const reducedHistory = filteredConversation.slice(-10); // 直近10件だけ
-      historyText = reducedHistory.map((msg: { role: string; content: string }) => {
-        const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
-        return `${speaker}: ${msg.content}`;
-      }).join('\n');
-      fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
-
-      try {
-        text = await callGemini();
-      } catch (retryError) {
-        console.error('Gemini再試行エラー:', retryError);
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of responseStream.stream) {
+            const partText = chunk?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (partText) {
+              const replaced = partText
+                .replace(/\{\{char}}/g, character.name)
+                .replace(/\{\{user}}/g, userName);
+              controller.enqueue(encoder.encode(replaced));
+            }
+          }
+        } catch (e) {
+          console.error('Streaming error:', e);
+        } finally {
+          controller.close();
+        }
       }
-    }
-    
-    // それでも空ならフォールバックメッセージを設定
-    if (!text || text.trim().length === 0) {
-      console.warn('Geminiが依然として空応答。フォールバックメッセージを返します');
-      text = `{{char}}: …ごめんね、ちょっと言葉に詰まっちゃったみたい。もう一度質問してくれる？`;
-    }
-    
-    return NextResponse.json({
-      success: true,
-      content: text
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8'
+      }
     });
     
   } catch (error) {

@@ -297,59 +297,65 @@ export default function ChatPage() {
       // Gemini APIでチャット応答を生成（簡単版）
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: newMessage.content,
-          settings: settings,
+          settings,
           persona: currentPersona,
           characterId: currentCharacter?.name,
           character: currentCharacter,
-          memos: memos,
-          conversation: [...messages, newMessage].slice(-20) // 直近20件
+          memos,
+          conversation: [...messages, newMessage].slice(-20)
         }),
       });
 
-      const chatData = await chatResponse.json();
+      let aiContent = '';
+      const aiResponse: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, aiResponse]); // 先に追加しておく
 
-      if (chatData.success) {
+      const contentType = chatResponse.headers.get('Content-Type') || '';
+
+      if (contentType.includes('application/json')) {
+        // 旧形式のJSON
+        const chatData = await chatResponse.json();
+        if (chatData.success) {
+          aiContent = chatData.content;
+        }
+      } else {
+        // ストリーム読み取り
+        const reader = chatResponse.body?.getReader();
+        const decoder = new TextDecoder();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            aiContent += decoder.decode(value, { stream: true });
+            // 部分的に表示を更新
+            setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+          }
+        }
+      }
+
+      // 最終更新
+      setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+
+      if (aiContent) {
+        
+        // 通知音
+        if (settings.chatNotificationSound) {
+          VoiceManager.playNotificationSound(true, 0.3);
+        }
+
         // 画像生成を開始
         if (settings.enableImageGeneration) {
           setIsGeneratingImage(true);
         }
         
-        // まずテキストレスポンスを表示
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: chatData.content,
-          timestamp: Date.now()
-        };
-        
-        setMessages(prev => [...prev, aiResponse]);
-
-        // チャット完了通知音を再生
-        if (settings.chatNotificationSound) {
-          VoiceManager.playNotificationSound(true, 0.3);
-        }
-
-        // 自動音声再生
-        if (settings.voiceEnabled && settings.voiceAutoPlay) {
-          const voiceSettings = {
-            enabled: settings.voiceEnabled,
-            autoPlay: settings.voiceAutoPlay,
-            voiceId: settings.voiceId,
-            stability: settings.voiceStability,
-            similarityBoost: settings.voiceSimilarityBoost,
-            style: settings.voiceStyle,
-            useSpeakerBoost: settings.voiceUseSpeakerBoost,
-            speed: settings.voiceSpeed,
-            volume: settings.voiceVolume,
-          };
-          VoiceManager.playAudio(chatData.content, voiceSettings);
-        }
-
         // 画像生成（非同期）
         if (settings.enableImageGeneration) {
         try {
@@ -362,7 +368,7 @@ export default function ChatPage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              aiResponse: chatData.content,
+              aiResponse: aiContent,
               character: currentCharacter,
               conversationContext: recentMessages,
               loraSettings: settings.loraSettings,
