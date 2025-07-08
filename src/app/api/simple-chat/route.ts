@@ -59,9 +59,10 @@ export async function POST(request: NextRequest) {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
         maxOutputTokens: settings?.maxTokens || 2048,
-        // 連続した同一表現を減らすためのペナルティ設定
-        presencePenalty: settings?.presencePenalty ?? 0.6,
-        frequencyPenalty: settings?.frequencyPenalty ?? 0.4,
+        ...(settings?.presencePenalty !== undefined && !(settings?.model || 'gemini-2.5-flash').includes('flash') ? {
+          presencePenalty: settings?.presencePenalty ?? 0.6,
+          frequencyPenalty: settings?.frequencyPenalty ?? 0.4,
+        } : {})
       }
     };
     const model = genAI.getGenerativeModel(modelConfig);
