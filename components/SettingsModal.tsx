@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
+import BackupControls from './BackupControls';
 import { AppSettings } from '../types/character';
 import { VoiceManager, ElevenLabsVoice } from '../lib/voiceManager';
 
@@ -602,6 +603,13 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </div>
                   )}
                 </div>
+              </section>
+
+              {/* バックアップ */}
+              <section>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">バックアップ</h3>
+                <p className="text-xs text-gray-500 mb-2">チャット履歴・メモ・設定を JSON で保存 / 復元します</p>
+                <BackupControls />
               </section>
             </div>
           </div>

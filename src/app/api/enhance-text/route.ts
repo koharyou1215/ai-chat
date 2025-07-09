@@ -55,70 +55,76 @@ export async function POST(req: NextRequest) {
 
     // 文章強化プロンプト
     const enhancementPrompt = isUserText 
-      ? `あなたはユーザーの文章作成アシスタントです。以下の簡潔な文章を、より表現豊かで感情的な文章に拡張してください。
+      ? `あなたは心理描写と感情表現の専門家です。ユーザーの簡潔な発言を、内面の豊かさが伝わる自然な文章に拡張してください。
 
-【相手キャラクター】
+【対話相手】
 名前: ${character.name}
-設定: ${character.character_definition || character.description || ''}
+性格: ${character.character_definition || character.description || '不明'}
 
 【ユーザー情報】
-${persona ? `名前: ${persona.name}\n説明: ${persona.description}\n好きなもの: ${persona.likes?.join(', ') || 'なし'}\n嫌いなもの: ${persona.dislikes?.join(', ') || 'なし'}\nその他設定: ${persona.other_settings || 'なし'}` : '一般的なユーザー'}
+${persona ? `名前: ${persona.name}\n性格: ${persona.description}\n好み: ${persona.likes?.join(', ') || 'なし'}\n嫌い: ${persona.dislikes?.join(', ') || 'なし'}\n口調: ${persona.other_settings || 'なし'}` : '一般的なユーザー'}
 
-【会話の流れ】
+【会話文脈】
 ${recentContext}
 
-【ユーザーの簡潔な文章】
+【拡張対象】
 「${selectedText}」
 
-【拡張ルール】
-1. ユーザー視点での自然な表現に拡張
-2. 元の意図・感情を保持しつつ詳細化
-3. ${character.name}への感情や反応を含める
-4. ユーザーの性格・好み・口調を反映
-5. 200-300文字程度に拡張
-6. 自然な日本語の話し言葉
-7. 過度に文学的にならず、親しみやすい表現
-8. 相手との関係性を意識した言葉選び
+【拡張方針】
+1. **内面描写**: ユーザーの心の動き、感情の変化を具体的に表現
+2. **感覚表現**: 五感を使った生き生きとした描写
+3. **関係性反映**: ${character.name}への気持ちや反応を自然に織り込む
+4. **個性表現**: ユーザーの性格・口調・価値観を文章に反映
+5. **情景描写**: 状況や雰囲気を感じられる適度な環境描写
+6. **自然な流れ**: 会話の文脈と調和する表現
 
-以下の形式で出力してください：
+【重要ポイント】
+- 元の意図を核として保持しつつ、感情の深みを追加
+- 200-300文字程度で適切な長さに拡張
+- 過度に文学的にならず、親しみやすい表現
+- ユーザー視点での一人称的な内面描写
 
-【拡張文】
-[ここに拡張された文章]`
-      : `あなたは創作的な文章拡張の専門家です。以下の指示に従って、選択された一文を自然で魅力的な文章に拡張してください。
+【出力】
+拡張された文章のみを出力してください。`
+      : `あなたは創作における表現技法の専門家です。キャラクターの発言を、魅力的で印象深い文章に拡張してください。
 
 【キャラクター】
 名前: ${character.name}
-設定: ${character.character_definition || character.description || ''}
+性格: ${character.character_definition || character.description || '不明'}
 
-【会話の流れ】
+【会話文脈】
 ${recentContext}
 
-【元のメッセージ全体】
+【元メッセージ】
 「${fullMessage}」
 
-【拡張対象の一文】
+【拡張対象】
 「${selectedText}」
 
-【拡張ルール】
-1. 選択された一文の核となる意味・感情を保持する
-2. キャラクターの性格・口調・特徴を反映
-3. 感情の動き、心理描写、表情、仕草、環境描写を適切に追加
-4. 300-400文字程度に拡張（元の文が短い場合はより詳細に）
-5. 会話の流れと自然に繋がるように調整
-6. 過度に大げさにせず、自然な範囲で豊かな表現を心がける
-7. 日本語の美しい表現を使用
+【拡張技法】
+1. **表情・仕草描写**: 微細な表情の変化、特徴的な仕草や動作
+2. **心理状態表現**: 内面の感情、思考の流れ、心の葛藤
+3. **個性的特徴強調**: ${character.name}らしい独特の表現や癖
+4. **感覚的描写**: 声のトーン、目の輝き、雰囲気の変化
+5. **環境との調和**: 周囲の空気感、時間や場所の影響
+6. **言葉の重み**: セリフに込められた想いや背景
 
-以下の形式で出力してください：
+【表現指針】
+- ${character.name}の個性が際立つ独特な表現
+- 300-450文字程度の豊かで詳細な描写
+- 読み手が情景を鮮明に想像できる具体性
+- 感情の機微を繊細に表現
+- キャラクターの魅力を最大限に引き出す
 
-【拡張文】
-[ここに拡張された文章]`;
+【出力】
+拡張された文章のみを出力してください。`;
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: enhancementPrompt }] }],
       generationConfig: {
-        temperature: 0.8,
-        topP: 0.9,
-        maxOutputTokens: 600,
+        temperature: 0.9,
+        topP: 0.95,
+        maxOutputTokens: 700,
       }
     });
 
@@ -131,19 +137,64 @@ ${recentContext}
     if (match && match[1]) {
       enhancedText = match[1].trim();
     } else {
-      // フォールバック: 元の形式で返す
-      enhancedText = text.replace(/^【拡張文】\s*\n?\s*/, '').trim();
+      // より柔軟な抽出
+      enhancedText = text
+        .replace(/^【.*?】\s*\n?\s*/, '') // 最初の【】見出しを除去
+        .replace(/\[.*?\]\s*/g, '') // [説明]形式を除去
+        .replace(/^「|」$/g, '') // 前後の引用符除去
+        .trim();
     }
 
-    // 余分な改行や装飾を除去
-    enhancedText = enhancedText
-      .replace(/^\[.*?\]\s*/, '') // [ここに〜]除去
-      .replace(/^「|」$/g, '') // 前後の引用符除去
-      .trim();
+    // 最小長チェックと動的フォールバック生成
+    const minLength = isUserText ? 200 : 300;
+    if (!enhancedText || enhancedText.length < Math.max(selectedText.length + 50, minLength * 0.7)) {
+      // 動的フォールバック生成
+      const fallbackPrompt = isUserText 
+        ? `「${selectedText}」というユーザーの発言を、${character.name}への気持ちを込めて200-250文字程度に拡張してください。感情的で自然な表現にしてください。`
+        : `${character.name}の「${selectedText}」という発言を、表情や仕草、心理描写を含めて300-350文字程度に拡張してください。キャラクターらしい豊かな表現にしてください。`;
 
-    if (!enhancedText || enhancedText.length < selectedText.length) {
-      // 拡張に失敗した場合のフォールバック
-      enhancedText = `${selectedText}。${character.name}の表情には、複雑な感情が浮かんでいた。その言葉の背後にある想いが、空気に静かに響いているようだった。`;
+      try {
+        const fallbackResult = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: fallbackPrompt }] }],
+          generationConfig: {
+            temperature: 0.8,
+            topP: 0.9,
+            maxOutputTokens: 500,
+          }
+        });
+
+        const fallbackText = fallbackResult.response.text()
+          .replace(/^「|」$/g, '')
+          .replace(/\[.*?\]\s*/g, '')
+          .trim();
+
+        if (fallbackText && fallbackText.length >= minLength * 0.7) {
+          enhancedText = fallbackText;
+        }
+      } catch (fallbackError) {
+        console.warn('Dynamic fallback failed:', fallbackError);
+      }
+
+      // 最終フォールバック（多様化）
+      if (!enhancedText || enhancedText.length < minLength * 0.7) {
+        if (isUserText) {
+          // ユーザーテキスト用フォールバック（記録分析基づく）
+          const userFallbacks = [
+            `${selectedText}…そう口にしながら、私の心の奥では複雑な感情が渦巻いていた。${character.name}さんの表情を見つめていると、なんだか胸が温かくなってくる。こんな風に自然に会話できるのって、実はとても特別なことなのかもしれない。言葉にはできない安らぎを感じながら、私はもう少しこの時間を大切にしたいと思った。`,
+            `${selectedText}と言った瞬間、自分でも意外なほど素直な気持ちが声に出ていることに気づいた。${character.name}さんとの会話は、いつも私に新しい発見をもたらしてくれる。心の中で小さく微笑みながら、この瞬間の空気感を記憶に刻み込もうとする自分がいた。こういう何気ない交流が、実は一番大切なのかもしれない。`,
+            `${selectedText}…その言葉を発しながら、私は${character.name}さんの反応をそっと観察していた。表情の変化や、ふとした仕草の一つ一つが、なぜかとても印象的に映る。この人と話していると、時間の流れがゆっくりと感じられて、日常の慌ただしさを忘れてしまいそうになる。そんな穏やかな気持ちに包まれながら、私は続く言葉を待っていた。`
+          ];
+          enhancedText = userFallbacks[Math.floor(Math.random() * userFallbacks.length)];
+        } else {
+          // キャラクターテキスト用フォールバック（記録分析基づく）
+          const charFallbacks = [
+            `${selectedText}と${character.name}は穏やかに微笑みながら言葉を紡いだ。その表情には独特の魅力があり、話すたびに瞳が柔らかく輝いているのが印象的だった。ふとした瞬間に見せる仕草や、声のトーンの微細な変化まで、すべてが${character.name}らしい個性を物語っている。部屋の空気が温かく包まれるような、そんな特別な雰囲気を醸し出していた。`,
+            `${selectedText}…${character.name}の言葉には、いつものように心地よい響きがあった。表情豊かに話す姿を見ていると、その人柄の良さや内面の豊かさが自然と伝わってくる。細やかな表情の変化や、特徴的な話し方の癖まで、どれもが${character.name}の魅力的な個性を表現していて、見ているだけで心が和やかになってくる。そんな穏やかな時間が流れていく。`,
+            `${selectedText}そう話す${character.name}の様子には、独特の暖かさと親しみやすさがあった。言葉一つ一つに込められた気持ちが丁寧に伝わってきて、その真摯な姿勢に心を打たれる。目の輝きや、ふとした瞬間に見せる表情の変化が、${character.name}という人の魅力を余すことなく表現していて、この瞬間を大切にしたいという気持ちが自然と湧いてくる。`
+          ];
+          enhancedText = charFallbacks[Math.floor(Math.random() * charFallbacks.length)];
+        }
+      }
     }
 
     return NextResponse.json({

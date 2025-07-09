@@ -276,3 +276,32 @@ export const useChatStore = create<ChatStore>()(
     }
   )
 );
+
+// ===== バックアップユーティリティ =====
+export const exportChatData = () => {
+  const { sessions, userPersonas, settings, memos } = useChatStore.getState();
+  return JSON.stringify({
+    version: 1,
+    sessions,
+    userPersonas,
+    settings,
+    memos
+  }, null, 2);
+};
+
+export const importChatData = (json: string) => {
+  try {
+    const data = JSON.parse(json);
+    if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Invalid backup');
+
+    useChatStore.setState({
+      sessions: data.sessions ?? [],
+      userPersonas: data.userPersonas ?? [],
+      settings: { ...defaultSettings, ...(data.settings ?? {}) },
+      memos: data.memos ?? [],
+    });
+  } catch (e) {
+    console.error('Import failed', e);
+    throw e;
+  }
+};
