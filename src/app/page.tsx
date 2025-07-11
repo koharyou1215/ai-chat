@@ -180,6 +180,8 @@ export default function ChatPage() {
     chatNotificationSound: true,
     imageEngine: 'replicate',
     bubbleBlur: true,
+    provider: 'gemini',
+    openRouterApiKey: '',
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
