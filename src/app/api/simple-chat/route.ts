@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { MemoryManager } from '../../../../lib/memoryManager';
 import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
+import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter';
 
 
 // NOTE: セキュリティのため API キーはハードコードしない
@@ -192,6 +194,55 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     }
     
     console.log('Final prompt:', fullPrompt);
+
+    // ---------- OpenRouter 経由の応答 ----------
+    if (settings?.provider === 'openrouter') {
+      try {
+        const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+        if (!openRouterApiKey) {
+          return NextResponse.json({
+            success: false,
+            error: 'OpenRouter APIキーが設定されていません'
+          }, { status: 500 });
+        }
+
+        const messagesForOpenRouter = [
+          { role: 'system' as const, content: basePrompt },
+          ...filteredConversation.map((msg: { role: 'user' | 'assistant'; content: string }) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          ...(doContinue ? [] : [{ role: 'user' as const, content: message }])
+        ];
+
+        const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo-0125';
+
+        const openRouterText = await callOpenRouter({
+          apiKey: openRouterApiKey,
+          model: openRouterModel,
+          messages: messagesForOpenRouter,
+          temperature: modelConfig.generationConfig.temperature,
+          maxTokens: modelConfig.generationConfig.maxOutputTokens,
+        });
+
+        const userName = persona?.name || 'あなた';
+        const replaced = openRouterText
+          .replace(/\{\{char}}/g, character.name)
+          .replace(/\{\{user}}/g, userName);
+
+        return NextResponse.json({
+          success: true,
+          content: replaced,
+          candidates: [replaced]
+        });
+      } catch (openRouterError) {
+        console.error('OpenRouter error:', openRouterError);
+        return NextResponse.json({
+          success: false,
+          error: 'OpenRouter との通信に失敗しました'
+        }, { status: 500 });
+      }
+    }
     
     // ---------- インスピレーション返信 (候補3つ) ----------
     const result = await model.generateContent({
