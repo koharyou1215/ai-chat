@@ -61,6 +61,11 @@ export default function ThemeModal({
         compressedSize: '動画ファイル（圧縮なし）',
         compressionRatio: 0
       });
+      
+      // 動画ファイルの制限について通知
+      setTimeout(() => {
+        alert('動画背景が設定されました。\n\n注意: 動画ファイルはこのセッション中のみ有効です。\nページをリロードすると元の背景に戻ります。');
+      }, 100);
       return;
     }
 

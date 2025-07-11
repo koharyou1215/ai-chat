@@ -182,6 +182,7 @@ export class ThemeManager {
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
+        video.preload = 'auto';
         video.style.cssText = `
           position: fixed;
           top: 0;
@@ -189,9 +190,18 @@ export class ThemeManager {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          z-index: -20;
+          z-index: -10;
+          pointer-events: none;
         `;
-        document.body.appendChild(video);
+        
+        // body の最初の子要素として挿入（layout.tsx の動画より前に配置）
+        document.body.insertBefore(video, document.body.firstChild);
+        
+        // layout.tsx の背景動画を隠す
+        const layoutVideo = document.querySelector('video[src="/bg.mp4"]');
+        if (layoutVideo && layoutVideo instanceof HTMLVideoElement) {
+          layoutVideo.style.display = 'none';
+        }
         
         document.body.classList.remove('vertical-image-bg');
         return;
@@ -219,7 +229,15 @@ export class ThemeManager {
     } else {
       // カスタム動画を削除
       const existingVideo = document.querySelector('#custom-bg-video');
-      if (existingVideo) existingVideo.remove();
+      if (existingVideo) {
+        existingVideo.remove();
+        
+        // layout.tsx の背景動画を復元
+        const layoutVideo = document.querySelector('video[src="/bg.mp4"]');
+        if (layoutVideo && layoutVideo instanceof HTMLVideoElement) {
+          layoutVideo.style.display = '';
+        }
+      }
       
       root.style.setProperty('--theme-background-image', 'none');
       root.style.setProperty('--theme-background', theme.background);
@@ -244,6 +262,13 @@ export class ThemeManager {
   
   static saveTheme(themeId: string, customBackground?: string) {
     try {
+      // blob: URL の場合は保存をスキップして警告
+      if (customBackground && customBackground.startsWith('blob:')) {
+        console.warn('動画ファイルは一時的な背景として設定されました。ページリロード後は無効になります。');
+        // blob URL は localStorage に保存せず、現在のセッションのみ有効
+        return;
+      }
+      
       const settings = {
         currentTheme: themeId,
         customBackground: customBackground
