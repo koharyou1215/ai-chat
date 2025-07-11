@@ -172,7 +172,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
           .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-10) // 直近10件だけ
+          .slice(-8) // 直近8件だけ
           .filter((msg: { role: string; content: string }) => msg.role === 'user' || msg.content.length < 250)
       : [];
 
@@ -262,7 +262,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
       generationConfig: {
         ...modelConfig.generationConfig,
-        candidateCount: 3
+        candidateCount: settings?.candidateCount || 1
       }
     });
 

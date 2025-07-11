@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
       ? [...conversation].reverse().find((msg: Message) => msg.role === 'assistant')?.content || ''
       : '';
 
-    // ユーザーインスピレーション用プロンプト
-    const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。以下の3つの異なるアプローチで、重複表現を避けたバリエーション豊かな候補を生成してください。
+    // ユーザーインスピレーション用プロンプト（多様性強化版）
+    const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。毎回全く異なる語彙・構文・発想を使って、重複表現を完全に避けたバリエーション豊かな候補を生成してください。
 
 【キャラクター情報】
 名前: ${character.name}
@@ -83,9 +83,15 @@ ${recentConversation}
 【重要指示】
 以下の3つの異なるアプローチで、それぞれ全く違う種類の返信を作成してください：
 
-1. 感情・心理重視
-2. 行動・提案重視
-3. 関係性・対話重視
+1. 感情・心理重視（驚き、興味、共感、疑問など）
+2. 行動・提案重視（具体的な行動や提案、体験談など）
+3. 関係性・対話重視（相手への関心、質問、会話発展など）
+
+【多様性要求】
+- 過去の出力パターンと意図的に異なる語彙を選択
+- 文体・語尾・表現方法を候補ごとに変える
+- 定型文・常套句を避け、創造的な表現を優先
+- 同じ意味でも違う言い回しを徹底
 
 【要件】
 - 各候補50-70文字程度
@@ -116,9 +122,9 @@ JSON配列のみを出力してください。例：
     const requestPayload: any = {
       contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
       generationConfig: {
-        temperature: 1.3,
-        topP: 0.9,
-        topK: 40,
+        temperature: 1.8, // 多様性を大幅向上
+        topP: 0.95,
+        topK: 80, // より広い語彙選択
         maxOutputTokens: 400,
         candidateCount: 3
       }

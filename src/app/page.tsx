@@ -27,6 +27,7 @@ import Image from 'next/image';
 import { InspirationModal } from '../../components/InspirationModal';
 import { UserInspirationModal } from '../../components/UserInspirationModal';
 import PersonaImportExport from '../../components/PersonaImportExport';
+import { loadAllCharactersFromPublic, loadAllPersonasFromPublic } from '../../lib/autoLoader';
 
 interface Message {
   id: string;
@@ -151,7 +152,7 @@ export default function ChatPage() {
   const [settings, setSettings] = useState<AppSettings>({
     temperature: 0.7,
     topP: 0.9,
-    maxTokens: 2048,
+    maxTokens: 1024,
     memorySize: 4000,
     bubbleOpacity: 0.9,
     geminiApiKey: 'AIzaSyB6swTTIlDM3pgyALHjZDFTUIQf2fhzLAE',
@@ -182,6 +183,7 @@ export default function ChatPage() {
     bubbleBlur: true,
     provider: 'gemini',
     openRouterApiKey: '',
+    candidateCount: 1,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -217,16 +219,19 @@ export default function ChatPage() {
         console.error('テーマ読み込みエラー:', error);
       }
 
-      // キャラクターを読み込み
-      const characters = CharacterLoader.getAllCharacters();
-      setAllCharacters(characters);
+      // キャラクターを読み込み（従来 + 自動読み込み）
+      const builtinCharacters = CharacterLoader.getAllCharacters();
+      const publicCharacters = await loadAllCharactersFromPublic();
+      const allCharacters = [...builtinCharacters, ...publicCharacters];
+      setAllCharacters(allCharacters);
       
-      // Personaを読み込み
+      // Personaを読み込み（保存済み + 自動読み込み）
       try {
         const savedPersonas = localStorage.getItem('ai-chat-personas');
-        if (savedPersonas) {
-          setAllPersonas(JSON.parse(savedPersonas));
-        }
+        const localPersonas = savedPersonas ? JSON.parse(savedPersonas) : [];
+        const publicPersonas = await loadAllPersonasFromPublic();
+        const combinedPersonas = [...localPersonas, ...publicPersonas];
+        setAllPersonas(combinedPersonas);
       } catch (error) {
         console.error('Persona読み込みエラー:', error);
       }
@@ -533,6 +538,13 @@ export default function ChatPage() {
 
   // 文章選択ハンドラー
   const handleTextSelection = (messageId: string) => {
+    // AIメッセージの範囲選択時は強化ボタンを表示しない（コピー阻害防止）
+    const targetMessage = messages.find(m => m.id === messageId);
+    if (targetMessage?.role === 'assistant') {
+      setShowEnhanceButton(false);
+      return;
+    }
+
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) {
       setShowEnhanceButton(false);
@@ -1234,7 +1246,7 @@ export default function ChatPage() {
                     ></div>
                      <div 
                        className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute"
-                       onMouseUp={() => handleTextSelection(msg.id)}
+                       onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
                        style={{ userSelect: 'text' }}
                      >
                        <FormattedText md={msg.content} />

@@ -192,4 +192,6 @@ export interface AppSettings {
   provider: 'gemini' | 'openrouter';
   /** OpenRouter APIキー */
   openRouterApiKey: string;
+  /** 生成候補数 (1-5 推奨) */
+  candidateCount: number;
 } 

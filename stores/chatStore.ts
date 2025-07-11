@@ -42,7 +42,7 @@ interface ChatStore {
 const defaultSettings: AppSettings = {
   temperature: 0.7,
   topP: 0.9,
-  maxTokens: 2048,
+  maxTokens: 1024,
   memorySize: 4000,
   bubbleOpacity: 0.9,
   geminiApiKey: '',
@@ -72,7 +72,8 @@ const defaultSettings: AppSettings = {
   imageEngine: 'replicate',
   bubbleBlur: true,
   provider: 'gemini',
-  openRouterApiKey: ''
+  openRouterApiKey: '',
+  candidateCount: 1
 };
 
 export const useChatStore = create<ChatStore>()(

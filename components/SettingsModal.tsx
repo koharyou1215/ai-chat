@@ -344,6 +344,33 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       ))}
                     </select>
                   </div>
+
+                  {/* Candidate Count */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      生成候補数: {formSettings.candidateCount}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={formSettings.candidateCount}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, candidateCount: parseInt(e.target.value) }))}
+                      className="w-full slider mb-2"
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={formSettings.candidateCount}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, candidateCount: parseInt(e.target.value) || 1 }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      多い程バリエーション豊かになりますが、料金と時間が増加します
+                    </p>
+                  </div>
                 </div>
               </section>
 
