@@ -23,6 +23,7 @@ export default function ThemeModal({
 }: ThemeModalProps) {
   const [selectedTheme, setSelectedTheme] = useState(currentTheme);
   const [previewBackground, setPreviewBackground] = useState<string | undefined>(customBackground);
+  const [isVideoBackground, setIsVideoBackground] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<{
@@ -53,6 +54,7 @@ export default function ThemeModal({
     if (file.type.startsWith('video/')) {
       const videoUrl = URL.createObjectURL(file);
       setPreviewBackground(videoUrl);
+      setIsVideoBackground(true);
       setSelectedTheme('custom');
       setCompressionInfo({
         originalSize: ImageCompressor.formatFileSize(file.size),
@@ -80,6 +82,7 @@ export default function ThemeModal({
 
       // 圧縮結果を設定
       setPreviewBackground(result.dataUrl);
+      setIsVideoBackground(false);
       setSelectedTheme('custom');
       
       // 圧縮情報を表示
@@ -119,6 +122,7 @@ export default function ThemeModal({
 
   const removeCustomBackground = () => {
     setPreviewBackground(undefined);
+    setIsVideoBackground(false);
     setCompressionInfo(null);
     if (selectedTheme === 'custom') {
       setSelectedTheme('ocean-sunset');
@@ -179,11 +183,21 @@ export default function ThemeModal({
                 ) : previewBackground ? (
                   <div className="space-y-4">
                     <div className="relative inline-block">
-                      <img
-                        src={previewBackground}
-                        alt="カスタム背景プレビュー"
-                        className="w-32 h-20 object-cover rounded-lg shadow-md"
-                      />
+                      {isVideoBackground ? (
+                        <video
+                          src={previewBackground}
+                          className="w-32 h-20 object-cover rounded-lg shadow-md"
+                          muted
+                          loop
+                          autoPlay
+                        />
+                      ) : (
+                        <img
+                          src={previewBackground}
+                          alt="カスタム背景プレビュー"
+                          className="w-32 h-20 object-cover rounded-lg shadow-md"
+                        />
+                      )}
                       <button
                         onClick={removeCustomBackground}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
@@ -192,17 +206,19 @@ export default function ThemeModal({
                       </button>
                     </div>
                     <div className="text-sm text-gray-600">
-                      <p className="font-medium mb-1">カスタム背景が設定されました</p>
+                      <p className="font-medium mb-1">
+                        カスタム{isVideoBackground ? '動画' : '画像'}背景が設定されました
+                      </p>
                       {compressionInfo && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1">
+                        <div className={`${isVideoBackground ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3 space-y-1`}>
                           <div className="flex items-center gap-1 text-green-700 font-medium">
                             <Info size={14} />
-                            自動圧縮完了
+                            {isVideoBackground ? '動画ファイル設定完了' : '自動圧縮完了'}
                           </div>
-                          <div className="text-xs text-green-600 space-y-1">
+                          <div className={`text-xs ${isVideoBackground ? 'text-blue-600' : 'text-green-600'} space-y-1`}>
                             <div>元のサイズ: {compressionInfo.originalSize}</div>
                             <div>圧縮後: {compressionInfo.compressedSize}</div>
-                            <div>圧縮率: {compressionInfo.compressionRatio}%</div>
+                            {!isVideoBackground && <div>圧縮率: {compressionInfo.compressionRatio}%</div>}
                           </div>
                         </div>
                       )}
