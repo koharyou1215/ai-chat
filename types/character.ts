@@ -188,4 +188,8 @@ export interface AppSettings {
   imageEngine: 'replicate' | 'sd';
   /** 吹き出しに backdrop-blur を適用するか */
   bubbleBlur: boolean;
+  /** 使用するLLMプロバイダ */
+  provider: 'gemini' | 'openrouter';
+  /** OpenRouter APIキー */
+  openRouterApiKey: string;
 } 

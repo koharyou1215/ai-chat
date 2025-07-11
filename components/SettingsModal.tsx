@@ -18,6 +18,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showSDKey, setShowSDKey] = useState(false);
   const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
+  const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
   const [voiceList, setVoiceList] = useState<ElevenLabsVoice[]>([]);
 
   // ユーザー指定のカスタム音声プリセット
@@ -140,6 +141,29 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </div>
                   </div>
 
+                  {/* OpenRouter API Key */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      OpenRouter API キー
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showOpenRouterKey ? 'text' : 'password'}
+                        value={formSettings.openRouterApiKey}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, openRouterApiKey: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
+                        placeholder="sk-or-..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOpenRouterKey(!showOpenRouterKey)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showOpenRouterKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Stable Diffusion API Key */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -195,6 +219,25 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
               <section>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">モデル設定</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Provider Select */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      プロバイダ
+                    </label>
+                    <select
+                      value={formSettings.provider}
+                      onChange={(e) => {
+                        const provider = e.target.value as 'gemini' | 'openrouter';
+                        const defaultModel = provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo-0125';
+                        // モデルがリスト内にない場合はデフォルトに切替
+                        setFormSettings(prev => ({ ...prev, provider, model: defaultModel }));
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    >
+                      <option value="gemini">Gemini</option>
+                      <option value="openrouter">OpenRouter</option>
+                    </select>
+                  </div>
                   {/* Temperature */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -293,7 +336,10 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       onChange={(e) => setFormSettings(prev => ({ ...prev, model: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     >
-                      {['gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17'].map(m => (
+                      {(formSettings.provider === 'gemini'
+                        ? ['gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17']
+                        : ['x-ai/grok-4','deepseek/deepseek-chat-v3-0324','deepseek/deepseek-r1-0528','anthropic/claude-sonnet-4','anthropic/claude-3.7-sonnet:thinking']
+                      ).map(m => (
                         <option key={m} value={m}>{m}</option>
                       ))}
                     </select>

@@ -70,7 +70,9 @@ const defaultSettings: AppSettings = {
   enableImageGeneration: true,
   chatNotificationSound: true,
   imageEngine: 'replicate',
-  bubbleBlur: true
+  bubbleBlur: true,
+  provider: 'gemini',
+  openRouterApiKey: ''
 };
 
 export const useChatStore = create<ChatStore>()(
