@@ -141,3 +141,16 @@ video[src="/bg.mp4"] {
 .font-cute {
   font-family: var(--font-cute);
 }
+
+/* Vercelツールバーを非表示 */
+[data-vercel-toolbar], 
+#vercel-toolbar,
+.__vercel_toolbar,
+[data-vercel-toolbar] *,
+iframe[src*="vercel.live"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}

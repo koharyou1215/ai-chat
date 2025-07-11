@@ -12,6 +12,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Vercelツールバーを無効化
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: 'production',
+  },
 }
 
 export default nextConfig;
