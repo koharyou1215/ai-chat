@@ -50,10 +50,13 @@ export async function POST(request: NextRequest) {
       console.log('Fallback to default character:', character?.name);
     }
     
-    // APIキーを決定（クライアントから送信された設定を優先、次にサーバー環境変数）
+    // プロバイダを決定（未指定は gemini）
+    const provider: 'gemini' | 'openrouter' = settings?.provider || 'gemini';
+
+    // GEMINI APIキー（Gemini 利用時のみ必須）
     const apiKey = settings?.geminiApiKey || SERVER_GEMINI_API_KEY;
-    
-    if (!apiKey) {
+
+    if (provider === 'gemini' && !apiKey) {
       console.error('GEMINI_API_KEY が設定されていません');
       return NextResponse.json({
         success: false,
@@ -61,11 +64,9 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    const genAI = getGenAI(apiKey);
-
-    // モデル設定を適用
+    // モデル設定（Gemini/OpenRouter 共通で使うパラメータをまとめて保持）
     const modelConfig = {
-      model: settings?.model || 'gemini-2.5-flash',
+      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo-0125'),
       generationConfig: {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
@@ -76,7 +77,14 @@ export async function POST(request: NextRequest) {
         } : {})
       }
     };
-    const model = genAI.getGenerativeModel(modelConfig);
+
+    // Gemini モデルは provider が gemini の時だけ初期化
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let model: any = null;
+    if (provider === 'gemini') {
+      const genAI = getGenAI(apiKey);
+      model = genAI.getGenerativeModel(modelConfig);
+    }
     
     // キャラクター情報からプロンプトを生成
     let basePrompt = '';
@@ -196,7 +204,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     console.log('Final prompt:', fullPrompt);
 
     // ---------- OpenRouter 経由の応答 ----------
-    if (settings?.provider === 'openrouter') {
+    if (provider === 'openrouter') {
       try {
         const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
         if (!openRouterApiKey) {
@@ -245,6 +253,11 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     }
     
     // ---------- インスピレーション返信 (候補3つ) ----------
+    if (provider !== 'gemini' || !model) {
+      // ここに来ることは通常ないが型安全のため
+      return NextResponse.json({ success: false, error: 'Provider not supported' }, { status: 500 });
+    }
+
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
       generationConfig: {
