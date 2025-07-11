@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function GET() {
   try {
-    const personasDir = path.join(process.cwd(), 'public', 'personas');
+    const personasDir = path.join(process.cwd(), 'public', 'personas', 'personas');
     
     // ディレクトリが存在するかチェック
     if (!fs.existsSync(personasDir)) {

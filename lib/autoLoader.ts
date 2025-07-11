@@ -20,7 +20,7 @@ export async function loadAllCharactersFromPublic(): Promise<Character[]> {
       if (!filename.endsWith('.json')) continue;
       
       try {
-        const charResponse = await fetch(`/characters/${filename}`);
+        const charResponse = await fetch(`/characters/character/${filename}`);
         if (charResponse.ok) {
           const characterData = await charResponse.json();
           characters.push(characterData);
@@ -58,7 +58,7 @@ export async function loadAllPersonasFromPublic(): Promise<UserPersona[]> {
       if (!filename.endsWith('.json')) continue;
       
       try {
-        const personaResponse = await fetch(`/personas/${filename}`);
+        const personaResponse = await fetch(`/personas/personas/${filename}`);
         if (personaResponse.ok) {
           const personaData = await personaResponse.json();
           personas.push(personaData);

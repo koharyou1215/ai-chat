@@ -23,18 +23,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  background-size: contain;
-  background-position: center top;
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-}
-
-/* スマホ縦向きなど縦長画面用調整 */
-@media (max-aspect-ratio: 3/4) {
-  body {
-    background-size: contain;
-    background-position: center center;
-  }
 }
 
 /* Line clamp utility for memo list */
@@ -88,10 +80,24 @@ body {
 .theme-background {
   background: var(--theme-background);
   background-image: var(--theme-background-image);
-  background-size: var(--theme-background-size);
-  background-position: var(--theme-background-position);
+  background-size: var(--theme-background-size, cover);
+  background-position: var(--theme-background-position, center);
   background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* 縦長画像用（テーマ設定時のみ） */
+.theme-background.vertical-image {
+  background-size: contain !important;
+  background-position: center top !important;
+}
+
+/* スマホ縦向け調整 */
+@media (max-aspect-ratio: 3/4) {
+  .theme-background.vertical-image {
+    background-size: contain !important;
+    background-position: center center !important;
+  }
 }
 
 .theme-sidebar {

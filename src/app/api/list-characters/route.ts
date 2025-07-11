@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function GET() {
   try {
-    const charactersDir = path.join(process.cwd(), 'public', 'characters');
+    const charactersDir = path.join(process.cwd(), 'public', 'characters', 'character');
     
     // ディレクトリが存在するかチェック
     if (!fs.existsSync(charactersDir)) {
