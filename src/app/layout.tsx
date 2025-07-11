@@ -42,7 +42,7 @@ export default function RootLayout({
       >
         {/* 全画面背景動画 (public/bg.mp4) */}
         <video
-          className="fixed inset-0 -z-10 w-full h-full object-cover"
+          className="fixed inset-0 -z-10 w-full h-full object-contain"
           src="/bg.mp4"
           autoPlay
           muted
