@@ -245,24 +245,56 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
         const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo';
 
-        const openRouterText = await callOpenRouter({
-          apiKey: openRouterApiKey,
-          model: openRouterModel,
-          messages: messagesForOpenRouter,
-          temperature: modelConfig.generationConfig.temperature,
-          maxTokens: modelConfig.generationConfig.maxOutputTokens,
-        });
+        // OpenRouterで複数候補を生成（並列リクエスト）
+        const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
+        const candidatePromises = Array.from({ length: candidateCount }, () =>
+          callOpenRouter({
+            apiKey: openRouterApiKey,
+            model: openRouterModel,
+            messages: messagesForOpenRouter,
+            temperature: modelConfig.generationConfig.temperature,
+            maxTokens: modelConfig.generationConfig.maxOutputTokens,
+          })
+        );
 
-        const userName = persona?.name || 'あなた';
-        const replaced = openRouterText
-          .replace(/\{\{char}}/g, character.name)
-          .replace(/\{\{user}}/g, userName);
+        try {
+          const openRouterTexts = await Promise.all(candidatePromises);
+          const userName = persona?.name || 'あなた';
+          
+          const candidates = openRouterTexts.map(text => 
+            text.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
+          );
 
-        return NextResponse.json({
-          success: true,
-          content: replaced,
-          candidates: [replaced]
-        });
+          console.log(`OpenRouter: ${candidateCount}個の候補を生成しました`);
+
+          return NextResponse.json({
+            success: true,
+            content: candidates[0], // 最初の候補をメインとして使用
+            candidates: candidates
+          });
+        } catch (multipleRequestError) {
+          console.warn('複数候補生成に失敗、単一候補で再試行:', multipleRequestError);
+          
+          // フォールバック: 1つだけ生成
+          const openRouterText = await callOpenRouter({
+            apiKey: openRouterApiKey,
+            model: openRouterModel,
+            messages: messagesForOpenRouter,
+            temperature: modelConfig.generationConfig.temperature,
+            maxTokens: modelConfig.generationConfig.maxOutputTokens,
+          });
+
+          const userName = persona?.name || 'あなた';
+          const replaced = openRouterText
+            .replace(/\{\{char}}/g, character.name)
+            .replace(/\{\{user}}/g, userName);
+
+          return NextResponse.json({
+            success: true,
+            content: replaced,
+            candidates: [replaced]
+          });
+        }
       } catch (openRouterError) {
         console.error('OpenRouter error:', openRouterError);
         return NextResponse.json({
