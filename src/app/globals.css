@@ -87,14 +87,14 @@ body {
 }
 
 /* 縦長画像用（テーマ設定時のみ） */
-.theme-background.vertical-image {
+.vertical-image-bg {
   background-size: contain !important;
   background-position: center top !important;
 }
 
 /* スマホ縦向け調整 */
 @media (max-aspect-ratio: 3/4) {
-  .theme-background.vertical-image {
+  .vertical-image-bg {
     background-size: contain !important;
     background-position: center center !important;
   }

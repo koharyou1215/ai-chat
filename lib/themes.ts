@@ -161,15 +161,31 @@ export class ThemeManager {
     
     // 背景の適用
     if (customBackground) {
+      // 画像の縦横比を検出して適切な background-size を設定
+      const img = new Image();
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        if (aspectRatio < 0.8) { // 縦長画像（2:3 など）
+          root.style.setProperty('--theme-background-size', 'contain');
+          root.style.setProperty('--theme-background-position', 'center top');
+          // vertical-image クラスを body に追加
+          document.body.classList.add('vertical-image-bg');
+        } else {
+          root.style.setProperty('--theme-background-size', 'cover');
+          root.style.setProperty('--theme-background-position', 'center');
+          document.body.classList.remove('vertical-image-bg');
+        }
+      };
+      img.src = customBackground;
+      
       root.style.setProperty('--theme-background-image', `url(${customBackground})`);
-      root.style.setProperty('--theme-background-size', 'cover');
-      root.style.setProperty('--theme-background-position', 'center');
       root.style.setProperty('--theme-background', 'transparent');
     } else {
       root.style.setProperty('--theme-background-image', 'none');
       root.style.setProperty('--theme-background', theme.background);
       root.style.setProperty('--theme-background-size', 'auto');
       root.style.setProperty('--theme-background-position', 'initial');
+      document.body.classList.remove('vertical-image-bg');
     }
     
     // サイドバー

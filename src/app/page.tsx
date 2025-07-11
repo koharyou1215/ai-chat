@@ -182,7 +182,7 @@ export default function ChatPage() {
     imageEngine: 'replicate',
     bubbleBlur: true,
     provider: 'gemini',
-    openRouterApiKey: '',
+    openRouterApiKey: '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',
     candidateCount: 1,
   });
 
