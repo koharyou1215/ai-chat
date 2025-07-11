@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     
     // モデル設定（Gemini/OpenRouter 共通で使うパラメータをまとめて保持）
     const modelConfig = {
-      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo-0125'),
+      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo'),
       generationConfig: {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
@@ -223,7 +223,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           ...(doContinue ? [] : [{ role: 'user' as const, content: message }])
         ];
 
-        const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo-0125';
+        const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo';
 
         const openRouterText = await callOpenRouter({
           apiKey: openRouterApiKey,

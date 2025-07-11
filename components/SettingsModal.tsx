@@ -228,7 +228,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       value={formSettings.provider}
                       onChange={(e) => {
                         const provider = e.target.value as 'gemini' | 'openrouter';
-                        const defaultModel = provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo-0125';
+                        const defaultModel = provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo';
                         // モデルがリスト内にない場合はデフォルトに切替
                         setFormSettings(prev => ({ ...prev, provider, model: defaultModel }));
                       }}
@@ -338,7 +338,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     >
                       {(formSettings.provider === 'gemini'
                         ? ['gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17']
-                        : ['x-ai/grok-4','deepseek/deepseek-chat-v3-0324','deepseek/deepseek-r1-0528','anthropic/claude-sonnet-4','anthropic/claude-3.7-sonnet:thinking']
+                        : ['openai/gpt-3.5-turbo','x-ai/grok-4','deepseek/deepseek-chat-v3-0324','deepseek/deepseek-r1-0528','anthropic/claude-sonnet-4','anthropic/claude-3.7-sonnet:thinking']
                       ).map(m => (
                         <option key={m} value={m}>{m}</option>
                       ))}
