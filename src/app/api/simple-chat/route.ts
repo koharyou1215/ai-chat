@@ -247,7 +247,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         console.error('OpenRouter error:', openRouterError);
         return NextResponse.json({
           success: false,
-          error: 'OpenRouter との通信に失敗しました'
+          error: openRouterError instanceof Error ? openRouterError.message : 'OpenRouter との通信に失敗しました'
         }, { status: 500 });
       }
     }
