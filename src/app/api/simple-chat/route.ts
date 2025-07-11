@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     
     // モデル設定（Gemini/OpenRouter 共通で使うパラメータをまとめて保持）
     const modelConfig = {
-      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-3.5-turbo'),
+      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-4o-mini'),
       generationConfig: {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
@@ -206,11 +206,31 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+        let openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+        
+        // APIキーの重複を修正（重複している場合は半分にカット）
+        if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
+          const halfLength = openRouterApiKey.length / 2;
+          const firstHalf = openRouterApiKey.substring(0, halfLength);
+          const secondHalf = openRouterApiKey.substring(halfLength);
+          if (firstHalf === secondHalf) {
+            console.log('OpenRouter APIキーの重複を検出、修正しています');
+            openRouterApiKey = firstHalf;
+          }
+        }
+        
+        console.log('OpenRouter API Key check:', {
+          hasSettingsApiKey: !!settings?.openRouterApiKey,
+          hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
+          settingsApiKeyLength: settings?.openRouterApiKey?.length || 0,
+          finalApiKeyLength: openRouterApiKey?.length || 0,
+          finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none'
+        });
+        
         if (!openRouterApiKey) {
           return NextResponse.json({
             success: false,
-            error: 'OpenRouter APIキーが設定されていません'
+            error: 'OpenRouter APIキーが設定されていません。設定画面でAPIキーを入力してください。'
           }, { status: 500 });
         }
 
@@ -267,6 +287,16 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     });
 
     const response = await result.response;
+    
+    // まず基本的な text() メソッドで取得を試行
+    let mainContent = '';
+    try {
+      mainContent = response.text();
+    } catch (textError) {
+      console.warn('response.text() failed:', textError);
+    }
+    
+    // 候補取得（フォールバック付き）
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const candidatesData = (response as any).candidates || [];
     
@@ -278,16 +308,29 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       }
     }).filter((text: string) => text.length > 0);
 
+    // メインコンテンツが空で候補もない場合のフォールバック
+    if (!mainContent && candidates.length === 0) {
+      console.warn('No content generated, using fallback');
+      mainContent = `すみません、今ちょっと調子が悪いみたい...もう一度話しかけてくれる？`;
+    }
+
     // プレースホルダ置換を各候補に適用
     const userName = persona?.name || 'あなた';
+    
+    // メインコンテンツがあればそれを使用、なければ最初の候補
+    const finalContent = mainContent || candidates[0] || 'エラーが発生しました';
+    const finalContentReplaced = finalContent
+      .replace(/\{\{char}}/g, character.name)
+      .replace(/\{\{user}}/g, userName);
+    
     const replaced = candidates.map((t: string) => 
       t.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
     );
 
     return NextResponse.json({
       success: true,
-      content: replaced[0] || 'エラーが発生しました',
-      candidates: replaced
+      content: finalContentReplaced,
+      candidates: replaced.length > 0 ? replaced : [finalContentReplaced]
     });
     
   } catch (error) {

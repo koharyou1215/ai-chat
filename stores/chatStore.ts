@@ -66,13 +66,13 @@ const defaultSettings: AppSettings = {
   voiceUseSpeakerBoost: true,
   voiceSpeed: 1.0,
   voiceVolume: 0.8,
-  model: 'gemini-2.5-flash',
+  model: 'openai/gpt-4o-mini',
   enableImageGeneration: true,
   chatNotificationSound: true,
   imageEngine: 'replicate',
   bubbleBlur: true,
-  provider: 'gemini',
-  openRouterApiKey: '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',
+  provider: 'openrouter',
+  openRouterApiKey: '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',
   candidateCount: 1
 };
 
@@ -221,6 +221,20 @@ export const useChatStore = create<ChatStore>()(
       },
 
       updateSettings: (settings) => {
+        // OpenRouter APIキーの重複を防ぐ処理
+        if (settings.openRouterApiKey) {
+          const key = settings.openRouterApiKey;
+          if (key.length > 100 && key.startsWith('sk-or-v1-')) {
+            const halfLength = key.length / 2;
+            const firstHalf = key.substring(0, halfLength);
+            const secondHalf = key.substring(halfLength);
+            if (firstHalf === secondHalf) {
+              console.log('設定保存時にOpenRouter APIキーの重複を検出、修正しています');
+              settings.openRouterApiKey = firstHalf;
+            }
+          }
+        }
+        
         set((state) => ({ settings: { ...state.settings, ...settings } }));
       },
 

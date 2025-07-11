@@ -24,6 +24,28 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     maxTokens = 1024,
   } = options;
 
+  // APIキーのデバッグログ
+  console.log('OpenRouter API Key debug:', {
+    keyLength: apiKey.length,
+    keyStart: apiKey.substring(0, 10),
+    keyEnd: apiKey.substring(apiKey.length - 10),
+    isValidFormat: apiKey.startsWith('sk-or-v1-')
+  });
+
+  const requestBody = {
+    model,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+  };
+
+  console.log('OpenRouter request details:', {
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    authHeader: `Bearer ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`,
+    model,
+    messageCount: messages.length
+  });
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -33,12 +55,7 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
       'HTTP-Referer': process.env.OPENROUTER_REFERER || 'https://example.com',
       'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
