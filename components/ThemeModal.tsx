@@ -44,8 +44,21 @@ export default function ThemeModal({
   };
 
   const handleFileUpload = async (file: File) => {
-    if (!file || !file.type.startsWith('image/')) {
-      alert('画像ファイルを選択してください');
+    if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
+      alert('画像または動画ファイルを選択してください');
+      return;
+    }
+
+    // 動画ファイルの場合はそのまま URL を設定
+    if (file.type.startsWith('video/')) {
+      const videoUrl = URL.createObjectURL(file);
+      setPreviewBackground(videoUrl);
+      setSelectedTheme('custom');
+      setCompressionInfo({
+        originalSize: ImageCompressor.formatFileSize(file.size),
+        compressedSize: '動画ファイル（圧縮なし）',
+        compressionRatio: 0
+      });
       return;
     }
 
@@ -212,6 +225,8 @@ export default function ThemeModal({
                     <p className="text-xs text-gray-500">
                       JPG, PNG, GIF形式をサポート（自動圧縮機能付き）
                       <br />
+                      MP4, WebM動画もサポート（自動ループ再生）
+                      <br />
                       どんなサイズでもOK！自動で最適化されます
                     </p>
                   </div>
@@ -220,7 +235,7 @@ export default function ThemeModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleFileUpload(file);

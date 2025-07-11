@@ -161,6 +161,42 @@ export class ThemeManager {
     
     // 背景の適用
     if (customBackground) {
+      // 動画かどうかを判定（blob: または .mp4/.webm を含む）
+      const isVideo = customBackground.startsWith('blob:') || 
+                      customBackground.match(/\.(mp4|webm|mov|avi)$/i);
+      
+      if (isVideo) {
+        // 動画背景の場合
+        root.style.setProperty('--theme-background-image', 'none');
+        root.style.setProperty('--theme-background', 'transparent');
+        
+        // 既存の動画要素を削除
+        const existingVideo = document.querySelector('#custom-bg-video');
+        if (existingVideo) existingVideo.remove();
+        
+        // 新しい動画要素を作成
+        const video = document.createElement('video');
+        video.id = 'custom-bg-video';
+        video.src = customBackground;
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          z-index: -20;
+        `;
+        document.body.appendChild(video);
+        
+        document.body.classList.remove('vertical-image-bg');
+        return;
+      }
+      
       // 画像の縦横比を検出して適切な background-size を設定
       const img = new Image();
       img.onload = () => {
@@ -181,6 +217,10 @@ export class ThemeManager {
       root.style.setProperty('--theme-background-image', `url(${customBackground})`);
       root.style.setProperty('--theme-background', 'transparent');
     } else {
+      // カスタム動画を削除
+      const existingVideo = document.querySelector('#custom-bg-video');
+      if (existingVideo) existingVideo.remove();
+      
       root.style.setProperty('--theme-background-image', 'none');
       root.style.setProperty('--theme-background', theme.background);
       root.style.setProperty('--theme-background-size', 'auto');
