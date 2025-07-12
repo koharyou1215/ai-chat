@@ -154,6 +154,7 @@ export default function ChatPage() {
     topP: 0.9,
     maxTokens: 1024,
     memorySize: 4000,
+    historySize: 12,
     bubbleOpacity: 0.9,
     geminiApiKey: 'AIzaSyB6swTTIlDM3pgyALHjZDFTUIQf2fhzLAE',
     stableDiffusionApiKey: '',
