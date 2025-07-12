@@ -154,6 +154,7 @@ export interface AppSettings {
   topP: number;
   maxTokens: number;
   memorySize: number;
+  historySize: number; // 履歴の件数を追加
   bubbleOpacity: number;
   geminiApiKey: string;
   stableDiffusionApiKey: string;

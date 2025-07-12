@@ -172,7 +172,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
           .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-8) // 直近8件だけ
+          .slice(-(settings?.historySize || 8)) // 設定値を反映
           .filter((msg: { role: string; content: string }) => msg.role === 'user' || msg.content.length < 250)
       : [];
 

@@ -326,6 +326,25 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     />
                   </div>
 
+                  {/* History Size */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      会話履歴の保持数: {formSettings.historySize}件
+                    </label>
+                    <input
+                      type="range"
+                      min="4"
+                      max="50"
+                      step="2"
+                      value={formSettings.historySize}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, historySize: parseInt(e.target.value) }))}
+                      className="w-full slider mb-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      AIが記憶する直近の会話の数です。多いほど文脈を理解しますが、トークンを消費します。
+                    </p>
+                  </div>
+
                   {/* Model Select */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

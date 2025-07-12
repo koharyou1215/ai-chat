@@ -44,6 +44,7 @@ const defaultSettings: AppSettings = {
   topP: 0.9,
   maxTokens: 1024,
   memorySize: 4000,
+  historySize: 12, // デフォルトの履歴件数
   bubbleOpacity: 0.9,
   geminiApiKey: '',
   stableDiffusionApiKey: '',
