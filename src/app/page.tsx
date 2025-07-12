@@ -4,7 +4,7 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Settings, MessageSquare, User, Loader, RefreshCw, Trash2, CornerUpLeft, Clock, Plus, X, FileText, Palette, Menu, Play, Cloud, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -898,6 +898,24 @@ export default function ChatPage() {
     }
   };
 
+  // チャットバブルのコピー処理
+  const handleCopy = (text: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('コピーしました');
+      });
+    } else {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('コピーしました');
+    }
+  };
+
   return (
     <div className="flex h-screen theme-background relative">
       {/* モバイル用オーバーレイ */}
@@ -1297,6 +1315,14 @@ export default function ChatPage() {
                          🎲
                        </button>
                        )}
+                       {/* コピー */}
+                       <button
+                         onClick={() => handleCopy(msg.content)}
+                         className="text-gray-500 hover:text-blue-600 p-1 rounded"
+                         title="コピー"
+                       >
+                         <Copy size={16} />
+                       </button>
                      </div>
                    </div>
                 </div>
@@ -1311,6 +1337,16 @@ export default function ChatPage() {
                         style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                       ></div>
                     <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    {/* コピー */}
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={() => handleCopy(msg.content)}
+                        className="text-white/80 hover:text-blue-200 p-1 rounded"
+                        title="コピー"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
