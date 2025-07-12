@@ -150,6 +150,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     if (settings?.enableJailbreak && settings?.jailbreakPrompt) {
       basePrompt = `${settings.jailbreakPrompt}\n\n${basePrompt}`;
     }
+
+    // ここで繰り返し禁止・心情変化指示を追加
+    basePrompt += '\n【超重要】過去のやり取りや感情・関係性を繰り返さず、キャラクターの心情や関係性は状況に応じて自然に変化・進展させてください。同じ言葉や感情表現を何度も使うことは禁止です。会話や物語が進むごとに、キャラクターの気持ちや態度も変化させてください。';
     
     // レスポンス形式に応じた指示を追加
     if (settings?.responseFormat && settings.responseFormat !== 'normal') {
@@ -185,6 +188,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     const userLine = doContinue ? '' : `{{user}}: ${message}\n`;
 
     let fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
+
+    if (doContinue) {
+      fullPrompt += '\n【重要】この続きでは、ユーザーの思考・行動・セリフは一切含めず、{{char}}（キャラクター）の返答・独白・行動・心情描写のみを自然に書き続けてください。物語や会話が進行するようにしてください。';
+    }
     
     // プロンプト長が30,000文字を超える場合は古い履歴から削除
     const MAX_PROMPT_CHARS = 30000;
