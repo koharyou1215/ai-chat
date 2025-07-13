@@ -28,6 +28,7 @@ import { InspirationModal } from '../../components/InspirationModal';
 import { UserInspirationModal } from '../../components/UserInspirationModal';
 import PersonaImportExport from '../../components/PersonaImportExport';
 import { loadAllCharactersFromPublic, loadAllPersonasFromPublic } from '../../lib/autoLoader';
+import { TouchGestureManager, isMobileDevice } from '../../lib/touchGestures';
 
 interface Message {
   id: string;
@@ -109,6 +110,9 @@ export default function ChatPage() {
 
   const { memos } = useChatStore();
 
+  // タッチジェスチャー管理
+  const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
+
   // 会話要約生成
   const handleGenerateSummary = async () => {
     if (!currentCharacter || messages.length < 3) {
@@ -188,10 +192,28 @@ export default function ChatPage() {
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
 
   // 初期化
   useEffect(() => {
     const initializeApp = async () => {
+      // タッチジェスチャー初期化（モバイルデバイスのみ）
+      if (isMobileDevice()) {
+        const gestureManager = new TouchGestureManager(
+          () => {
+            // 左スワイプ: サイドバーを開く
+            setIsSidebarOpen(true);
+          },
+          () => {
+            // 右スワイプ: サイドバーを閉じる
+            setIsSidebarOpen(false);
+          },
+          undefined,
+          undefined,
+          undefined
+        );
+        setTouchGestureManager(gestureManager);
+      }
       // 設定を読み込み
       try {
         const savedSettings = localStorage.getItem('ai-chat-settings');
@@ -268,6 +290,19 @@ export default function ChatPage() {
     
     initializeApp();
   }, []);
+
+  // タッチジェスチャーをDOM要素にアタッチ
+  useEffect(() => {
+    if (touchGestureManager && mainContainerRef.current) {
+      touchGestureManager.attach(mainContainerRef.current);
+      
+      return () => {
+        if (mainContainerRef.current) {
+          touchGestureManager.detach(mainContainerRef.current);
+        }
+      };
+    }
+  }, [touchGestureManager]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -917,7 +952,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen theme-background relative">
+    <div ref={mainContainerRef} className="flex h-screen theme-background relative">
       {/* モバイル用オーバーレイ */}
       {isSidebarOpen && (
         <div 
