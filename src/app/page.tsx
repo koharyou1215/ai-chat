@@ -29,6 +29,7 @@ import { UserInspirationModal } from '../../components/UserInspirationModal';
 import PersonaImportExport from '../../components/PersonaImportExport';
 import { loadAllCharactersFromPublic, loadAllPersonasFromPublic } from '../../lib/autoLoader';
 import { TouchGestureManager, isMobileDevice } from '../../lib/touchGestures';
+import MobileHelper from '../../components/MobileHelper';
 
 interface Message {
   id: string;
@@ -952,7 +953,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div ref={mainContainerRef} className="flex h-screen theme-background relative">
+    <MobileHelper>
+      <div ref={mainContainerRef} className="flex h-screen theme-background relative">
       {/* モバイル用オーバーレイ */}
       {isSidebarOpen && (
         <div 
@@ -1801,5 +1803,6 @@ export default function ChatPage() {
         }}
       />
     </div>
+    </MobileHelper>
   );
 }
