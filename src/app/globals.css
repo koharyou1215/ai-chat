@@ -27,6 +27,18 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  /* iPhone Safari対応 */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* テキスト選択を許可する要素 */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Line clamp utility for memo list */
@@ -59,6 +71,8 @@ body {
 /* Smooth scroll behavior */
 .chat-history-scroll {
   scroll-behavior: smooth;
+  /* iPhone Safari対応 */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Theme variables */
@@ -140,6 +154,71 @@ video[src="/bg.mp4"] {
 
 .font-cute {
   font-family: var(--font-cute);
+}
+
+/* iPhone Safari対応の追加スタイル */
+@media screen and (max-width: 768px) {
+  /* タッチ操作の最適化 */
+  button, input, textarea, select {
+    font-size: 16px !important; /* iPhone Safariでズームを防ぐ */
+    min-height: 44px; /* タッチターゲットの最小サイズ */
+  }
+  
+  /* モーダルの調整 */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* チャット入力エリアの調整 */
+  .chat-input {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* サイドバーの調整 */
+  .sidebar {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+  }
+}
+
+/* 安全エリア対応 */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* タッチ操作の最適化 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* スクロールの最適化 */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Vercelツールバーを非表示 */

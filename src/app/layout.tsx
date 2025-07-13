@@ -21,12 +21,25 @@ const cuteFont = M_PLUS_Rounded_1c({
 export const metadata: Metadata = {
   title: "AI Chat",
   description: "AIキャラクターと会話できるチャットアプリ",
-};
-
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
+  keywords: "AI, チャット, キャラクター, 会話",
+  authors: [{ name: "AI Chat Team" }],
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    minimumScale: 1,
+    userScalable: true,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'AI Chat',
+  },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
 };
 
 export default function RootLayout({
@@ -35,7 +48,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="AI Chat" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#667eea" />
+        <meta name="msapplication-TileColor" content="#667eea" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cuteFont.variable} antialiased`}
         suppressHydrationWarning
@@ -49,6 +72,7 @@ export default function RootLayout({
           loop
           playsInline
           preload="auto"
+          webkit-playsinline="true"
         />
         {children}
       </body>

@@ -929,7 +929,7 @@ export default function ChatPage() {
       {/* サイドバー */}
       <div className={`
         ${isSidebarOpen ? 'w-80' : 'w-0'} 
-        theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto
+        theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
         ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
       `}>
         <div className="min-w-80 flex flex-col h-full">
@@ -1040,21 +1040,21 @@ export default function ChatPage() {
         <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2 md:hidden">
           <button 
             onClick={() => setIsAuthModalOpen(true)}
-            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+            className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Cloud size={16} />
             クラウド同期
           </button>
           <button 
             onClick={() => setIsThemeModalOpen(true)}
-            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+            className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Palette size={16} />
             テーマ
           </button>
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
+            className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Settings size={16} />
             設定
@@ -1062,7 +1062,7 @@ export default function ChatPage() {
         </div>
 
         {/* チャット履歴 */}
-        <div className="flex-1 flex flex-col min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="flex-1 flex flex-col min-h-0 safe-area-bottom">
           <div className="p-4 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="theme-text-primary font-semibold flex items-center gap-2">
@@ -1097,7 +1097,7 @@ export default function ChatPage() {
                     setMessages([]);
                   }
                 }}
-                className="theme-text-secondary hover:theme-text-primary p-1 rounded hover:bg-white/10 transition-colors"
+                className="touch-target theme-text-secondary hover:theme-text-primary p-2 rounded hover:bg-white/10 transition-colors"
                 title="新しいチャット"
               >
                 <Plus size={16} />
@@ -1207,11 +1207,11 @@ export default function ChatPage() {
       {/* メインチャットエリア */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* ヘッダー */}
-        <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4">
+        <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors"
+              className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors"
               title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
             >
               <Menu size={20} />
@@ -1219,19 +1219,35 @@ export default function ChatPage() {
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
               <User size={20} className="text-white" />
             </div>
-            <div>
-              <h3 className="text-white font-semibold">{currentCharacter?.name || 'キャラクター'}</h3>
-              <p className="text-white/70 text-sm">{currentCharacter?.tags[0] || '航海士'}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white font-semibold truncate">{currentCharacter?.name || 'キャラクター'}</h3>
+              <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
+                title="設定"
+              >
+                <Settings size={18} />
+              </button>
+              <button
+                onClick={() => setIsThemeModalOpen(true)}
+                className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
+                title="テーマ"
+              >
+                <Palette size={18} />
+              </button>
             </div>
           </div>
         </div>
 
         {/* チャットメッセージエリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' ? (
-                <div className="max-w-2xl">
+                <div className="max-w-2xl w-full">
                   {/* キャラクター画像 */}
                   {settings.enableImageGeneration && (msg.image || isGeneratingImage) && (
                     <div className="mb-3">
@@ -1242,11 +1258,11 @@ export default function ChatPage() {
                             alt="Character"
                             width={512}
                             height={768}
-                            className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl object-cover"
+                            className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl object-cover"
                           />
                         )}
                         {isGeneratingImage && !msg.image && (
-                          <div className="w-full max-w-[80vw] sm:w-80 h-auto sm:h-96 bg-black/30 rounded-lg flex items-center justify-center">
+                          <div className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 bg-black/30 rounded-lg flex items-center justify-center">
                             <Loader className="animate-spin text-white" size={24} />
                           </div>
                         )}
@@ -1256,7 +1272,7 @@ export default function ChatPage() {
                   
                   {/* メッセージバブル */}
                   <div 
-                    className="relative z-10 rounded-2xl p-4 shadow-lg"
+                    className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
                     style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
                   >
                     <div 
@@ -1264,13 +1280,13 @@ export default function ChatPage() {
                       style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
                     ></div>
                      <div 
-                       className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute"
+                       className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
                        onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
                        style={{ userSelect: 'text' }}
                      >
                        <FormattedText md={msg.content} />
                      </div>
-                     <div className="flex justify-end mt-2 gap-1">
+                     <div className="flex justify-end mt-2 gap-1 flex-wrap">
                        <VoiceControls
                          text={msg.content}
                          settings={{
@@ -1294,14 +1310,14 @@ export default function ChatPage() {
                        <button 
                          onClick={() => handleRegenerate()}
                          disabled={isLoading}
-                         className="text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
+                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
                          title="再生成"
                        >
                          <RefreshCw size={16} />
                        </button>
                        <button 
                          onClick={() => handleRollback(msg.id)}
-                         className="text-gray-500 hover:text-gray-700 p-1 rounded"
+                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
                          title="ここまで戻る"
                        >
                          <CornerUpLeft size={16} />
@@ -1309,7 +1325,7 @@ export default function ChatPage() {
                        {settings.enableImageGeneration && (
                        <button
                          onClick={() => handleImageReroll(msg)}
-                         className="text-yellow-500 hover:text-yellow-700 p-1 rounded"
+                         className="touch-target text-yellow-500 hover:text-yellow-700 p-1 rounded"
                          title="画像をランダムシードで再生成"
                        >
                          🎲
@@ -1318,7 +1334,7 @@ export default function ChatPage() {
                        {/* コピー */}
                        <button
                          onClick={() => handleCopy(msg.content)}
-                         className="text-gray-500 hover:text-blue-600 p-1 rounded"
+                         className="touch-target text-gray-500 hover:text-blue-600 p-1 rounded"
                          title="コピー"
                        >
                          <Copy size={16} />
@@ -1327,21 +1343,21 @@ export default function ChatPage() {
                    </div>
                 </div>
               ) : (
-                <div className="max-w-lg">
+                <div className="max-w-lg w-full">
                   <div
-                    className={`relative z-10 rounded-2xl p-4 shadow-lg ${settings.bubbleBlur ? 'backdrop-blur-sm' : ''}`}
+                    className={`relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg ${settings.bubbleBlur ? 'backdrop-blur-sm' : ''}`}
                     style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                   >
                                           <div 
                         className="absolute -top-2 right-6 w-4 h-4 rotate-45"
                         style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                       ></div>
-                    <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{msg.content}</p>
                     {/* コピー */}
                     <div className="flex justify-end mt-2">
                       <button
                         onClick={() => handleCopy(msg.content)}
-                        className="text-white/80 hover:text-blue-200 p-1 rounded"
+                        className="touch-target text-white/80 hover:text-blue-200 p-1 rounded"
                         title="コピー"
                       >
                         <Copy size={16} />
@@ -1356,47 +1372,50 @@ export default function ChatPage() {
         </div>
 
         {/* 入力エリア */}
-        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-end gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
+            <div className="flex items-end gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="メッセージを入力..."
-                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[40px] max-h-64"
+                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] max-h-64 text-base"
                 rows={isInputExpanded ? 4 : 1}
+                style={{ fontSize: '16px' }}
               />
-              <button
-                onClick={() => setIsInputExpanded(!isInputExpanded)}
-                className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"
-                title={isInputExpanded ? '入力欄を縮小' : '入力欄を拡大'}
-              >
-                {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
-              </button>
-              <button
-                onClick={handleUserInspiration}
-                disabled={isLoadingUserInspiration || !currentCharacter}
-                className="text-yellow-400 hover:text-yellow-300 p-2 rounded-full transition-colors disabled:opacity-50"
-                title="返信候補を提案"
-              >
-                {isLoadingUserInspiration ? <Loader size={16} className="animate-spin" /> : '💡'}
-              </button>
-              <button
-                onClick={handleUserTextEnhancement}
-                disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
-                className="text-purple-400 hover:text-purple-300 p-2 rounded-full transition-colors disabled:opacity-50"
-                title="文章を強化"
-              >
-                {isEnhancingUserText ? <Loader size={16} className="animate-spin" /> : '✨'}
-              </button>
-              <button
-                onClick={handleSend}
-                disabled={!message.trim() || isLoading}
-                className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white p-3 rounded-full transition-colors"
-              >
-                {isLoading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
-              </button>
+              <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                <button
+                  onClick={() => setIsInputExpanded(!isInputExpanded)}
+                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full transition-colors"
+                  title={isInputExpanded ? '入力欄を縮小' : '入力欄を拡大'}
+                >
+                  {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
+                </button>
+                <button
+                  onClick={handleUserInspiration}
+                  disabled={isLoadingUserInspiration || !currentCharacter}
+                  className="touch-target text-yellow-400 hover:text-yellow-300 p-2 rounded-full transition-colors disabled:opacity-50"
+                  title="返信候補を提案"
+                >
+                  {isLoadingUserInspiration ? <Loader size={16} className="animate-spin" /> : '💡'}
+                </button>
+                <button
+                  onClick={handleUserTextEnhancement}
+                  disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
+                  className="touch-target text-purple-400 hover:text-purple-300 p-2 rounded-full transition-colors disabled:opacity-50"
+                  title="文章を強化"
+                >
+                  {isEnhancingUserText ? <Loader size={16} className="animate-spin" /> : '✨'}
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={!message.trim() || isLoading}
+                  className="touch-target bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white p-3 rounded-full transition-colors"
+                >
+                  {isLoading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
+                </button>
+              </div>
             </div>
             
             <div className="flex justify-center mt-2 gap-2">
