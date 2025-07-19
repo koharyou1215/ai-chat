@@ -6,21 +6,25 @@
       "use": "@vercel/next"
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/sw.js",
-      "headers": {
-        "cache-control": "s-maxage=0"
-      }
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "s-maxage=0"
+        }
+      ]
     },
     {
-      "src": "/manifest.json",
-      "headers": {
-        "cache-control": "s-maxage=0"
-      }
-    }
-  ],
-  "headers": [
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "s-maxage=0"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
