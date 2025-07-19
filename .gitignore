@@ -22,3 +22,5 @@ Thumbs.db
 # Next.js build output
 .next/
 ai-chat-standalone/.next/
+
+.vercel
