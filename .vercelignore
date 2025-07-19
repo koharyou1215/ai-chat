@@ -1,0 +1,7 @@
+# 例）重い動画・画像をデプロイから除外
+public/gb.mp4/*
+public/背景/*
+public/characters/character/*
+*.mp4
+*.mov
+*.zip

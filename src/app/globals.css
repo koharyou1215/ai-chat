@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  /* iPhone Safari対応 */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* テキスト選択を許可する要素 */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Line clamp utility for memo list */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Custom scrollbar styles */
+.chat-history-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-history-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.chat-history-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.chat-history-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Smooth scroll behavior */
+.chat-history-scroll {
+  scroll-behavior: smooth;
+  /* iPhone Safari対応 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Theme variables */
+:root {
+  --theme-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --theme-background-image: none;
+  --theme-background-size: auto;
+  --theme-background-position: initial;
+  --theme-sidebar: rgba(0, 0, 0, 0.3);
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: rgba(255, 255, 255, 0.8);
+  --theme-text-accent: #ffd700;
+  --theme-bubble-user: rgba(59, 130, 246, 0.9);
+  --theme-bubble-ai: rgba(255, 255, 255, 0.9);
+  --theme-bubble-opacity: 0.9;
+}
+
+/* Theme application */
+.theme-background {
+  background: var(--theme-background);
+  background-image: var(--theme-background-image);
+  background-size: var(--theme-background-size, cover);
+  background-position: var(--theme-background-position, center);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* 縦長画像用（テーマ設定時のみ） */
+.vertical-image-bg {
+  background-size: contain !important;
+  background-position: center top !important;
+}
+
+/* スマホ縦向け調整 */
+@media (max-aspect-ratio: 3/4) {
+  .vertical-image-bg {
+    background-size: contain !important;
+    background-position: center center !important;
+  }
+}
+
+/* 背景動画の配置調整 */
+video[src="/bg.mp4"] {
+  background-color: #000;
+  object-position: center center;
+}
+
+/* スマホ縦向けでの動画表示調整 */
+@media (max-aspect-ratio: 3/4) {
+  video[src="/bg.mp4"] {
+    object-position: center top;
+  }
+}
+
+.theme-sidebar {
+  background: var(--theme-sidebar) !important;
+  backdrop-filter: blur(10px);
+}
+
+.theme-text-primary {
+  color: var(--theme-text-primary) !important;
+}
+
+.theme-text-secondary {
+  color: var(--theme-text-secondary) !important;
+}
+
+.theme-text-accent {
+  color: var(--theme-text-accent) !important;
+}
+
+.theme-bubble-user {
+  background: var(--theme-bubble-user) !important;
+}
+
+.theme-bubble-ai {
+  background: var(--theme-bubble-ai) !important;
+}
+
+.font-cute {
+  font-family: var(--font-cute);
+}
+
+/* iPhone Safari対応の追加スタイル */
+@media screen and (max-width: 768px) {
+  /* タッチ操作の最適化 */
+  button, input, textarea, select {
+    font-size: 16px !important; /* iPhone Safariでズームを防ぐ */
+    min-height: 44px; /* タッチターゲットの最小サイズ */
+  }
+  
+  /* モーダルの調整 */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* チャット入力エリアの調整 */
+  .chat-input {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* サイドバーの調整 */
+  .sidebar {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+  }
+}
+
+/* 安全エリア対応 */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* タッチ操作の最適化 */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* スクロールの最適化 */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Vercelツールバーを非表示 */
+[data-vercel-toolbar], 
+#vercel-toolbar,
+.__vercel_toolbar,
+[data-vercel-toolbar] *,
+iframe[src*="vercel.live"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}

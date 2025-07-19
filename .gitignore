@@ -1,0 +1,24 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Git backup created during history rewrite
+.git_backup/
+
+# Vercel large assets (already excluded from deploy, also keep repository small)
+public/gb.mp4/
+public/背景/
+public/characters/character/
+*.mp4
+*.mov
+*.zip
+
+# OS / IDE artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Next.js build output
+.next/
+ai-chat-standalone/.next/
