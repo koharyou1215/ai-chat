@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0 -p 3003",
     "build": "next build",
-    "build:prod": "NODE_ENV=production next build",
     "start": "next start",
-    "start:prod": "NODE_ENV=production next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -33,5 +31,8 @@
     "eslint-config-next": "15.3.4",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
