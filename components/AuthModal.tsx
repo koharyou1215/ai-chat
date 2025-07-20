@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
 import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser } from '../lib/supabase'
 import { User as SupabaseUser } from '@supabase/supabase-js'
-import { syncAllData, checkSyncStatus, SyncData } from '../lib/cloudSyncManager'
+import { syncAllData, SyncData } from '../lib/cloudSyncManager'
 
 interface AuthModalProps {
   isOpen: boolean

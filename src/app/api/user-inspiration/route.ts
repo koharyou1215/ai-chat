@@ -160,7 +160,7 @@ ${recentConversation}
       }
     } else {
       // 従来の3バリエーション版
-      const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。毎回全く異なる語彙・構文・発想を使って、重複表現を完全に避けたバリエーション豊かな候補を生成してください。
+    const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。毎回全く異なる語彙・構文・発想を使って、重複表現を完全に避けたバリエーション豊かな候補を生成してください。
 
 【キャラクター情報】
 名前: {{char}}
@@ -253,33 +253,33 @@ JSON配列のみを出力してください。例：
         const genAI = getGenAI(apiKey);
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const requestPayload: any = {
-          contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
-          generationConfig: {
+    const requestPayload: any = {
+      contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
+      generationConfig: {
             temperature: 1.8,
-            topP: 0.95,
+        topP: 0.95,
             topK: 80,
-            maxOutputTokens: 400,
-            candidateCount: 3
-          }
-        };
+        maxOutputTokens: 400,
+        candidateCount: 3
+      }
+    };
 
-        const result = await model.generateContent(requestPayload);
+    const result = await model.generateContent(requestPayload);
 
-        let candidates: string[] = [];
-        try {
-          const res: any = result.response as any;
-          if (res?.candidates) {
-            candidates = res.candidates
-              .map((cand: any) => cand.content?.parts?.[0]?.text || '')
-              .map((c: string) => c.trim())
-              .filter((c: string) => c.length > 0);
-          }
-        } catch (e) {
-          console.warn('candidate parse error', e);
-        }
+    let candidates: string[] = [];
+    try {
+      const res: any = result.response as any;
+      if (res?.candidates) {
+        candidates = res.candidates
+          .map((cand: any) => cand.content?.parts?.[0]?.text || '')
+          .map((c: string) => c.trim())
+          .filter((c: string) => c.length > 0);
+      }
+    } catch (e) {
+      console.warn('candidate parse error', e);
+    }
 
-        if (candidates.length === 0) {
+    if (candidates.length === 0) {
           // 動的フォールバック生成
           const dynamicFallbackPrompt = `{{char}}というキャラクターとの会話で、ユーザーが使いそうな自然な返事を3つ、それぞれ50-70文字で作成してください。
 
@@ -292,7 +292,7 @@ JSON配列のみを出力してください。例：
 候補2: [返事2] 
 候補3: [返事3]`;
 
-          try {
+      try {
             if (provider === 'openrouter') {
               const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
@@ -331,40 +331,40 @@ JSON配列のみを出力してください。例：
                 }
               }
             } else {
-              const fallbackResult = await model.generateContent({
-                contents: [{ role: 'user', parts: [{ text: dynamicFallbackPrompt }] }],
-                generationConfig: {
-                  temperature: 0.9,
-                  topP: 0.9,
-                  maxOutputTokens: 300,
-                }
-              });
-
-              const fallbackText = fallbackResult.response.text();
-              const fallbackCandidates = fallbackText
-                .split(/候補[123]:\s*/)
-                .slice(1)
-                .map(candidate => candidate.trim())
-                .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
-                .map(candidate => candidate.replace(/^「|」$/g, ''))
-                .filter(candidate => candidate.length > 0);
-
-              if (fallbackCandidates.length > 0) {
-                return NextResponse.json({
-                  success: true,
-                  candidates: fallbackCandidates.slice(0, 3)
-                });
-              }
-            }
-          } catch (fallbackError) {
-            console.warn('Dynamic fallback failed:', fallbackError);
+        const fallbackResult = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: dynamicFallbackPrompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            topP: 0.9,
+            maxOutputTokens: 300,
           }
-        }
-
-        return NextResponse.json({
-          success: true,
-          candidates: candidates
         });
+
+        const fallbackText = fallbackResult.response.text();
+        const fallbackCandidates = fallbackText
+          .split(/候補[123]:\s*/)
+          .slice(1)
+          .map(candidate => candidate.trim())
+          .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
+          .map(candidate => candidate.replace(/^「|」$/g, ''))
+          .filter(candidate => candidate.length > 0);
+
+        if (fallbackCandidates.length > 0) {
+          return NextResponse.json({
+            success: true,
+            candidates: fallbackCandidates.slice(0, 3)
+          });
+              }
+        }
+      } catch (fallbackError) {
+        console.warn('Dynamic fallback failed:', fallbackError);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+          candidates: candidates
+    });
       }
     }
   } catch (error) {

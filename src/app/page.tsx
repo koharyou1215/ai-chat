@@ -366,18 +366,18 @@ export default function ChatPage() {
             }
           } else {
             // 完全なセッション情報が取得できない場合は名前で検索
-            const lastCharacter = allCharacters.find(c => c.name === lastSession.characterId);
-            if (lastCharacter) {
-              setCurrentCharacter(lastCharacter);
-              setCurrentSessionId(lastSession.id);
-              setMessages(lastSession.messages);
+          const lastCharacter = allCharacters.find(c => c.name === lastSession.characterId);
+          if (lastCharacter) {
+            setCurrentCharacter(lastCharacter);
+            setCurrentSessionId(lastSession.id);
+            setMessages(lastSession.messages);
               console.log('最後のセッションを復元（名前検索）:', lastSession.title, 'キャラクター:', lastCharacter.name);
-            } else {
-              // キャラクターが見つからない場合はデフォルト
-              const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
-              if (defaultCharacter) {
-                setCurrentCharacter(defaultCharacter);
-                setInitialMessage(defaultCharacter);
+          } else {
+            // キャラクターが見つからない場合はデフォルト
+            const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+            if (defaultCharacter) {
+              setCurrentCharacter(defaultCharacter);
+              setInitialMessage(defaultCharacter);
               }
             }
           }
@@ -1093,7 +1093,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div ref={mainContainerRef} className="flex h-screen theme-background relative">
+      <div ref={mainContainerRef} className="flex h-screen theme-background relative">
       {/* モバイル用オーバーレイ */}
       {isSidebarOpen && (
         <div 
@@ -1144,83 +1144,83 @@ export default function ChatPage() {
                 ⚙️ 設定
               </button>
             </div>
-          </div>
+        </div>
 
           {/* タブコンテンツ */}
           <div className="flex-1 overflow-hidden">
             {/* キャラクタータブ */}
             {activeTab === 'characters' && (
               <div className="h-full flex flex-col">
-                <CharacterSelector
-                  characters={allCharacters}
-                  currentCharacter={currentCharacter}
-                  onSelectCharacter={(character: Character) => {
-                    console.log('キャラクター変更:', character.name);
+          <CharacterSelector
+          characters={allCharacters}
+          currentCharacter={currentCharacter}
+          onSelectCharacter={(character: Character) => {
+            console.log('キャラクター変更:', character.name);
+            
+            // キャラクターを設定
+            setCurrentCharacter(character);
+            
+            // 現在のセッションをクリア
+            setCurrentSessionId(null);
+            
+            // 音声再生を停止
+            VoiceManager.stopAudio();
+            
+            // 新しいキャラクターの初回メッセージを設定
+            const firstMessage = Array.isArray(character.first_message) 
+              ? character.first_message.join('\n') 
+              : (character.first_message || 'こんにちは！');
+              
+            console.log('初回メッセージ設定:', firstMessage);
+            
+            setMessages([{
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: firstMessage,
+              timestamp: Date.now()
+            }]);
+          }}
+          onAddCharacter={() => {
+            setEditingCharacter(null);
+            setIsCharacterModalOpen(true);
+          }}
+          onEditCharacter={(character: Character) => {
+            setEditingCharacter(character);
+            setIsCharacterModalOpen(true);
+          }}
+          onDeleteCharacter={(character: Character) => {
+            if (confirm(`「${character.name}」を削除しますか？`)) {
+              CharacterLoader.deleteCharacter(character.name);
+              const updatedCharacters = CharacterLoader.getAllCharacters();
+              setAllCharacters(updatedCharacters);
+              
+              // 削除したキャラクターが現在選択中の場合
+              if (currentCharacter?.name === character.name) {
+                const firstCharacter = updatedCharacters[0];
+                if (firstCharacter) {
+                  console.log('削除後の代替キャラクター:', firstCharacter.name);
+                  setCurrentCharacter(firstCharacter);
+                  setCurrentSessionId(null);
+                  
+                  const firstMessage = Array.isArray(firstCharacter.first_message) 
+                    ? firstCharacter.first_message.join('\n') 
+                    : (firstCharacter.first_message || 'こんにちは！');
                     
-                    // キャラクターを設定
-                    setCurrentCharacter(character);
-                    
-                    // 現在のセッションをクリア
-                    setCurrentSessionId(null);
-                    
-                    // 音声再生を停止
-                    VoiceManager.stopAudio();
-                    
-                    // 新しいキャラクターの初回メッセージを設定
-                    const firstMessage = Array.isArray(character.first_message) 
-                      ? character.first_message.join('\n') 
-                      : (character.first_message || 'こんにちは！');
-                      
-                    console.log('初回メッセージ設定:', firstMessage);
-                    
-                    setMessages([{
-                      id: crypto.randomUUID(),
-                      role: 'assistant',
-                      content: firstMessage,
-                      timestamp: Date.now()
-                    }]);
-                  }}
-                  onAddCharacter={() => {
-                    setEditingCharacter(null);
-                    setIsCharacterModalOpen(true);
-                  }}
-                  onEditCharacter={(character: Character) => {
-                    setEditingCharacter(character);
-                    setIsCharacterModalOpen(true);
-                  }}
-                  onDeleteCharacter={(character: Character) => {
-                    if (confirm(`「${character.name}」を削除しますか？`)) {
-                      CharacterLoader.deleteCharacter(character.name);
-                      const updatedCharacters = CharacterLoader.getAllCharacters();
-                      setAllCharacters(updatedCharacters);
-                      
-                      // 削除したキャラクターが現在選択中の場合
-                      if (currentCharacter?.name === character.name) {
-                        const firstCharacter = updatedCharacters[0];
-                        if (firstCharacter) {
-                          console.log('削除後の代替キャラクター:', firstCharacter.name);
-                          setCurrentCharacter(firstCharacter);
-                          setCurrentSessionId(null);
-                          
-                          const firstMessage = Array.isArray(firstCharacter.first_message) 
-                            ? firstCharacter.first_message.join('\n') 
-                            : (firstCharacter.first_message || 'こんにちは！');
-                            
-                          setMessages([{
-                            id: crypto.randomUUID(),
-                            role: 'assistant',
-                            content: firstMessage,
-                            timestamp: Date.now()
-                          }]);
-                        } else {
-                          setCurrentCharacter(null);
-                          setMessages([]);
-                        }
-                      }
-                    }
-                  }}
-                  onImportExport={() => setIsImportExportOpen(true)}
-                />
+                  setMessages([{
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: firstMessage,
+                    timestamp: Date.now()
+                  }]);
+                } else {
+                  setCurrentCharacter(null);
+                  setMessages([]);
+                }
+              }
+            }
+          }}
+          onImportExport={() => setIsImportExportOpen(true)}
+        />
               </div>
             )}
 
@@ -1454,7 +1454,7 @@ export default function ChatPage() {
                 </p>
               </div>
             )}
-          </div>
+        </div>
         </div>
       </div>
 

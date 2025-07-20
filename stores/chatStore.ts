@@ -13,6 +13,7 @@ interface ChatStore {
   settings: AppSettings;
   memos: ChatMemo[];
   isLoading: boolean;
+  sidebarOpen: boolean;
   
   // Actions
   setCurrentCharacter: (character: Character | null) => void;
@@ -30,6 +31,7 @@ interface ChatStore {
   setUserPersona: (persona: UserPersona) => void;
   addUserPersona: (persona: UserPersona) => void;
   setLoading: (loading: boolean) => void;
+  toggleSidebar: () => void;
   
   // Memo actions
   addMemo: (memo: ChatMemo) => void;
@@ -89,6 +91,7 @@ export const useChatStore = create<ChatStore>()(
       settings: defaultSettings,
       memos: [],
       isLoading: false,
+      sidebarOpen: false,
 
       // Actions
       setCurrentCharacter: (character) => {
@@ -257,6 +260,10 @@ export const useChatStore = create<ChatStore>()(
 
       setLoading: (loading) => {
         set({ isLoading: loading });
+      },
+
+      toggleSidebar: () => {
+        set((state) => ({ sidebarOpen: !state.sidebarOpen }));
       },
 
       addMemo: (memo) => {
