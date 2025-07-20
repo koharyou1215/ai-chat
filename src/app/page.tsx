@@ -14,6 +14,7 @@ import SettingsModal from '../../components/SettingsModal';
 import VoiceControls, { VoiceToggle } from '../../components/VoiceControls';
 import CharacterModal from '../../components/CharacterModal';
 import CharacterSelector from '../../components/CharacterSelector';
+import CharacterGallery from '../../components/CharacterGallery';
 import PersonaModal from '../../components/PersonaModal';
 import PersonaSelector from '../../components/PersonaSelector';
 import CharacterImportExport from '../../components/CharacterImportExport';
@@ -108,6 +109,7 @@ export default function ChatPage() {
 
   // Personaインポート/エクスポート
   const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
+  const [isCharacterGalleryOpen, setIsCharacterGalleryOpen] = useState(false);
 
   const { memos } = useChatStore();
 
@@ -1292,8 +1294,15 @@ export default function ChatPage() {
               <User size={20} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-white font-semibold truncate">{currentCharacter?.name || 'キャラクター'}</h3>
-              <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+              <button
+                onClick={() => setIsCharacterGalleryOpen(true)}
+                className="text-left w-full"
+              >
+                <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors">
+                  {currentCharacter?.name || 'キャラクター'}
+                </h3>
+                <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+              </button>
             </div>
             <div className="flex gap-2">
               <button
@@ -1674,6 +1683,49 @@ export default function ChatPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* キャラクターギャラリー */}
+      {isCharacterGalleryOpen && (
+        <CharacterGallery
+          characters={allCharacters}
+          currentCharacter={currentCharacter}
+          onSelectCharacter={(character) => {
+            setCurrentCharacter(character);
+            setIsCharacterGalleryOpen(false);
+            // 新しいキャラクターでセッションを開始
+            setCurrentSessionId(null);
+            setMessages([{
+              id: '1',
+              role: 'assistant',
+              content: Array.isArray(character.first_message) 
+                ? character.first_message.join('\n') 
+                : (character.first_message || 'こんにちは！'),
+              timestamp: Date.now()
+            }]);
+          }}
+          onAddCharacter={() => {
+            setIsCharacterGalleryOpen(false);
+            setIsCharacterModalOpen(true);
+            setEditingCharacter(null);
+          }}
+          onEditCharacter={(character) => {
+            setIsCharacterGalleryOpen(false);
+            setIsCharacterModalOpen(true);
+            setEditingCharacter(character);
+          }}
+          onDeleteCharacter={(character) => {
+            if (confirm(`「${character.name}」を削除しますか？`)) {
+              // 削除処理（実装予定）
+              console.log('キャラクター削除:', character.name);
+            }
+          }}
+          onImportExport={() => {
+            setIsCharacterGalleryOpen(false);
+            setIsImportExportOpen(true);
+          }}
+          onClose={() => setIsCharacterGalleryOpen(false)}
+        />
       )}
 
       {/* 設定モーダル */}
