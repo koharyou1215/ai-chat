@@ -9508,9 +9508,186 @@ Vercelの静的ファイル配信で**アクセス権限**の問題が発生し�
 
 ---
 
+```diff
+- 
++ {
++   "version": 2,
++   "builds": [
++     {
++       "src": "package.json",
++       "use": "@vercel/next"
++     }
++   ],
++   "headers": [
++     {
++       "source": "/_next/static/(.*)",
++       "headers": [
++         {
++           "key": "Access-Control-Allow-Origin",
++           "value": "*"
++         },
++         {
++           "key": "Access-Control-Allow-Methods",
++           "value": "GET, OPTIONS"
++         },
++         {
++           "key": "Access-Control-Allow-Headers",
++           "value": "*"
++         },
++         {
++           "key": "Cache-Control",
++           "value": "public, max-age=31536000, immutable"
++         }
++       ]
++     },
++     {
++       "source": "/public/(.*)",
++       "headers": [
++         {
++           "key": "Access-Control-Allow-Origin",
++           "value": "*"
++         },
++         {
++           "key": "Cache-Control",
++           "value": "public, max-age=31536000, immutable"
++         }
++       ]
++     },
++     {
++       "source": "/(.*)",
++       "headers": [
++         {
++           "key": "Access-Control-Allow-Origin",
++           "value": "*"
++         },
++         {
++           "key": "Access-Control-Allow-Methods",
++           "value": "GET, POST, PUT, DELETE, OPTIONS"
++         },
++         {
++           "key": "Access-Control-Allow-Headers",
++           "value": "Content-Type, Authorization"
++         }
++       ]
++     }
++   ],
++   "rewrites": [
++     {
++       "source": "/_next/static/(.*)",
++       "destination": "/_next/static/$1"
++     }
++   ]
++ } 
+```
+
+---
+
+### 2. Next.js設定を最適化
 
 
 ---
+
+```diff
+              value: '*',
+            },
++           {
++             key: 'Access-Control-Allow-Methods',
++             value: 'GET, OPTIONS',
++           },
++           {
++             key: 'Access-Control-Allow-Headers',
++             value: '*',
++           },
+          ],
+        },
+```
+
+---
+
+### 3. フォント読み込みを完全に修正
+
+
+---
+
+```diff
+  }
+  
+- /* フォント読み込みの最適化 */
+- @font-face {
+-   font-family: 'Inter';
+-   font-style: normal;
+-   font-weight: 400;
+-   font-display: swap;
+-   src: local('Inter'), local('Inter-Regular'), url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2') format('woff2');
+-   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
++ /* フォント読み込みの最適化 - システムフォントのみ使用 */
++ @layer base {
++   html {
++     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+- /* フォント読み込み成功時の設定 */
+- .font-loaded {
+-   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
++   body {
++     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
++   }
+  }
+  
+```
+
+```diff
+    }
+  }
+- 
+- /* フォント読み込みの優先度設定 */
+- @layer base {
+-   html {
+-     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+-   }
+- }
+  
+  /* デプロイ時の安定性向上 */
+```
+
+---
+
+### 4. 変更をコミットしてデプロイ
+
+
+---
+
+```bash
+git add .
+```
+
+```
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat> git add .
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat>
+```
+
+---
+
+```bash
+git commit -m "fix: 403エラーを根本的に解決 - Vercel設定再作成 - CORS設定強化 - システムフォントのみ使用 - 静的ファイル配信修正"
+```
+
+```
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat> git commit -m "fix: 403エラーを根本的に解決 - Ver
+cel設定再作成 -                                     git commit -m "fix: 403エラーを根本的に解決 - Ver
+cel設定再作成 - CORS設定強化 - システムフォントのみ使用 - 静的ファイル配信修正"
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat>
+```
+
+---
+
+_**User**_
+
+デプロイするやはりUIがおかしいまま直りません。
+
+---
+
+_**Assistant**_
 
 
 

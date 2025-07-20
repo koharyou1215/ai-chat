@@ -23,44 +23,6 @@ const nextConfig: NextConfig = {
     
     return config
   },
-  headers: async () => {
-    return [
-      {
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: '*',
-          },
-        ],
-      },
-      {
-        source: '/public/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-        ],
-      },
-    ]
-  },
 }
 
 export default nextConfig
