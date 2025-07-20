@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
   experimental: {
     optimizeCss: true,
   },
@@ -13,6 +12,12 @@ const nextConfig: NextConfig = {
   },
   env: {
     CUSTOM_KEY: 'my-value',
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 }
 

@@ -3,7 +3,7 @@
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../../stores/chatStore";
 import ChatMemoProvider from "../../components/ChatMemoProvider";
 
@@ -15,13 +15,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [mounted, setMounted] = useState(false);
   const toggleSidebar = useChatStore((state) => state.toggleSidebar);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleVideoError = useCallback(() => {
     if (videoRef.current) {
@@ -66,7 +61,6 @@ export default function RootLayout({
               loop
               playsInline
               preload="auto"
-              // @ts-expect-error - webkit-playsinline is required for iOS Safari compatibility
               webkit-playsinline="true"
               onError={handleVideoError}
             >

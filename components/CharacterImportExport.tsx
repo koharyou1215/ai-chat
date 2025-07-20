@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, Download, FileText, Image, Package, AlertCircle, CheckCircle, X } from 'lucide-react';
-import { Character } from '../types/character';
+import { Character, CharacterDefinition, CharacterTracker, ExampleDialogue } from '../types/character';
 
 interface CharacterImportExportProps {
   isOpen: boolean;
@@ -111,40 +111,46 @@ export default function CharacterImportExport({
     return null;
   };
 
-  const validateAndNormalizeCharacter = (data: any, fileName: string): Character | null => {
+  const validateAndNormalizeCharacter = (data: Record<string, unknown>, fileName: string): Character | null => {
     try {
+      // 型ガード関数
+      const getString = (value: unknown): string => typeof value === 'string' ? value : '';
+      const getStringArray = (value: unknown): string[] => 
+        Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
+      const getArray = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
+      
       // 基本的なバリデーション
-      if (!data.name) {
+      if (!data.name || typeof data.name !== 'string') {
         throw new Error('キャラクター名が必要です');
       }
 
       // 様々な形式を統一形式に変換
       const character: Character = {
-        'file-name': data['file-name'] || fileName,
-        name: data.name,
-        tags: Array.isArray(data.tags) ? data.tags : (data.tags ? [data.tags] : []),
+        'file-name': getString(data['file-name']) || fileName,
+        name: getString(data.name),
+        tags: getStringArray(data.tags),
         first_message: Array.isArray(data.first_message) 
           ? data.first_message 
-          : (data.first_mes || data.greeting ? [data.first_mes || data.greeting] : ['']),
+          : [getString(data.first_mes) || getString(data.greeting) || ''],
         
         // 基本フィールド
-        personality: data.personality || data.description || '',
-        appearance: data.appearance || '',
-        speaking_style: data.speaking_style || '',
-        scenario: data.scenario || data.world_scenario || '',
-        nsfw_profile: data.nsfw_profile || '',
-        age: data.age || '',
-        occupation: data.occupation || '',
-        hobbies: Array.isArray(data.hobbies) ? data.hobbies : [],
-        likes: Array.isArray(data.likes) ? data.likes : [],
-        dislikes: Array.isArray(data.dislikes) ? data.dislikes : [],
-        background: data.background || '',
-        avatar_url: data.avatar_url || '',
+        personality: getString(data.personality) || getString(data.description),
+        appearance: getString(data.appearance),
+        speaking_style: getString(data.speaking_style),
+        scenario: getString(data.scenario) || getString(data.world_scenario),
+        nsfw_profile: getString(data.nsfw_profile),
+        age: getString(data.age),
+        occupation: getString(data.occupation),
+        hobbies: getStringArray(data.hobbies),
+        likes: getStringArray(data.likes),
+        dislikes: getStringArray(data.dislikes),
+        background: getString(data.background),
+        avatar_url: getString(data.avatar_url),
 
         // 既存の複雑な構造がある場合は保持
-        character_definition: data.character_definition,
-        trackers: data.trackers,
-        example_dialogue: data.example_dialogue
+        character_definition: data.character_definition as CharacterDefinition | undefined,
+        trackers: getArray(data.trackers) as CharacterTracker[],
+        example_dialogue: getArray(data.example_dialogue) as ExampleDialogue[]
       };
 
       return character;
