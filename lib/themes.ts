@@ -159,14 +159,14 @@ export class ThemeManager {
   static applyTheme(theme: Theme, customBackground?: string) {
     const root = document.documentElement;
     
-    // 背景の適用
+    // Backgroundの適用
     if (customBackground) {
       // 動画かどうかを判定（blob: または .mp4/.webm を含む）
       const isVideo = customBackground.startsWith('blob:') || 
                       customBackground.match(/\.(mp4|webm|mov|avi)$/i);
       
       if (isVideo) {
-        // 動画背景の場合
+        // 動画Backgroundの場合
         root.style.setProperty('--theme-background-image', 'none');
         root.style.setProperty('--theme-background', 'transparent');
         
@@ -197,7 +197,7 @@ export class ThemeManager {
         // body の最初の子要素として挿入（layout.tsx の動画より前に配置）
         document.body.insertBefore(video, document.body.firstChild);
         
-        // layout.tsx の背景動画を隠す
+        // layout.tsx のBackground動画を隠す
         const layoutVideo = document.querySelector('video[src="/bg.mp4"]');
         if (layoutVideo && layoutVideo instanceof HTMLVideoElement) {
           layoutVideo.style.display = 'none';
@@ -232,7 +232,7 @@ export class ThemeManager {
       if (existingVideo) {
         existingVideo.remove();
         
-        // layout.tsx の背景動画を復元
+        // layout.tsx のBackground動画を復元
         const layoutVideo = document.querySelector('video[src="/bg.mp4"]');
         if (layoutVideo && layoutVideo instanceof HTMLVideoElement) {
           layoutVideo.style.display = '';
@@ -264,7 +264,7 @@ export class ThemeManager {
     try {
       // blob: URL の場合は保存をスキップして警告
       if (customBackground && customBackground.startsWith('blob:')) {
-        console.warn('動画ファイルは一時的な背景として設定されました。ページリロード後は無効になります。');
+        console.warn(`動画ファイルは一時的なBackgroundとして設定されました。ページリロード後は無効になります。`);
         // blob URL は localStorage に保存せず、現在のセッションのみ有効
         return;
       }
@@ -286,13 +286,13 @@ export class ThemeManager {
       console.error('テーマ保存エラー:', error);
       
       if (error instanceof Error && error.message.includes('quota')) {
-        // ストレージ容量不足の場合、カスタム背景なしで保存
+        // ストレージ容量不足の場合、カスタムBackgroundなしで保存
         const fallbackSettings = {
           currentTheme: themeId === 'custom' ? 'ocean-sunset' : themeId
         };
         try {
           localStorage.setItem('ai-chat-theme', JSON.stringify(fallbackSettings));
-          alert('画像データが大きすぎるため、カスタム背景なしで保存されました');
+          alert('画像データが大きすぎるため、カスタムBackgroundなしで保存されました');
         } catch {
           alert('設定の保存に失敗しました');
         }

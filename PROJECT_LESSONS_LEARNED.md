@@ -16,7 +16,8 @@ Get-ChildItem -Recurse -File | Measure-Object -Property Length -Sum
 
 # 2. .vercelignore で除外設定
 public/gb.mp4/*
-public/背景/*
+public/Background
+/*
 public/characters/character/*
 *.mp4
 *.mov
@@ -24,7 +25,8 @@ public/characters/character/*
 
 # 3. Git履歴の書き換え（大容量ファイルを完全削除）
 git filter-repo --path public/gb.mp4/ --invert-paths
-git filter-repo --path public/背景/ --invert-paths
+git filter-repo --path public/Background
+/ --invert-paths
 git filter-repo --path public/characters/character/ --invert-paths
 
 # 4. リポジトリの再初期化（最終手段）

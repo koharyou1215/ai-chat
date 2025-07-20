@@ -7,7 +7,8 @@ node_modules/
 
 # Vercel large assets (already excluded from deploy, also keep repository small)
 public/gb.mp4/
-public/背景/
+public/Background
+/
 public/characters/character/
 *.mp4
 *.mov

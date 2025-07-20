@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Plus, Edit, Trash2, Search, Clock, ArrowLeft, Grid, List, Calendar, User, Star } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, Search, Clock, ArrowLeft, Grid, List, Calendar, Star } from 'lucide-react';
 import { SessionSummary } from '../lib/historyManager';
 
 interface ChatHistoryGalleryProps {
@@ -35,11 +35,11 @@ export default function ChatHistoryGallery({
     .sort((a, b) => {
       switch (sortBy) {
         case 'recent':
-          return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
+          return b.updatedAt - a.updatedAt;
         case 'name':
           return a.title.localeCompare(b.title);
         case 'duration':
-          return (b.duration || 0) - (a.duration || 0);
+          return 0; // durationプロパティは存在しないため、デフォルトで0を返す
         case 'messages':
           return (b.messageCount || 0) - (a.messageCount || 0);
         default:
@@ -54,8 +54,9 @@ export default function ChatHistoryGallery({
     return mins > 0 ? `${hours}時間${mins}分` : `${hours}時間`;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return '--';
+    const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
@@ -215,7 +216,7 @@ function ChatHistoryCard({
   onSelect: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
   formatDuration: (minutes: number) => string;
-  formatDate: (dateString: string) => string;
+  formatDate: (timestamp?: number) => string;
 }) {
   return (
     <div
@@ -301,7 +302,7 @@ function ChatHistoryListItem({
   onSelect: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
   formatDuration: (minutes: number) => string;
-  formatDate: (dateString: string) => string;
+  formatDate: (timestamp?: number) => string;
 }) {
   return (
     <div

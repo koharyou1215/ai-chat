@@ -35,7 +35,8 @@ export default function ThemeModal({
 
   const handleThemeSelect = (themeId: string) => {
     setSelectedTheme(themeId);
-    setPreviewBackground(undefined); // カスタム背景をリセット
+    // カスタムBackgroundをリセット
+    setPreviewBackground(undefined);
   };
 
   const handleApplyTheme = () => {
@@ -64,7 +65,7 @@ export default function ThemeModal({
       
       // 動画ファイルの制限について通知
       setTimeout(() => {
-        alert('動画背景が設定されました。\n\n注意: 動画ファイルはこのセッション中のみ有効です。\nページをリロードすると元の背景に戻ります。');
+        alert(`動画Backgroundが設定されました。\n\n注意: 動画ファイルはこのセッション中のみ有効です。\nページをリロードすると元のBackgroundに戻ります。`);
       }, 100);
       return;
     }
@@ -143,7 +144,8 @@ export default function ThemeModal({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <Palette size={28} />
-            テーマ・背景設定
+            テーマ・Background
+設定
           </h2>
           <button
             onClick={onClose}
@@ -157,11 +159,13 @@ export default function ThemeModal({
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
           <div className="space-y-8">
             
-            {/* カスタム背景アップロード */}
+            {/* カスタムBackground
+アップロード */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Upload size={20} />
-                カスタム背景画像
+                カスタムBackground
+画像
                 <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
                   自動圧縮
                 </span>
@@ -199,7 +203,7 @@ export default function ThemeModal({
                       ) : (
                         <img
                           src={previewBackground}
-                          alt="カスタム背景プレビュー"
+                          alt="カスタムBackgroundプレビュー"
                           className="w-32 h-20 object-cover rounded-lg shadow-md"
                         />
                       )}
@@ -212,7 +216,8 @@ export default function ThemeModal({
                     </div>
                     <div className="text-sm text-gray-600">
                       <p className="font-medium mb-1">
-                        カスタム{isVideoBackground ? '動画' : '画像'}背景が設定されました
+                        カスタム{isVideoBackground ? '動画' : '画像'}Background
+が設定されました
                       </p>
                       {compressionInfo && (
                         <div className={`${isVideoBackground ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'} border rounded-lg p-3 space-y-1`}>
@@ -305,7 +310,8 @@ export default function ThemeModal({
                   </div>
                 ))}
                 
-                {/* カスタム背景テーマ */}
+                {/* カスタムBackground
+テーマ */}
                 {previewBackground && (
                   <div
                     onClick={() => setSelectedTheme('custom')}
@@ -315,11 +321,12 @@ export default function ThemeModal({
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {/* カスタム背景プレビュー */}
+                    {/* カスタムBackground
+プレビュー */}
                     <div className="w-full h-24 relative">
                       <img
                         src={previewBackground}
-                        alt="カスタム背景"
+                        alt="カスタムBackground"
                         className="w-full h-full object-cover"
                       />
                       {selectedTheme === 'custom' && (
@@ -332,7 +339,8 @@ export default function ThemeModal({
                     {/* テーマ名 */}
                     <div className="p-3 bg-white">
                       <h4 className="font-medium text-gray-800 text-sm text-center">
-                        カスタム背景
+                        カスタムBackground
+
                       </h4>
                     </div>
                   </div>
@@ -406,7 +414,7 @@ export default function ThemeModal({
           <div className="text-sm text-gray-600">
             選択中: {
               selectedTheme === 'custom' 
-                ? 'カスタム背景' 
+                ? 'カスタムBackground' 
                 : defaultThemes.find(t => t.id === selectedTheme)?.name || '不明'
             }
           </div>

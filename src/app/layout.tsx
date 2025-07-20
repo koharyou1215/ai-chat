@@ -63,7 +63,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cuteFont.variable} antialiased`}
         suppressHydrationWarning
       >
-        {/* 全画面背景動画 (public/bg.mp4) */}
+        {/* 全画面Background
+動画 (public/bg.mp4) */}
         <video
           className="fixed inset-0 -z-10 w-full h-full object-contain"
           src="/bg.mp4"

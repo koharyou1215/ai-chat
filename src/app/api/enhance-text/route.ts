@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // 会話コンテキストを構築
     const conversationContext = context && context.length > 0 ? `
 【会話コンテキスト】
-${context.slice(-3).map((msg: any) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`).join('\n')}
+${context.slice(-3).map((msg: { role: string; content: string }) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`).join('\n')}
 ` : '';
 
     const prompt = `以下のテキストを、より魅力的で表現豊かな文章に強化してください。
@@ -55,7 +55,8 @@ ${text}
 以下の要素を考慮して、3つの異なるバリエーションを生成してください：
 
 1. **感情表現の強化**: 感情や気持ちをより具体的に表現
-2. **詳細描写の追加**: 状況や背景をより詳しく説明
+2. **詳細描写の追加**: 状況やBackground
+をより詳しく説明
 3. **個性の反映**: キャラクターの性格や話し方を活かした表現
 4. **会話の自然さ**: 文脈に沿った自然な流れ
 5. **表現の多様性**: 同じ内容でも異なる表現方法
@@ -74,8 +75,8 @@ ${text}
     {
       "title": "詳細描写版", 
       "content": "強化されたテキスト2",
-      "description": "状況や背景を詳しく説明したバージョン",
-      "improvements": ["状況の具体化", "背景の説明", "文脈の明確化"]
+      "description": "状況やBackgroundを詳しく説明したバージョン",
+      "improvements": ["状況の具体化", "Backgroundの説明", "文脈の明確化"]
     },
     {
       "title": "個性表現版",
@@ -97,13 +98,13 @@ JSON形式以外は出力しないでください。`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    const responseText = response.text();
 
     try {
-      const data = JSON.parse(text);
+      const data = JSON.parse(responseText);
       
       // 各バージョンの文字数を計算
-      const enhancedVersionsWithStats = data.enhancedVersions.map((version: any) => ({
+      const enhancedVersionsWithStats = data.enhancedVersions.map((version: { content: string; [key: string]: unknown }) => ({
         ...version,
         originalLength: text.length,
         enhancedLength: version.content.length,
@@ -133,8 +134,8 @@ JSON形式以外は出力しないでください。`;
         {
           title: "詳細描写版",
           content: `現在の状況を考えると、${text} ということがより明確になります。`,
-          description: "状況や背景を詳しく説明したバージョン", 
-          improvements: ["状況の具体化", "背景の説明"],
+          description: "状況やBackgroundを詳しく説明したバージョン", 
+          improvements: ["状況の具体化", "Backgroundの説明"],
           originalLength: text.length,
           enhancedLength: text.length + 25,
           improvementRatio: Math.round(((text.length + 25) / text.length) * 100)

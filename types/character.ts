@@ -94,6 +94,12 @@ export interface Character {
 export interface UserPersona {
   id: string;
   name: string;
+  /** ペルソナの簡単な説明 */
+  description?: string;
+  /** ペルソナの役割・肩書き */
+  role?: string;
+  /** 特徴キーワード */
+  traits?: string[];
   likes: string[];
   dislikes: string[];
   other_settings: string;

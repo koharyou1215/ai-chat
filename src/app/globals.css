@@ -114,7 +114,8 @@ input, textarea, [contenteditable] {
   }
 }
 
-/* 背景動画の配置調整 */
+/* Background
+動画の配置調整 */
 video[src="/bg.mp4"] {
   background-color: #000;
   object-position: center center;

@@ -4,10 +4,19 @@ export interface SessionSummary {
   id: string;
   title: string;
   characterName: string;
+  characterId: string;
   lastMessage: string;
   messageCount: number;
   createdAt: number;
   updatedAt: number;
+  // 最終活動時間（updatedAt と同値）
+  lastActivity?: number;
+  // 会話継続時間（分）
+  duration?: number;
+  // お気に入りフラグ（未使用だが UI 用に用意）
+  favorite?: boolean;
+  /** セッション内のメッセージ配列 */
+  messages: ChatMessage[];
 }
 
 class HistoryManager {
@@ -91,10 +100,14 @@ class HistoryManager {
             id: session.id,
             title: session.title,
             characterName: session.characterId,
+            characterId: session.characterId,
             lastMessage: lastMessage?.content?.substring(0, 50) + '...' || '新しいチャット',
             messageCount: session.messages.length,
             createdAt: session.createdAt,
-            updatedAt: session.updatedAt
+            updatedAt: session.updatedAt,
+            lastActivity: session.updatedAt,
+            duration: Math.floor((session.updatedAt - session.createdAt) / 60000),
+            messages: session.messages,
           });
           
           cursor.continue();
@@ -141,10 +154,14 @@ class HistoryManager {
             id: session.id,
             title: session.title,
             characterName: session.characterId,
+            characterId: session.characterId,
             lastMessage: lastMessage?.content?.substring(0, 50) + '...' || '新しいチャット',
             messageCount: session.messages.length,
             createdAt: session.createdAt,
-            updatedAt: session.updatedAt
+            updatedAt: session.updatedAt,
+            lastActivity: session.updatedAt,
+            duration: Math.floor((session.updatedAt - session.createdAt) / 60000),
+            messages: session.messages,
           });
           
           cursor.continue();

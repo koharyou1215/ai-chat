@@ -95,7 +95,8 @@ function buildSystemPrompt(character: { name: string; character_definition: any 
 **長所**: ${character_definition.personality.strengths.join(', ')}
 **短所**: ${character_definition.personality.weaknesses.join(', ')}
 
-**背景**: ${character_definition.background}
+**Background
+**: ${character_definition.background}
 
 **話し方**:
 - 基本口調: ${character_definition.speaking_style.base}

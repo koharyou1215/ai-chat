@@ -72,7 +72,8 @@ export class GeminiService {
 **長所**: ${character_definition!.personality.strengths.join(', ')}
 **短所**: ${character_definition!.personality.weaknesses.join(', ')}
 
-**背景**: ${character_definition!.background}
+**Background
+**: ${character_definition!.background}
 
 **外見**:
 - 全体: ${character_definition!.appearance.description}

@@ -462,7 +462,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
           <div className="mt-8 space-y-6">
             {/* シナリオ */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">シナリオ・背景</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">シナリオ・Background
+</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,20 +474,23 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                     onChange={(e) => setFormData(prev => ({ ...prev, scenario: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     rows={4}
-                    placeholder="キャラクターとの出会いのシチュエーションや背景設定を記述してください"
+                    placeholder="キャラクターとの出会いのシチュエーションやBackground
+設定を記述してください"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    背景・設定
+                    Background
+・設定
                   </label>
                   <textarea
                     value={formData.background}
                     onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     rows={3}
-                    placeholder="キャラクターの詳細な背景設定や世界観を記述してください"
+                    placeholder="キャラクターの詳細なBackground
+設定や世界観を記述してください"
                   />
                 </div>
               </div>
