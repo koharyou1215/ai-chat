@@ -60,7 +60,7 @@ const defaultSettings: AppSettings = {
   customBackground: undefined,
   voiceEnabled: false,
   voiceAutoPlay: false,
-  voiceId: 'pNInz6obpgDQGcFmaJgB',
+  voiceId: '',
   voiceStability: 0.5,
   voiceSimilarityBoost: 0.75,
   voiceStyle: 0,
@@ -73,7 +73,7 @@ const defaultSettings: AppSettings = {
   imageEngine: 'replicate',
   bubbleBlur: true,
   provider: 'openrouter',
-  openRouterApiKey: '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',
+  openRouterApiKey: '',
   candidateCount: 1
 };
 
