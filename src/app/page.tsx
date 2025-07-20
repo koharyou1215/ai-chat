@@ -20,6 +20,7 @@ import PersonaSelector from '../../components/PersonaSelector';
 import CharacterImportExport from '../../components/CharacterImportExport';
 import { MessageMemoButton, MemoListButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
+import EnhancedImpressionModal from '../../components/EnhancedImpressionModal';
 import ThemeModal from '../../components/ThemeModal';
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
@@ -110,6 +111,9 @@ export default function ChatPage() {
   // Personaインポート/エクスポート
   const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
   const [isCharacterGalleryOpen, setIsCharacterGalleryOpen] = useState(false);
+  const [isEnhancedImpressionOpen, setIsEnhancedImpressionOpen] = useState(false);
+  const [currentImpressions, setCurrentImpressions] = useState<any[]>([]);
+  const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
 
   const { memos } = useChatStore();
 
@@ -154,6 +158,47 @@ export default function ChatPage() {
       setIsSummaryOpen(false);
     } finally {
       setIsGeneratingSummary(false);
+    }
+  };
+
+  // 強化されたインプレッション生成
+  const handleGenerateEnhancedImpression = async () => {
+    if (!currentCharacter || messages.length < 3) {
+      alert('インプレッション生成には最低3つのメッセージが必要です');
+      return;
+    }
+
+    setIsGeneratingImpression(true);
+    setIsEnhancedImpressionOpen(true);
+    setCurrentImpressions([]);
+
+    try {
+      const response = await fetch('/api/enhanced-impression', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messages,
+          character: currentCharacter,
+          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentImpressions(data.impressions);
+      } else {
+        alert('インプレッションの生成に失敗しました: ' + data.error);
+        setIsEnhancedImpressionOpen(false);
+      }
+    } catch (error) {
+      console.error('Enhanced impression generation error:', error);
+      alert('インプレッションの生成中にエラーが発生しました');
+      setIsEnhancedImpressionOpen(false);
+    } finally {
+      setIsGeneratingImpression(false);
     }
   };
   const [settings, setSettings] = useState<AppSettings>({
@@ -1545,6 +1590,16 @@ export default function ChatPage() {
                 📋
               </button>
               
+              {/* 強化インプレッション */}
+              <button
+                onClick={handleGenerateEnhancedImpression}
+                disabled={isGeneratingImpression || messages.length < 3}
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-pink-400 hover:text-pink-300"
+                title="会話インプレッション（3視点）"
+              >
+                💖
+              </button>
+              
               {/* 再生成 */}
               <button 
                 onClick={handleRegenerate}
@@ -1727,6 +1782,16 @@ export default function ChatPage() {
           onClose={() => setIsCharacterGalleryOpen(false)}
         />
       )}
+
+      {/* 強化されたインプレッションモーダル */}
+      <EnhancedImpressionModal
+        isOpen={isEnhancedImpressionOpen}
+        onClose={() => setIsEnhancedImpressionOpen(false)}
+        impressions={currentImpressions}
+        isLoading={isGeneratingImpression}
+        onRegenerate={handleGenerateEnhancedImpression}
+        characterName={currentCharacter?.name}
+      />
 
       {/* 設定モーダル */}
       <SettingsModal
