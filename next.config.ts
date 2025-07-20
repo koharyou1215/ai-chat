@@ -1,40 +1,73 @@
-// next.config.ts
-const isProd = process.env.NODE_ENV === 'production'
+import type { NextConfig } from 'next'
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  // 本番環境での安定性を向上
+const nextConfig: NextConfig = {
   output: 'standalone',
-  experimental: {
-    turbo: isProd ? { loaders: {} } : {},
-  },
-  images: {
-    domains: ['replicate.delivery'],
-    unoptimized: true, // デプロイ時の画像最適化問題を回避
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // ビルド時の警告を抑制
+  unoptimized: true,
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Vercelツールバーを無効化
-  env: {
-    NEXT_PUBLIC_VERCEL_ENV: 'production',
-  },
-  // 本番環境でのパフォーマンス最適化
   compress: true,
   poweredByHeader: false,
-  // デプロイ時の安定性向上
-  swcMinify: true,
-  // 静的ファイルの最適化
-  assetPrefix: isProd ? '' : undefined,
-  // ビルド時の警告を抑制
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@next/font'],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    
+    // フォントファイルの最適化
+    config.module.rules.push({
+      test: /\.(woff|woff2|eot|ttf|otf)$/i,
+      type: 'asset/resource',
+      generator: {
+        filename: 'static/fonts/[name][ext]',
+      },
+    })
+    
+    return config
+  },
+  headers: async () => {
+    return [
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+      {
+        source: '/public/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ]
+  },
+  assetPrefix: process.env.NODE_ENV === 'production' ? '' : undefined,
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
 }
 
-export default nextConfig;
+export default nextConfig
