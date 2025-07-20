@@ -39,7 +39,10 @@ export default function ChatHistoryGallery({
         case 'name':
           return a.title.localeCompare(b.title);
         case 'duration':
-          return 0; // durationプロパティは存在しないため、デフォルトで0を返す
+          // 会話時間は updatedAt - createdAt で計算
+          const durationA = (a.updatedAt || 0) - (a.createdAt || 0);
+          const durationB = (b.updatedAt || 0) - (b.createdAt || 0);
+          return durationB - durationA;
         case 'messages':
           return (b.messageCount || 0) - (a.messageCount || 0);
         default:
@@ -156,7 +159,7 @@ export default function ChatHistoryGallery({
         {/* チャット履歴一覧 */}
         <div className="flex-1 overflow-y-auto p-6">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
               {filteredSessions.map((session) => (
                 <ChatHistoryCard
                   key={session.id}

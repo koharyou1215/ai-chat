@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, Edit, Trash2, Search, Brain, ArrowLeft, Grid, List, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Brain, ArrowLeft, Grid, List, Package } from 'lucide-react';
 import { UserPersona } from '../types/character';
 
 interface PersonaGalleryProps {
@@ -148,7 +148,7 @@ export default function PersonaGallery({
         {/* ペルソナ一覧 */}
         <div className="flex-1 overflow-y-auto p-6">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
               {filteredPersonas.map((persona, idx) => (
                 <PersonaCard
                   key={`${persona.name}-${idx}`}

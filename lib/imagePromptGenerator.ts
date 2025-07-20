@@ -51,7 +51,7 @@ export class ImagePromptGenerator {
   private static buildBaseCharacterPrompt(character: Character): string {
     const appearance = character.character_definition?.appearance;
     if (!appearance) {
-      return `beautiful anime girl, ${character.name}`;
+      return `beautiful anime girl, {{char}}`;
     }
 
     const parts = [];

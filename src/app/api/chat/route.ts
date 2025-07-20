@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       })
       .join('\n');
     
-    const fullPrompt = `${systemPrompt}\n\n会話履歴:\n${conversationHistory}\n\n${character.name}:`;
+    const fullPrompt = `${systemPrompt}\n\n会話履歴:\n${conversationHistory}\n\n{{char}}:`;
     
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
@@ -85,10 +85,10 @@ function buildSystemPrompt(character: { name: string; character_definition: any 
   
   const { character_definition } = character;
   
-  const prompt = `あなたは「${character.name}」として振る舞ってください。
+  const prompt = `あなたは「{{char}}」として振る舞ってください。
 
 ## キャラクター設定
-**名前**: ${character.name}
+**名前**: {{char}}
 **性格**: ${character_definition.personality.summary}
 **外面的性格**: ${character_definition.personality.external}
 **内面的性格**: ${character_definition.personality.internal}
@@ -109,7 +109,7 @@ function buildSystemPrompt(character: { name: string; character_definition: any 
 **ユーザーとの関係**: ${character_definition.scenario.relationship_with_user}
 
 ## 重要な指示
-- 必ず${character.name}として一貫して振る舞ってください
+- 必ず{{char}}として一貫して振る舞ってください
 - 設定された性格や話し方を守ってください
 - 自然で魅力的な会話を心がけてください
 - 状況に応じて感情豊かに反応してください

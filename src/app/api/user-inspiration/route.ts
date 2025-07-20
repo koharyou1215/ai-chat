@@ -25,15 +25,27 @@ export async function POST(req: NextRequest) {
       character,
       persona,
       conversation,
-      settings
+      settings,
+      variantCount = 1
     } = await req.json();
 
-    const apiKey = (settings?.geminiApiKey as string) || SERVER_GEMINI_API_KEY;
+    // プロバイダーに応じてAPIキーを選択
+    const provider = settings?.provider || 'gemini';
+    let apiKey = '';
+    let modelName = '';
+
+    if (provider === 'openrouter') {
+      apiKey = settings?.openRouterApiKey || '';
+      modelName = settings?.model || 'anthropic/claude-sonnet-4';
+    } else {
+      apiKey = settings?.geminiApiKey || SERVER_GEMINI_API_KEY;
+      modelName = settings?.model || 'gemini-1.5-flash';
+    }
 
     if (!apiKey) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Gemini API key not configured' 
+        error: `${provider === 'openrouter' ? 'OpenRouter' : 'Gemini'} API key not configured` 
       }, { status: 500 });
     }
 
@@ -43,11 +55,6 @@ export async function POST(req: NextRequest) {
         error: 'Character not specified' 
       }, { status: 400 });
     }
-
-    const genAI = getGenAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: settings?.model || 'gemini-2.0-flash-exp'
-    });
 
     // 会話履歴を構築（直近5~8件）
     const recentConversation = (conversation || [])
@@ -64,11 +71,99 @@ export async function POST(req: NextRequest) {
       ? [...conversation].reverse().find((msg: Message) => msg.role === 'assistant')?.content || ''
       : '';
 
-    // ユーザーインスピレーション用プロンプト（多様性強化版）
-    const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。毎回全く異なる語彙・構文・発想を使って、重複表現を完全に避けたバリエーション豊かな候補を生成してください。
+    if (variantCount === 1) {
+      // シンプル高速版（1本のみ）
+      const simplePrompt = `あなたは創作的で自然なユーザー返信を提案する専門AIです。
 
 【キャラクター情報】
-名前: ${character.name}
+名前: {{char}}
+性格・特徴: ${character.character_definition || character.description || '不明'}
+
+【ユーザー情報】
+${persona ? `名前: ${persona.name}\n性格: ${persona.description}\n好み: ${persona.likes?.join(', ') || 'なし'}\n苦手: ${persona.dislikes?.join(', ') || 'なし'}\n口調・特徴: ${persona.other_settings || 'なし'}` : '一般的なユーザー（名前なし）'}
+
+【最新のキャラクター発言】
+「${lastCharacterMessage}」
+
+【会話の文脈】
+${recentConversation}
+
+【重要指示】
+上記の会話文脈を踏まえて、ユーザーが自然に返しそうな返信を1つ作成してください。
+
+【要件】
+- 50-70文字程度
+- ユーザーの性格・口調を反映
+- 会話を自然に発展させる内容
+- {{char}}との関係性に適した親しみ度
+- 創造的で自然な表現
+
+【禁止語】
+「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」
+
+自然な返信:`;
+
+      if (provider === 'openrouter') {
+        // OpenRouter APIを使用
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3003',
+            'X-Title': 'AI Chat App'
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              { role: 'user', content: simplePrompt }
+            ],
+            temperature: 1.2,
+            max_tokens: 200,
+            n: 1
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const singleCandidate = data.choices[0]?.message?.content?.trim() || '';
+
+        return NextResponse.json({
+          success: true,
+          candidates: [singleCandidate]
+        });
+      } else {
+        // Gemini APIを使用
+        const genAI = getGenAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: simplePrompt }] }],
+          generationConfig: {
+            temperature: 1.2,
+            topP: 0.9,
+            maxOutputTokens: 200,
+            candidateCount: 1
+          }
+        });
+
+        const response = await result.response;
+        const singleCandidate = response.text().trim();
+
+        return NextResponse.json({
+          success: true,
+          candidates: [singleCandidate]
+        });
+      }
+    } else {
+      // 従来の3バリエーション版
+      const inspirationPrompt = `あなたは創作的で多様なユーザー返信を提案する専門AIです。毎回全く異なる語彙・構文・発想を使って、重複表現を完全に避けたバリエーション豊かな候補を生成してください。
+
+【キャラクター情報】
+名前: {{char}}
 性格・特徴: ${character.character_definition || character.description || '不明'}
 
 【ユーザー情報】
@@ -98,10 +193,10 @@ ${recentConversation}
 - 3つとも完全に異なるアプローチとトーン
 - ユーザーの性格・口調を反映
 - 会話を自然に発展させる内容
-- ${character.name}との関係性に適した親しみ度
+- {{char}}との関係性に適した親しみ度
 
 【禁止語】
-「そうなんですね」「なるほど」「詳しく聞かせて」「${character.name}さんらしい答えですね」
+「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」
 
 【出力例】
 [
@@ -119,102 +214,164 @@ JSON配列のみを出力してください。例：
 ]
 `;
 
-    const requestPayload: any = {
-      contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
-      generationConfig: {
-        temperature: 1.8, // 多様性を大幅向上
-        topP: 0.95,
-        topK: 80, // より広い語彙選択
-        maxOutputTokens: 400,
-        candidateCount: 3
-      }
-    };
+      if (provider === 'openrouter') {
+        // OpenRouter APIを使用
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3003',
+            'X-Title': 'AI Chat App'
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              { role: 'user', content: inspirationPrompt }
+            ],
+            temperature: 1.8,
+            max_tokens: 400,
+            n: 3
+          })
+        });
 
-    const result = await model.generateContent(requestPayload);
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}`);
+        }
 
-    // Gemini SDK は result.response.candidates に Content オブジェクト配列を返す
-    let candidates: string[] = [];
-    try {
-      const res: any = result.response as any;
-      if (res?.candidates) {
-        candidates = res.candidates
-          .map((cand: any) => cand.content?.parts?.[0]?.text || '')
-          .map((c: string) => c.trim())
-          .filter((c: string) => c.length > 0);
-      }
-    } catch (e) {
-      console.warn('candidate parse error', e);
-    }
+        const data = await response.json();
+        const candidates = data.choices
+          ?.map((choice: any) => choice.message?.content?.trim())
+          .filter((c: string) => c && c.length > 0) || [];
 
-    if (candidates.length === 0) {
-      // 動的フォールバック生成（従来ロジック）
-      const dynamicFallbackPrompt = `${character.name}というキャラクターとの会話で、ユーザーが使いそうな自然な返事を3つ、それぞれ50-70文字で作成してください。
+        return NextResponse.json({
+          success: true,
+          candidates: candidates
+        });
+      } else {
+        // Gemini APIを使用
+        const genAI = getGenAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        const requestPayload: any = {
+          contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
+          generationConfig: {
+            temperature: 1.8,
+            topP: 0.95,
+            topK: 80,
+            maxOutputTokens: 400,
+            candidateCount: 3
+          }
+        };
+
+        const result = await model.generateContent(requestPayload);
+
+        let candidates: string[] = [];
+        try {
+          const res: any = result.response as any;
+          if (res?.candidates) {
+            candidates = res.candidates
+              .map((cand: any) => cand.content?.parts?.[0]?.text || '')
+              .map((c: string) => c.trim())
+              .filter((c: string) => c.length > 0);
+          }
+        } catch (e) {
+          console.warn('candidate parse error', e);
+        }
+
+        if (candidates.length === 0) {
+          // 動的フォールバック生成
+          const dynamicFallbackPrompt = `{{char}}というキャラクターとの会話で、ユーザーが使いそうな自然な返事を3つ、それぞれ50-70文字で作成してください。
 
 【禁止語】「そうなんですね」「なるほど」「詳しく聞かせて」
 
-キャラクター: ${character.name}
+キャラクター: {{char}}
 最新発言: "${lastCharacterMessage || '始めまして！'}"
 
 候補1: [返事1]
 候補2: [返事2] 
 候補3: [返事3]`;
 
-      try {
-        const fallbackResult = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: dynamicFallbackPrompt }] }],
-          generationConfig: {
-            temperature: 0.9,
-            topP: 0.9,
-            maxOutputTokens: 300,
+          try {
+            if (provider === 'openrouter') {
+              const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${apiKey}`,
+                  'Content-Type': 'application/json',
+                  'HTTP-Referer': 'http://localhost:3003',
+                  'X-Title': 'AI Chat App'
+                },
+                body: JSON.stringify({
+                  model: modelName,
+                  messages: [
+                    { role: 'user', content: dynamicFallbackPrompt }
+                  ],
+                  temperature: 0.9,
+                  max_tokens: 300
+                })
+              });
+
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                const fallbackText = fallbackData.choices[0]?.message?.content || '';
+                const fallbackCandidates = fallbackText
+                  .split(/候補[123]:\s*/)
+                  .slice(1)
+                  .map(candidate => candidate.trim())
+                  .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
+                  .map(candidate => candidate.replace(/^「|」$/g, ''))
+                  .filter(candidate => candidate.length > 0);
+
+                if (fallbackCandidates.length > 0) {
+                  return NextResponse.json({
+                    success: true,
+                    candidates: fallbackCandidates.slice(0, 3)
+                  });
+                }
+              }
+            } else {
+              const fallbackResult = await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: dynamicFallbackPrompt }] }],
+                generationConfig: {
+                  temperature: 0.9,
+                  topP: 0.9,
+                  maxOutputTokens: 300,
+                }
+              });
+
+              const fallbackText = fallbackResult.response.text();
+              const fallbackCandidates = fallbackText
+                .split(/候補[123]:\s*/)
+                .slice(1)
+                .map(candidate => candidate.trim())
+                .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
+                .map(candidate => candidate.replace(/^「|」$/g, ''))
+                .filter(candidate => candidate.length > 0);
+
+              if (fallbackCandidates.length > 0) {
+                return NextResponse.json({
+                  success: true,
+                  candidates: fallbackCandidates.slice(0, 3)
+                });
+              }
+            }
+          } catch (fallbackError) {
+            console.warn('Dynamic fallback failed:', fallbackError);
           }
-        });
-
-        const fallbackText = fallbackResult.response.text();
-        const fallbackCandidates = fallbackText
-          .split(/候補[123]:\s*/)
-          .slice(1)
-          .map(candidate => candidate.trim())
-          .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
-          .map(candidate => candidate.replace(/^「|」$/g, ''))
-          .filter(candidate => candidate.length > 0);
-
-        if (fallbackCandidates.length > 0) {
-          return NextResponse.json({
-            success: true,
-            candidates: fallbackCandidates.slice(0, 3)
-          });
         }
-      } catch (fallbackError) {
-        console.warn('Dynamic fallback failed:', fallbackError);
+
+        return NextResponse.json({
+          success: true,
+          candidates: candidates
+        });
       }
-
-      // 最終フォールバック（多様化された静的候補）
-      const staticFallbackCandidates = lastCharacterMessage.length > 0 ? [
-        `そうなんですね！${character.name}さんの考え方、とても興味深いです`,
-        `なるほど、そういう風に思っていらっしゃるんですね`,
-        `${character.name}さんらしい答えですね！もう少し詳しく聞かせてください`
-      ] : [
-        `${character.name}さん、こんにちは！今日はどんなお話をしましょうか？`,
-        `初めまして！${character.name}さんとお話しできて嬉しいです`,
-        `よろしくお願いします。${character.name}さんのことをもっと知りたいです`
-      ];
-      
-      return NextResponse.json({
-        success: true,
-        candidates: staticFallbackCandidates
-      });
     }
-
-    return NextResponse.json({
-      success: true,
-      candidates: candidates.slice(0, 3) // 最大3つまで
-    });
-
   } catch (error) {
     console.error('User inspiration error:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to generate user inspiration' 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
   }
 } 

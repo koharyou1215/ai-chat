@@ -103,50 +103,54 @@ export default function CharacterSelector({
         </button>
 
         {isExpanded && (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {characters.map((character, idx) => {
-              const isSelected = currentCharacter?.name === character.name;
-              
-              return (
-                <div
-                  key={`${character.name}-${idx}`}
-                  onClick={() => onSelectCharacter(character)}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-blue-500/30 border border-blue-400/50'
-                      : 'bg-white/5 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
-                    {character.avatar_url ? (
-                      <img
-                        src={character.avatar_url}
-                        alt={character.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <User size={20} className="text-white" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h5 className="text-white font-medium truncate">{character.name}</h5>
-                      {character.tags.includes('お気に入り') && (
-                        <Star size={14} className="text-yellow-400 flex-shrink-0" />
-                      )}
+          <div className="max-h-80 overflow-y-auto">
+            {/* グリッド表示 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+              {characters.slice(0, 6).map((character, idx) => {
+                const isSelected = currentCharacter?.name === character.name;
+                
+                return (
+                  <div
+                    key={`${character.name}-${idx}`}
+                    onClick={() => onSelectCharacter(character)}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-blue-500/30 border border-blue-400/50'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
+                        {character.avatar_url ? (
+                          <img
+                            src={character.avatar_url}
+                            alt={character.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User size={16} className="text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <h5 className="text-white font-medium text-sm truncate">{character.name}</h5>
+                          {character.tags.includes('お気に入り') && (
+                            <Star size={12} className="text-yellow-400 flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-white/60 text-xs truncate">
+                          {character.occupation || character.tags[0] || 'キャラクター'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-white/60 text-xs truncate">
-                      {character.occupation || character.tags[0] || 'キャラクター'}
-                    </p>
                     
                     {/* タグ */}
                     {character.tags.length > 0 && (
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 flex-wrap">
                         {character.tags.slice(0, 2).map((tag, index) => (
                           <span
                             key={index}
-                            className="bg-white/20 text-white/70 px-2 py-0.5 rounded text-xs"
+                            className="bg-white/20 text-white/70 px-1.5 py-0.5 rounded text-xs"
                           >
                             {tag}
                           </span>
@@ -159,33 +163,79 @@ export default function CharacterSelector({
                       </div>
                     )}
                   </div>
+                );
+              })}
+            </div>
+            
+            {/* 残りのキャラクター（リスト表示） */}
+            {characters.length > 6 && (
+              <div className="space-y-2 border-t border-white/10 pt-4">
+                <h4 className="text-white/70 text-sm font-medium mb-2">その他のキャラクター</h4>
+                {characters.slice(6).map((character, idx) => {
+                  const isSelected = currentCharacter?.name === character.name;
+                  
+                  return (
+                    <div
+                      key={`${character.name}-${idx + 6}`}
+                      onClick={() => onSelectCharacter(character)}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-blue-500/30 border border-blue-400/50'
+                          : 'bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center flex-shrink-0">
+                        {character.avatar_url ? (
+                          <img
+                            src={character.avatar_url}
+                            alt={character.name}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User size={20} className="text-white" />
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-white font-medium truncate">{character.name}</h5>
+                          {character.tags.includes('お気に入り') && (
+                            <Star size={14} className="text-yellow-400 flex-shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-white/60 text-xs truncate">
+                          {character.occupation || character.tags[0] || 'キャラクター'}
+                        </p>
+                      </div>
 
-                  {/* アクションボタン */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditCharacter(character);
-                      }}
-                      className="text-white/50 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
-                      title="編集"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteCharacter(character);
-                      }}
-                      className="text-white/50 hover:text-red-300 p-1 rounded hover:bg-white/10 transition-colors"
-                      title="削除"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      {/* アクションボタン */}
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditCharacter(character);
+                          }}
+                          className="text-white/50 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
+                          title="編集"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteCharacter(character);
+                          }}
+                          className="text-white/50 hover:text-red-300 p-1 rounded hover:bg-white/10 transition-colors"
+                          title="削除"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             
             {characters.length === 0 && (
               <div className="text-white/50 text-center py-4 text-sm">

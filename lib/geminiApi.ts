@@ -59,13 +59,13 @@ export class GeminiService {
     
     // character_definition が無い（旧形式のキャラ or 不完全データ）の場合は簡易プロンプトにフォールバック
     if (!character_definition) {
-      return `あなたは「${character.name}」として振る舞ってください。ユーザーと自然に会話し、キャラクターとして一貫性を保ってください。`;
+      return `あなたは「{{char}}」として振る舞ってください。ユーザーと自然に会話し、キャラクターとして一貫性を保ってください。`;
     }
 
-    let prompt = `あなたは「${character.name}」として振る舞ってください。
+    let prompt = `あなたは「{{char}}」として振る舞ってください。
 
 ## キャラクター設定
-**名前**: ${character.name}
+**名前**: {{char}}
 **性格**: ${character_definition!.personality.summary}
 **外面的性格**: ${character_definition!.personality.external}
 **内面的性格**: ${character_definition!.personality.internal}
@@ -96,7 +96,7 @@ export class GeminiService {
     }
 
     prompt += `\n\n## 重要な指示
-- 必ず${character.name}として一貫して振る舞ってください
+- 必ず{{char}}として一貫して振る舞ってください
 - 設定された性格や話し方を守ってください
 - 自然で魅力的な会話を心がけてください
 - 状況に応じて感情豊かに反応してください`;
@@ -126,7 +126,7 @@ export class GeminiService {
 
     // character_definition がない場合のフォールバック
     if (!appearance) {
-      return baseImagePrompt || `${character.name}, best quality, master piece`;
+      return baseImagePrompt || `{{char}}, best quality, master piece`;
     }
 
     const basePrompt = baseImagePrompt || `

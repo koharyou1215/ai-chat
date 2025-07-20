@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       basePrompt = `あなたは{{char}}です。以下の設定に従って{{char}}として行動してください。
 
 【キャラクター設定】
-{{char}}の名前: ${character.name}
+{{char}}の名前: {{char}}
 {{char}}の性格: ${character.personality}
 {{char}}の外見: ${character.appearance}
 {{char}}の話し方: ${character.speaking_style}
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.map((ex: ExampleDialogue) => `{{user}}: ${ex.user}\n{{char}}: ${ex.char}`).join('\n\n')}` : ''}
 
 上記の設定を厳密に守り、{{char}}として一貫した返答をしてください。
-{{user}}は会話相手を指します。{{char}}は${character.name}を指します。`;
+{{user}}は会話相手を指します。{{char}}は{{char}}を指します。`;
     } else {
       // 完全なフォールバック
       basePrompt = `あなたは{{char}}（ナミ）という名前の航海士です。明るく親しみやすい関西弁で話してください。{{user}}は会話相手を指します。`;

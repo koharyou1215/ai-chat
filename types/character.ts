@@ -116,6 +116,7 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   characterId: string;
+  character?: Character; // キャラクター情報全体を保存
   messages: ChatMessage[];
   title: string;
   createdAt: number;
@@ -201,4 +202,8 @@ export interface AppSettings {
   openRouterApiKey: string;
   /** 生成候補数 (1-5 推奨) */
   candidateCount: number;
+  /** 電球（インスピレーション）プロンプト */
+  inspirationPrompt?: string;
+  /** キラキラ（文章強化）プロンプト */
+  enhancementPrompt?: string;
 } 
