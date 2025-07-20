@@ -21,6 +21,7 @@ import CharacterImportExport from '../../components/CharacterImportExport';
 import { MessageMemoButton, MemoListButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
 import EnhancedImpressionModal from '../../components/EnhancedImpressionModal';
+import ChatHistoryGallery from '../../components/ChatHistoryGallery';
 import ThemeModal from '../../components/ThemeModal';
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
@@ -114,6 +115,7 @@ export default function ChatPage() {
   const [isEnhancedImpressionOpen, setIsEnhancedImpressionOpen] = useState(false);
   const [currentImpressions, setCurrentImpressions] = useState<any[]>([]);
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
 
   const { memos } = useChatStore();
 
@@ -1191,10 +1193,18 @@ export default function ChatPage() {
                   {sessions.length}
                 </span>
               </h2>
-              <button
-                onClick={() => {
-                  console.log('新しいチャット開始');
-                  setCurrentSessionId(null);
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setIsChatHistoryOpen(true)}
+                  className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  title="履歴ギャラリー"
+                >
+                  <Grid size={16} />
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('新しいチャット開始');
+                    setCurrentSessionId(null);
                   
                   // 音声再生を停止
                   VoiceManager.stopAudio();
@@ -1221,6 +1231,7 @@ export default function ChatPage() {
               >
                 <Plus size={16} />
               </button>
+              </div>
             </div>
           </div>
           
@@ -1780,6 +1791,41 @@ export default function ChatPage() {
             setIsImportExportOpen(true);
           }}
           onClose={() => setIsCharacterGalleryOpen(false)}
+        />
+      )}
+
+      {/* チャット履歴ギャラリー */}
+      {isChatHistoryOpen && (
+        <ChatHistoryGallery
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          onSelectSession={(sessionId) => {
+            if (sessionId === 'new') {
+              setCurrentSessionId(null);
+              if (currentCharacter) {
+                const firstMessage = Array.isArray(currentCharacter.first_message) 
+                  ? currentCharacter.first_message.join('\n') 
+                  : (currentCharacter.first_message || 'こんにちは！');
+                
+                setMessages([{
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: firstMessage,
+                  timestamp: Date.now()
+                }]);
+              }
+            } else {
+              historyManager.loadSession(sessionId).then(loadedSession => {
+                if (loadedSession) {
+                  setMessages(loadedSession.messages);
+                  setCurrentSessionId(sessionId);
+                }
+              });
+            }
+            setIsChatHistoryOpen(false);
+          }}
+          onDeleteSession={handleDeleteSession}
+          onClose={() => setIsChatHistoryOpen(false)}
         />
       )}
 
