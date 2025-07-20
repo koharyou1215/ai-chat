@@ -169,65 +169,65 @@ ${text}
 JSON形式以外は出力しないでください。`;
 
       const result = await model.generateContent(detailedPrompt);
-      const response = await result.response;
-      const responseText = response.text();
+    const response = await result.response;
+    const responseText = response.text();
 
-      try {
-        const data = JSON.parse(responseText);
-        
-        // 各バージョンの文字数を計算
-        const enhancedVersionsWithStats = data.enhancedVersions.map((version: { content: string; [key: string]: unknown }) => ({
-          ...version,
-          originalLength: text.length,
-          enhancedLength: version.content.length,
-          improvementRatio: Math.round((version.content.length / text.length) * 100)
-        }));
+    try {
+      const data = JSON.parse(responseText);
+      
+      // 各バージョンの文字数を計算
+      const enhancedVersionsWithStats = data.enhancedVersions.map((version: { content: string; [key: string]: unknown }) => ({
+        ...version,
+        originalLength: text.length,
+        enhancedLength: version.content.length,
+        improvementRatio: Math.round((version.content.length / text.length) * 100)
+      }));
 
-        return NextResponse.json({
-          success: true,
-          originalText: text,
-          enhancedVersions: enhancedVersionsWithStats
-        });
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
+      return NextResponse.json({
+        success: true,
+        originalText: text,
+        enhancedVersions: enhancedVersionsWithStats
+      });
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
         console.error('Raw response:', responseText);
-        
-        // フォールバック: 基本的な強化を生成
-        const fallbackVersions = [
-          {
-            title: "感情重視版",
-            content: `${text} この気持ちを大切にしたいと思います。`,
-            description: "感情表現を豊かにしたバージョン",
-            improvements: ["感情の具体化", "共感の表現"],
-            originalLength: text.length,
-            enhancedLength: text.length + 15,
-            improvementRatio: Math.round(((text.length + 15) / text.length) * 100)
-          },
-          {
-            title: "詳細描写版",
-            content: `現在の状況を考えると、${text} ということがより明確になります。`,
-            description: "状況やBackgroundを詳しく説明したバージョン", 
-            improvements: ["状況の具体化", "Backgroundの説明"],
-            originalLength: text.length,
-            enhancedLength: text.length + 25,
-            improvementRatio: Math.round(((text.length + 25) / text.length) * 100)
-          },
-          {
-            title: "個性表現版",
-            content: `${text} これは私らしい考え方だと思います。`,
-            description: "キャラクターの個性を活かしたバージョン",
-            improvements: ["性格の反映", "個性の表現"],
-            originalLength: text.length,
-            enhancedLength: text.length + 20,
-            improvementRatio: Math.round(((text.length + 20) / text.length) * 100)
-          }
-        ];
+      
+      // フォールバック: 基本的な強化を生成
+      const fallbackVersions = [
+        {
+          title: "感情重視版",
+          content: `${text} この気持ちを大切にしたいと思います。`,
+          description: "感情表現を豊かにしたバージョン",
+          improvements: ["感情の具体化", "共感の表現"],
+          originalLength: text.length,
+          enhancedLength: text.length + 15,
+          improvementRatio: Math.round(((text.length + 15) / text.length) * 100)
+        },
+        {
+          title: "詳細描写版",
+          content: `現在の状況を考えると、${text} ということがより明確になります。`,
+          description: "状況やBackgroundを詳しく説明したバージョン", 
+          improvements: ["状況の具体化", "Backgroundの説明"],
+          originalLength: text.length,
+          enhancedLength: text.length + 25,
+          improvementRatio: Math.round(((text.length + 25) / text.length) * 100)
+        },
+        {
+          title: "個性表現版",
+          content: `${text} これは私らしい考え方だと思います。`,
+          description: "キャラクターの個性を活かしたバージョン",
+          improvements: ["性格の反映", "個性の表現"],
+          originalLength: text.length,
+          enhancedLength: text.length + 20,
+          improvementRatio: Math.round(((text.length + 20) / text.length) * 100)
+        }
+      ];
 
-        return NextResponse.json({
-          success: true,
-          originalText: text,
-          enhancedVersions: fallbackVersions
-        });
+      return NextResponse.json({
+        success: true,
+        originalText: text,
+        enhancedVersions: fallbackVersions
+      });
       }
     }
   } catch (error) {

@@ -2,7 +2,6 @@
 
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { M_PLUS_Rounded_1c } from "next/font/google";
 import "./globals.css";
 import CharacterGallery from "../components/CharacterGallery";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -25,7 +24,6 @@ import PersonaSelector from "../components/PersonaSelector";
 
 const GeistSansVariable = GeistSans.variable;
 const GeistMonoVariable = GeistMono.variable;
-const m_PLUS_Rounded_1c = M_PLUS_Rounded_1c({ subsets: ["latin"], weight: "400", variable: "--font-m-plus-rounded-1c" });
 
 export default function RootLayout({
   children,
@@ -82,24 +80,24 @@ export default function RootLayout({
   }, [sidebarOpen]);
 
   return (
-    <html lang="ja" className={`h-full ${GeistSansVariable} ${GeistMonoVariable} ${m_PLUS_Rounded_1c.variable}`}>
+    <html lang="ja" className={`h-full ${GeistSansVariable} ${GeistMonoVariable}`}>
       <head>
         {/* メタデータはsrc/app/metadata.tsに移動 */}
       </head>
       <body className="h-full overflow-hidden">
         <ChatMemoProvider>
           <div className="flex h-full w-full bg-black relative">
-            <video
+        <video
               ref={videoRef}
               className="absolute inset-0 w-full h-full object-cover z-0 opacity-50"
-              src="/bg.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
+          src="/bg.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
               // @ts-expect-error
-              webkit-playsinline="true"
+          webkit-playsinline="true"
               onError={handleVideoError}
             >
               <source src="/bg.mp4" type="video/mp4" />
@@ -151,7 +149,7 @@ export default function RootLayout({
             </div>
 
             <main className="flex-grow relative z-10 flex flex-col bg-gray-800 bg-opacity-40 backdrop-blur-sm">
-              {children}
+        {children}
             </main>
 
             {/* Modals */}
