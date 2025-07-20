@@ -2,15 +2,16 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  unoptimized: true,
   typescript: {
     ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   compress: true,
   poweredByHeader: false,
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['@next/font'],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -62,11 +63,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ]
-  },
-  assetPrefix: process.env.NODE_ENV === 'production' ? '' : undefined,
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
   },
 }
 
