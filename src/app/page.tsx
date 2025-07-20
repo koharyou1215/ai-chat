@@ -215,6 +215,7 @@ export default function ChatPage() {
         );
         setTouchGestureManager(gestureManager);
       }
+
       // 設定を読み込み
       try {
         const savedSettings = localStorage.getItem('ai-chat-settings');
@@ -260,37 +261,71 @@ export default function ChatPage() {
         console.error('Persona読み込みエラー:', error);
       }
       
-      const character = CharacterLoader.getCharacterByName('ナミ');
-      if (character) {
-        setCurrentCharacter(character);
-        
-        // 履歴を読み込み
-        try {
-          await historyManager.init();
-          const allSessions = await historyManager.getAllSessions();
-          setSessions(allSessions);
-        } catch (error) {
-          console.error('履歴読み込みエラー:', error);
+      // 履歴を読み込み
+      try {
+        await historyManager.init();
+        const allSessions = await historyManager.getAllSessions();
+        setSessions(allSessions);
+      } catch (error) {
+        console.error('履歴読み込みエラー:', error);
+      }
+
+      // 最後のセッションとキャラクターを復元
+      try {
+        const lastSession = sessions[0]; // 最新のセッション
+        if (lastSession) {
+          // 最後のセッションのキャラクターを復元
+          const lastCharacter = allCharacters.find(c => c.name === lastSession.characterId);
+          if (lastCharacter) {
+            setCurrentCharacter(lastCharacter);
+            setCurrentSessionId(lastSession.id);
+            setMessages(lastSession.messages);
+            console.log('最後のセッションを復元:', lastSession.title, 'キャラクター:', lastCharacter.name);
+          } else {
+            // キャラクターが見つからない場合はデフォルト
+            const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+            if (defaultCharacter) {
+              setCurrentCharacter(defaultCharacter);
+              setInitialMessage(defaultCharacter);
+            }
+          }
+        } else {
+          // セッションがない場合はデフォルトキャラクター
+          const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+          if (defaultCharacter) {
+            setCurrentCharacter(defaultCharacter);
+            setInitialMessage(defaultCharacter);
+          }
         }
-        
-        // 初期メッセージを設定
-        const firstMessage = Array.isArray(character.first_message) 
-          ? character.first_message.join('\n') 
-          : (character.first_message || 'こんにちは！');
-          
-        console.log('初回メッセージ設定:', firstMessage);
-        
-        setMessages([{
-          id: '1',
-          role: 'assistant',
-          content: firstMessage,
-          timestamp: Date.now()
-        }]);
+      } catch (error) {
+        console.error('セッション復元エラー:', error);
+        // エラー時はデフォルトキャラクター
+        const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+        if (defaultCharacter) {
+          setCurrentCharacter(defaultCharacter);
+          setInitialMessage(defaultCharacter);
+        }
       }
     };
     
     initializeApp();
   }, []);
+
+  // 初期メッセージ設定のヘルパー関数
+  const setInitialMessage = (character: Character) => {
+    const firstMessage = Array.isArray(character.first_message) 
+      ? character.first_message.join('\n') 
+      : (character.first_message || 'こんにちは！');
+      
+    console.log('初期メッセージ設定:', firstMessage);
+    
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: firstMessage,
+      timestamp: Date.now()
+    }]);
+  };
 
   // タッチジェスチャーをDOM要素にアタッチ
   useEffect(() => {
@@ -1338,12 +1373,15 @@ export default function ChatPage() {
                            volume: settings.voiceVolume,
                          }}
                        />
-                       <MessageMemoButton 
-                         messageId={msg.id}
-                         messageContent={msg.content}
-                         sessionId={currentSessionId || 'temp'}
-                         characterId={currentCharacter?.name || 'unknown'}
-                       />
+                       {/* デスクトップ用メモボタン */}
+                       <div className="hidden md:block">
+                         <MessageMemoButton 
+                           messageId={msg.id}
+                           messageContent={msg.content}
+                           sessionId={currentSessionId || 'temp'}
+                           characterId={currentCharacter?.name || 'unknown'}
+                         />
+                       </div>
                        <button 
                          onClick={() => handleRegenerate()}
                          disabled={isLoading}
@@ -1417,9 +1455,13 @@ export default function ChatPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="メッセージを入力..."
-                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] max-h-64 text-base"
-                rows={isInputExpanded ? 4 : 1}
-                style={{ fontSize: '16px' }}
+                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] text-base"
+                rows={isInputExpanded ? (window.innerWidth < 768 ? 8 : 4) : 1}
+                style={{ 
+                  fontSize: '16px',
+                  maxHeight: isInputExpanded ? (window.innerWidth < 768 ? '320px' : '256px') : '44px',
+                  transition: 'max-height 0.3s ease-in-out'
+                }}
               />
               <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
                 <button
@@ -1429,22 +1471,7 @@ export default function ChatPage() {
                 >
                   {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
                 </button>
-                <button
-                  onClick={handleUserInspiration}
-                  disabled={isLoadingUserInspiration || !currentCharacter}
-                  className="touch-target text-yellow-400 hover:text-yellow-300 p-2 rounded-full transition-colors disabled:opacity-50"
-                  title="返信候補を提案"
-                >
-                  {isLoadingUserInspiration ? <Loader size={16} className="animate-spin" /> : '💡'}
-                </button>
-                <button
-                  onClick={handleUserTextEnhancement}
-                  disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
-                  className="touch-target text-purple-400 hover:text-purple-300 p-2 rounded-full transition-colors disabled:opacity-50"
-                  title="文章を強化"
-                >
-                  {isEnhancingUserText ? <Loader size={16} className="animate-spin" /> : '✨'}
-                </button>
+
                 <button
                   onClick={handleSend}
                   disabled={!message.trim() || isLoading}
@@ -1455,65 +1482,122 @@ export default function ChatPage() {
               </div>
             </div>
             
-            <div className="flex justify-center mt-2 gap-2">
-              <VoiceToggle
-                enabled={settings.voiceEnabled}
-                onToggle={(enabled) => {
-                  const newSettings = { ...settings, voiceEnabled: enabled };
+            <div className="flex justify-center mt-2 gap-1">
+              {/* 音声オン/オフ */}
+              <button
+                onClick={() => {
+                  const newSettings = { ...settings, voiceEnabled: !settings.voiceEnabled };
                   setSettings(newSettings);
                   localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
                   
-                  // APIキーを設定
-                  if (enabled && newSettings.elevenLabsApiKey) {
+                  if (newSettings.voiceEnabled && newSettings.elevenLabsApiKey) {
                     VoiceManager.setApiKey(newSettings.elevenLabsApiKey);
                   }
                 }}
-              />
+                className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.voiceEnabled ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
+                title={settings.voiceEnabled ? '音声OFF' : '音声ON'}
+              >
+                {settings.voiceEnabled ? '🔊' : '🔇'}
+              </button>
+              
+              {/* 画像生成 */}
               <button
                 onClick={() => {
                   const newSettings = { ...settings, enableImageGeneration: !settings.enableImageGeneration };
                   setSettings(newSettings);
                   localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
                 }}
-                className={`text-xs px-3 py-1 rounded-full backdrop-blur-sm transition-colors ${settings.enableImageGeneration ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
-                title={settings.enableImageGeneration ? '画像生成を無効化' : '画像生成を有効化'}
+                className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.enableImageGeneration ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
+                title={settings.enableImageGeneration ? '画像生成OFF' : '画像生成ON'}
               >
-                🖼 {settings.enableImageGeneration ? '画像ON' : '画像OFF'}
+                {settings.enableImageGeneration ? '🖼️' : '📷'}
               </button>
-              <MemoListButton currentCharacterId={currentCharacter?.name} />
+              
+              {/* メモ一覧 */}
+              <button
+                onClick={() => {
+                  // MemoListButtonの機能を直接実行
+                  const memoListButton = document.querySelector('[data-memo-list-button]') as HTMLButtonElement;
+                  if (memoListButton) memoListButton.click();
+                }}
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
+                title="メモ一覧"
+              >
+                📝
+              </button>
+              
+              {/* 要約 */}
               <button 
                 onClick={handleGenerateSummary}
                 disabled={isLoading || messages.length < 3}
-                className="text-white/70 hover:text-white text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
                 title="会話要約を生成"
               >
-                <FileText size={12} />
-                要約
+                📋
               </button>
+              
+              {/* 再生成 */}
               <button 
                 onClick={handleRegenerate}
                 disabled={isLoading || messages.length === 0}
-                className="text-white/70 hover:text-white text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
+                title="再生成"
               >
-                <RefreshCw size={12} />
-                再生成
+                🔄
               </button>
+              
+              {/* 会話リセット */}
               <button 
                 onClick={handleReset}
-                className="text-white/70 hover:text-white text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm transition-colors flex items-center gap-1"
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
+                title="会話リセット"
               >
-                <Trash2 size={12} />
-                会話リセット
+                🗑️
               </button>
+              
+              {/* 続き */}
               <button 
                 onClick={handleContinue}
                 disabled={isLoading || messages.length === 0}
-                className="text-white/70 hover:text-white text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 flex items-center gap-1"
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
                 title="続きを生成"
               >
-                <Play size={12} />
-                続き
+                ▶️
               </button>
+              
+              {/* 電球（インスピレーション） */}
+              <button
+                onClick={handleUserInspiration}
+                disabled={isLoadingUserInspiration || !currentCharacter}
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-yellow-400 hover:text-yellow-300"
+                title="返信候補を提案"
+              >
+                💡
+              </button>
+              
+              {/* キラキラ（文章強化） */}
+              <button
+                onClick={handleUserTextEnhancement}
+                disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-purple-400 hover:text-purple-300"
+                title="文章を強化"
+              >
+                ✨
+              </button>
+              
+              {/* アスタリスクボタン */}
+              <button
+                onClick={() => setMessage(prev => prev + '*')}
+                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
+                title="アスタリスクを追加"
+              >
+                *
+              </button>
+              
+              {/* 非表示のMemoListButton（機能用） */}
+              <div className="hidden">
+                <MemoListButton currentCharacterId={currentCharacter?.name} />
+              </div>
             </div>
           </div>
         </div>

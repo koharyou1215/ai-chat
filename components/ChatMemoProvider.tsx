@@ -85,6 +85,7 @@ export function MemoListButton({ currentCharacterId }: { currentCharacterId?: st
         onClick={() => setIsMemoListOpen(true)}
         className="text-white/70 hover:text-white text-xs px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm transition-colors flex items-center gap-1"
         title="メモ一覧"
+        data-memo-list-button="true"
       >
         <BookOpen size={12} />
         メモ一覧 ({memos.length})
