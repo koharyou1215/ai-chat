@@ -1,9 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
+  trailingSlash: true,
   images: {
     unoptimized: true,
   },
@@ -16,6 +14,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
 }
 
 export default nextConfig
