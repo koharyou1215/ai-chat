@@ -40,6 +40,11 @@ export const metadata: Metadata = {
     email: false,
     address: false,
   },
+  // デプロイ時の安定性向上
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -63,8 +68,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cuteFont.variable} antialiased`}
         suppressHydrationWarning
       >
-        {/* 全画面Background
-動画 (public/bg.mp4) */}
+        {/* 全画面Background動画 (public/bg.mp4) */}
         <video
           className="fixed inset-0 -z-10 w-full h-full object-contain"
           src="/bg.mp4"
@@ -74,6 +78,10 @@ export default function RootLayout({
           playsInline
           preload="auto"
           webkit-playsinline="true"
+          onError={() => {
+            // ビデオ読み込みエラー時の処理
+            console.log('Background video failed to load');
+          }}
         />
         {children}
         

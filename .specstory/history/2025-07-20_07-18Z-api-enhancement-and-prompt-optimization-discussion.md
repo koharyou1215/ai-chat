@@ -7085,3 +7085,87 @@ UIの問題が解決され、アプリケーションが正常に動作するは
 
 ---
 
+_**User**_
+
+デプロイでするとなんか画面がおかしくなるんですよね。ローカルでは表示されるんですけど。
+
+---
+
+_**Assistant**_
+
+デプロイ時に画面がおかしくなる問題ですね！これはよくある問題です。ローカルとデプロイ環境の違いが原因です。
+
+## デプロイ時の画面表示問題を解決
+
+まず、現在のデプロイ状況を確認しましょう：
+
+
+---
+
+```bash
+git status
+```
+
+```
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat> git status
+On branch main
+
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat>
+```
+
+---
+
+```bash
+git log --oneline -3
+```
+
+```
+PS C:\Users\kohar\Desktop\新しいフォルダー\ai-chat> git log --oneline -3
+3755b2d (HEAD -> main, origin/main) fix: message
+3755b2d (HEAD -> main, origin/main) fix: message
+3755b2d (HEAD -> main, origin/main) fix: message
+f4c31d4 fix: message
+95250d0 remove: .specstory folder completely
+3755b2d (HEAD -> main, origin/main) fix: message
+3755b2d (HEAD -> main, origin/main) fix: message
+f4c31d4 fix: message
+95250d0 remove: .specstory folder completely
+~
+~
+3755b2d (HEAD -> main, origin/main) fix: message
+f4c31d4 fix: message
+95250d0 remove: .specstory folder completely
+~
+~
+~
+~
+~
+~
+~
+~
+~
+(END)...skipping...
+3755b2d (HEAD -> main, origin/main) fix: message
+f4c31d4 fix: message
+95250d0 remove: .specstory folder completely
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+(END)
+```
+
+---
+
+
+
+---
+
