@@ -26,6 +26,15 @@ const nextConfig = {
   // 本番環境でのパフォーマンス最適化
   compress: true,
   poweredByHeader: false,
+  // デプロイ時の安定性向上
+  swcMinify: true,
+  // 静的ファイルの最適化
+  assetPrefix: isProd ? '' : undefined,
+  // ビルド時の警告を抑制
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
 }
 
 export default nextConfig;

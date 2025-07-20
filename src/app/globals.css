@@ -190,6 +190,50 @@ video[src="/bg.mp4"] {
   }
 }
 
+/* デプロイ時の安定性向上 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 本番環境でのレイアウト安定性 */
+@media (min-width: 1024px) {
+  .theme-sidebar {
+    position: relative !important;
+    transform: none !important;
+  }
+}
+
+/* デプロイ時のフォント読み込み安定性 */
+.font-cute {
+  font-family: var(--font-cute), 'M PLUS Rounded 1c', sans-serif;
+  font-display: swap;
+}
+
+/* サイドバーの安定性向上 */
+.sidebar-open {
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.sidebar-closed {
+  transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+@media (min-width: 768px) {
+  .sidebar-closed {
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
 /* 安全エリア対応 */
 @supports (padding: max(0px)) {
   .safe-area-top {

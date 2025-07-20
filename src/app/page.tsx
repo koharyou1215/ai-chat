@@ -1107,6 +1107,7 @@ export default function ChatPage() {
         ${isSidebarOpen ? 'w-80' : 'w-0'} 
         theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
         ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
+        ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
       `}>
         <div className="min-w-80 flex flex-col h-full">
           {/* タブナビゲーション */}
