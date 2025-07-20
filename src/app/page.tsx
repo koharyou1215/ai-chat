@@ -1454,52 +1454,6 @@ export default function ChatPage() {
               </div>
             )}
           </div>
-
-          <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2 hidden md:block">
-            {/* 電球（インスピレーション）ボタン */}
-            <button
-              onClick={handleUserInspiration}
-              disabled={isLoadingUserInspiration || !currentCharacter}
-              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              title="返信候補を提案"
-            >
-              💡
-              インスピレーション
-            </button>
-            
-            {/* キラキラ（文章強化）ボタン */}
-            <button
-              onClick={handleUserTextEnhancement}
-              disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
-              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              title="文章を強化"
-            >
-              ✨
-              文章強化
-            </button>
-            
-            <button 
-              onClick={() => setIsAuthModalOpen(true)}
-              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
-            >
-              <Cloud size={16} />
-              クラウド同期
-            </button>
-            <button 
-              onClick={() => setIsThemeModalOpen(true)}
-              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
-            >
-              <Palette size={16} />
-              テーマ変更
-            </button>
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-2 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
-            >
-              <Settings size={16} />
-              設定
-            </button>
-          </div>
         </div>
       </div>
 
