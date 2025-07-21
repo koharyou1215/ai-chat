@@ -99,7 +99,7 @@ export default function CharacterSelector({
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full text-left text-white/70 hover:text-white text-sm font-medium transition-colors"
         >
-          {isExpanded ? '▼' : '▶'} すべてのキャラクター ({characters.length})
+          {isExpanded ? '▼' : '▶'} すべてのキャラクター ({(characters || []).length})
         </button>
 
         {isExpanded && (
@@ -168,7 +168,7 @@ export default function CharacterSelector({
             </div>
             
             {/* 残りのキャラクター（リスト表示） */}
-            {characters.length > 6 && (
+            {(characters || []).length > 6 && (
               <div className="space-y-2 border-t border-white/10 pt-4">
                 <h4 className="text-white/70 text-sm font-medium mb-2">その他のキャラクター</h4>
                 {characters.slice(6).map((character, idx) => {
@@ -237,7 +237,7 @@ export default function CharacterSelector({
               </div>
             )}
             
-            {characters.length === 0 && (
+            {(characters || []).length === 0 && (
               <div className="text-white/50 text-center py-4 text-sm">
                 キャラクターがありません
               </div>

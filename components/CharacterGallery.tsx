@@ -76,7 +76,7 @@ export default function CharacterGallery({
               <User size={28} />
               キャラクターギャラリー
             </h2>
-            <span className="text-gray-500">({filteredCharacters.length} / {characters.length})</span>
+            <span className="text-gray-500">({(filteredCharacters || []).length} / {(characters || []).length})</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -137,9 +137,9 @@ export default function CharacterGallery({
                   {tag}
                 </button>
               ))}
-              {allTags.length > 8 && (
+              {(allTags || []).length > 8 && (
                 <span className="text-gray-500 text-sm px-3 py-1">
-                  +{allTags.length - 8} more
+                  +{(allTags || []).length - 8} more
                 </span>
               )}
             </div>
@@ -210,7 +210,7 @@ export default function CharacterGallery({
             </div>
           )}
 
-          {filteredCharacters.length === 0 && (
+          {(filteredCharacters || []).length === 0 && (
             <div className="text-center py-12">
               <User size={64} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">

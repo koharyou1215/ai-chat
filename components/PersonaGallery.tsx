@@ -69,7 +69,7 @@ export default function PersonaGallery({
               <Brain size={28} />
               ペルソナギャラリー
             </h2>
-            <span className="text-gray-500">({filteredPersonas.length} / {personas.length})</span>
+            <span className="text-gray-500">({(filteredPersonas || []).length} / {(personas || []).length})</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export default function PersonaGallery({
             </div>
           )}
 
-          {filteredPersonas.length === 0 && (
+          {(filteredPersonas || []).length === 0 && (
             <div className="text-center py-12">
               <Brain size={64} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">

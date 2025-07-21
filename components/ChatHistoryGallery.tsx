@@ -88,7 +88,7 @@ export default function ChatHistoryGallery({
               <MessageSquare size={28} />
               チャット履歴
             </h2>
-            <span className="text-gray-500">({filteredSessions.length} / {sessions.length})</span>
+            <span className="text-gray-500">({(filteredSessions || []).length} / {(sessions || []).length})</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function ChatHistoryGallery({
             </div>
           )}
 
-          {filteredSessions.length === 0 && (
+          {(filteredSessions || []).length === 0 && (
             <div className="text-center py-12">
               <MessageSquare size={64} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
