@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 // @ts-nocheck
 
-// crypto.randomUUID ポリフィル
+// crypto.randomUUID 繝昴Μ繝輔ぅ繝ｫ
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -18,6 +18,7 @@ import CharacterModal from '../../components/CharacterModal';
 import CharacterSelector from '../../components/CharacterSelector';
 import PersonaModal from '../../components/PersonaModal';
 import PersonaSelector from '../../components/PersonaSelector';
+import NavigationButtons from '../../components/NavigationButtons';
 import { MessageMemoButton, MemoListButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
 import ThemeModal from '../../components/ThemeModal';
@@ -29,8 +30,7 @@ import { loadAllCharactersFromPublic, loadAllPersonasFromPublic } from '../../li
 import { TouchGestureManager, isMobileDevice } from '../../lib/touchGestures';
 import dynamic from 'next/dynamic';
 
-// 動的インポート（初期バンドル削減）
-const CharacterGallery = dynamic(() => import('../../components/CharacterGallery'), { ssr: false });
+// 蜍慕噪繧､繝ｳ繝昴・繝茨ｼ亥・譛溘ヰ繝ｳ繝峨Ν蜑頑ｸ幢ｼ・const CharacterGallery = dynamic(() => import('../../components/CharacterGallery'), { ssr: false });
 const EnhancedImpressionModal = dynamic(() => import('../../components/EnhancedImpressionModal'), { ssr: false });
 const ChatHistoryGallery = dynamic(() => import('../../components/ChatHistoryGallery'), { ssr: false });
 const InspirationModal = dynamic(() => import('../../components/InspirationModal').then(m => m.InspirationModal), { ssr: false });
@@ -99,20 +99,19 @@ export default function ChatPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
 
-  // インスピレーション関連
+  // 繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ髢｢騾｣
   const [showInspiration, setShowInspiration] = useState(false);
   const [inspirationCandidates, setInspirationCandidates] = useState<string[]>([]);
   const [showUserInspiration, setShowUserInspiration] = useState(false);
   const [userInspirationCandidates, setUserInspirationCandidates] = useState<string[]>([]);
   const [isLoadingUserInspiration, setIsLoadingUserInspiration] = useState(false);
 
-  // ユーザー文章強化機能
+  // 繝ｦ繝ｼ繧ｶ繝ｼ譁・ｫ蠑ｷ蛹匁ｩ溯・
   const [isEnhancingUserText, setIsEnhancingUserText] = useState(false);
   
-  // タブ管理
-  const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'settings'>('characters');
+  // 繧ｿ繝也ｮ｡逅・  const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'settings'>('characters');
 
-  // 文章強化機能
+  // 譁・ｫ蠑ｷ蛹匁ｩ溯・
   const [selectedText, setSelectedText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState('');
   const [showEnhanceButton, setShowEnhanceButton] = useState(false);
@@ -125,8 +124,7 @@ export default function ChatPage() {
   } | null>(null);
   const [showEnhancementModal, setShowEnhancementModal] = useState(false);
 
-  // Personaインポート/エクスポート
-  const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
+  // Persona繧､繝ｳ繝昴・繝・繧ｨ繧ｯ繧ｹ繝昴・繝・  const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
   const [isCharacterGalleryOpen, setIsCharacterGalleryOpen] = useState(false);
   const [isEnhancedImpressionOpen, setIsEnhancedImpressionOpen] = useState(false);
   const [currentImpressions, setCurrentImpressions] = useState<ChatImpression[]>([]);
@@ -135,13 +133,11 @@ export default function ChatPage() {
 
   const { memos } = useChatStore();
 
-  // タッチジェスチャー管理
-  const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
+  // 繧ｿ繝・メ繧ｸ繧ｧ繧ｹ繝√Ε繝ｼ邂｡逅・  const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
 
-  // 会話要約生成
-  const handleGenerateSummary = async () => {
+  // 莨夊ｩｱ隕∫ｴ・函謌・  const handleGenerateSummary = async () => {
     if (!currentCharacter || messages.length < 3) {
-      alert('要約するには最低3つのメッセージが必要です');
+      alert('隕∫ｴ・☆繧九↓縺ｯ譛菴・縺､縺ｮ繝｡繝・そ繝ｼ繧ｸ縺悟ｿ・ｦ√〒縺・);
       return;
     }
 
@@ -158,7 +154,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: messages,
           characterName: currentCharacter.name,
-          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'
+          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '譁ｰ縺励＞繝√Ε繝・ヨ' : '譁ｰ縺励＞繝√Ε繝・ヨ'
         }),
       });
 
@@ -167,22 +163,22 @@ export default function ChatPage() {
       if (data.success) {
         setCurrentSummary(data.summary);
       } else {
-        alert('要約の生成に失敗しました: ' + data.error);
+        alert('隕∫ｴ・・逕滓・縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ' + data.error);
         setIsSummaryOpen(false);
       }
     } catch (error) {
       console.error('Summary generation error:', error);
-      alert('要約の生成中にエラーが発生しました');
+      alert('隕∫ｴ・・逕滓・荳ｭ縺ｫ繧ｨ繝ｩ繝ｼ縺檎匱逕溘＠縺ｾ縺励◆');
       setIsSummaryOpen(false);
     } finally {
       setIsGeneratingSummary(false);
     }
   };
 
-  // 強化されたインプレッション生成
+  // 蠑ｷ蛹悶＆繧後◆繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ逕滓・
   const handleGenerateEnhancedImpression = async () => {
     if (!currentCharacter || messages.length < 3) {
-      alert('インプレッション生成には最低3つのメッセージが必要です');
+      alert('繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ逕滓・縺ｫ縺ｯ譛菴・縺､縺ｮ繝｡繝・そ繝ｼ繧ｸ縺悟ｿ・ｦ√〒縺・);
       return;
     }
 
@@ -199,7 +195,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: messages,
           character: currentCharacter,
-          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'
+          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '譁ｰ縺励＞繝√Ε繝・ヨ' : '譁ｰ縺励＞繝√Ε繝・ヨ'
         }),
       });
 
@@ -208,12 +204,12 @@ export default function ChatPage() {
       if (data.success) {
         setCurrentImpressions(data.impressions);
       } else {
-        alert('インプレッションの生成に失敗しました: ' + data.error);
+        alert('繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ縺ｮ逕滓・縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ' + data.error);
         setIsEnhancedImpressionOpen(false);
       }
     } catch (error) {
       console.error('Enhanced impression generation error:', error);
-      alert('インプレッションの生成中にエラーが発生しました');
+      alert('繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ縺ｮ逕滓・荳ｭ縺ｫ繧ｨ繝ｩ繝ｼ縺檎匱逕溘＠縺ｾ縺励◆');
       setIsEnhancedImpressionOpen(false);
     } finally {
       setIsGeneratingImpression(false);
@@ -260,18 +256,15 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
-  // 初期化
-  useEffect(() => {
+  // 蛻晄悄蛹・  useEffect(() => {
     const initializeApp = async () => {
-      // タッチジェスチャー初期化（モバイルデバイスのみ）
-      if (isMobileDevice()) {
+      // 繧ｿ繝・メ繧ｸ繧ｧ繧ｹ繝√Ε繝ｼ蛻晄悄蛹厄ｼ医Δ繝舌う繝ｫ繝・ヰ繧､繧ｹ縺ｮ縺ｿ・・      if (isMobileDevice()) {
         const gestureManager = new TouchGestureManager(
           () => {
-            // 左スワイプ: サイドバーを開く
-            setIsSidebarOpen(true);
+            // 蟾ｦ繧ｹ繝ｯ繧､繝・ 繧ｵ繧､繝峨ヰ繝ｼ繧帝幕縺・            setIsSidebarOpen(true);
           },
           () => {
-            // 右スワイプ: サイドバーを閉じる
+            // 蜿ｳ繧ｹ繝ｯ繧､繝・ 繧ｵ繧､繝峨ヰ繝ｼ繧帝哩縺倥ｋ
             setIsSidebarOpen(false);
           },
           undefined,
@@ -281,72 +274,67 @@ export default function ChatPage() {
         setTouchGestureManager(gestureManager);
       }
 
-      // 設定を読み込み
+      // 險ｭ螳壹ｒ隱ｭ縺ｿ霎ｼ縺ｿ
       try {
         const savedSettings = localStorage.getItem('ai-chat-settings');
         if (savedSettings) {
           const parsedSettings = JSON.parse(savedSettings);
           setSettings(prev => ({ ...prev, ...parsedSettings }));
           
-          // 音声APIキーを設定
-          if (parsedSettings.elevenLabsApiKey) {
-            console.log('ElevenLabs APIキー設定:', parsedSettings.elevenLabsApiKey.substring(0, 10) + '...');
+          // 髻ｳ螢ｰAPI繧ｭ繝ｼ繧定ｨｭ螳・          if (parsedSettings.elevenLabsApiKey) {
+            console.log('ElevenLabs API繧ｭ繝ｼ險ｭ螳・', parsedSettings.elevenLabsApiKey.substring(0, 10) + '...');
             VoiceManager.setApiKey(parsedSettings.elevenLabsApiKey);
           } else {
-            console.log('ElevenLabs APIキーが設定されていません（Web Speech API使用）');
+            console.log('ElevenLabs API繧ｭ繝ｼ縺瑚ｨｭ螳壹＆繧後※縺・∪縺帙ｓ・・eb Speech API菴ｿ逕ｨ・・);
           }
         }
       } catch (error) {
-        console.error('設定読み込みエラー:', error);
+        console.error('險ｭ螳夊ｪｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ:', error);
       }
 
-      // テーマを読み込みと適用
+      // 繝・・繝槭ｒ隱ｭ縺ｿ霎ｼ縺ｿ縺ｨ驕ｩ逕ｨ
       try {
         const themeData = ThemeManager.loadTheme();
         const theme = getThemeById(themeData.themeId) || getDefaultTheme();
         ThemeManager.applyTheme(theme, themeData.customBackground);
       } catch (error) {
-        console.error('テーマ読み込みエラー:', error);
+        console.error('繝・・繝櫁ｪｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ:', error);
       }
 
-      // キャラクターを読み込み（従来 + 自動読み込み）
-      const builtinCharacters = CharacterLoader.getAllCharacters();
+      // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧定ｪｭ縺ｿ霎ｼ縺ｿ・亥ｾ捺擂 + 閾ｪ蜍戊ｪｭ縺ｿ霎ｼ縺ｿ・・      const builtinCharacters = CharacterLoader.getAllCharacters();
       const publicCharacters = await loadAllCharactersFromPublic();
       const allCharacters = [...builtinCharacters, ...publicCharacters];
       setAllCharacters(allCharacters);
       
-      // Personaを読み込み（保存済み + 自動読み込み）
-      try {
+      // Persona繧定ｪｭ縺ｿ霎ｼ縺ｿ・井ｿ晏ｭ俶ｸ医∩ + 閾ｪ蜍戊ｪｭ縺ｿ霎ｼ縺ｿ・・      try {
         const savedPersonas = localStorage.getItem('ai-chat-personas');
         const localPersonas = savedPersonas ? JSON.parse(savedPersonas) : [];
         const publicPersonas = await loadAllPersonasFromPublic();
         const combinedPersonas = [...localPersonas, ...publicPersonas];
         setAllPersonas(combinedPersonas);
       } catch (error) {
-        console.error('Persona読み込みエラー:', error);
+        console.error('Persona隱ｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ:', error);
       }
       
-      // 履歴を読み込み
+      // 螻･豁ｴ繧定ｪｭ縺ｿ霎ｼ縺ｿ
       try {
         await historyManager.init();
         const allSessions = await historyManager.getAllSessions();
         setSessions(allSessions);
       } catch (error) {
-        console.error('履歴読み込みエラー:', error);
+        console.error('螻･豁ｴ隱ｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ:', error);
       }
 
-      // 最後のセッションとキャラクターを復元
-      try {
-        const lastSession = sessions[0]; // 最新のセッション
+      // 譛蠕後・繧ｻ繝・す繝ｧ繝ｳ縺ｨ繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧貞ｾｩ蜈・      try {
+        const lastSession = sessions[0]; // 譛譁ｰ縺ｮ繧ｻ繝・す繝ｧ繝ｳ
         if (lastSession) {
-          // 完全なセッション情報を取得
-          const fullSession = await historyManager.loadSession(lastSession.id);
+          // 螳悟・縺ｪ繧ｻ繝・す繝ｧ繝ｳ諠・ｱ繧貞叙蠕・          const fullSession = await historyManager.loadSession(lastSession.id);
           
           if (fullSession) {
-            // 保存されたキャラクター情報を優先使用
+            // 菫晏ｭ倥＆繧後◆繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ諠・ｱ繧貞━蜈井ｽｿ逕ｨ
             let lastCharacter = fullSession.character;
             
-            // 保存されたキャラクター情報がない場合は、名前で検索
+            // 菫晏ｭ倥＆繧後◆繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ諠・ｱ縺後↑縺・ｴ蜷医・縲∝錐蜑阪〒讀懃ｴ｢
             if (!lastCharacter) {
               lastCharacter = allCharacters.find(c => c.name === fullSession.characterId);
             }
@@ -355,26 +343,24 @@ export default function ChatPage() {
               setCurrentCharacter(lastCharacter);
               setCurrentSessionId(fullSession.id);
               setMessages(fullSession.messages);
-              console.log('最後のセッションを復元:', fullSession.title, 'キャラクター:', lastCharacter.name);
+              console.log('譛蠕後・繧ｻ繝・す繝ｧ繝ｳ繧貞ｾｩ蜈・', fullSession.title, '繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ:', lastCharacter.name);
             } else {
-              // キャラクターが見つからない場合はデフォルト
-              const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+              // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺瑚ｦ九▽縺九ｉ縺ｪ縺・ｴ蜷医・繝・ヵ繧ｩ繝ｫ繝・              const defaultCharacter = CharacterLoader.getCharacterByName('繝翫Α');
               if (defaultCharacter) {
                 setCurrentCharacter(defaultCharacter);
                 setInitialMessage(defaultCharacter);
               }
             }
           } else {
-            // 完全なセッション情報が取得できない場合は名前で検索
+            // 螳悟・縺ｪ繧ｻ繝・す繝ｧ繝ｳ諠・ｱ縺悟叙蠕励〒縺阪↑縺・ｴ蜷医・蜷榊燕縺ｧ讀懃ｴ｢
           const lastCharacter = allCharacters.find(c => c.name === lastSession.characterId);
           if (lastCharacter) {
             setCurrentCharacter(lastCharacter);
             setCurrentSessionId(lastSession.id);
             setMessages(lastSession.messages);
-              console.log('最後のセッションを復元（名前検索）:', lastSession.title, 'キャラクター:', lastCharacter.name);
+              console.log('譛蠕後・繧ｻ繝・す繝ｧ繝ｳ繧貞ｾｩ蜈・ｼ亥錐蜑肴､懃ｴ｢・・', lastSession.title, '繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ:', lastCharacter.name);
           } else {
-            // キャラクターが見つからない場合はデフォルト
-            const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+            // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺瑚ｦ九▽縺九ｉ縺ｪ縺・ｴ蜷医・繝・ヵ繧ｩ繝ｫ繝・            const defaultCharacter = CharacterLoader.getCharacterByName('繝翫Α');
             if (defaultCharacter) {
               setCurrentCharacter(defaultCharacter);
               setInitialMessage(defaultCharacter);
@@ -382,17 +368,17 @@ export default function ChatPage() {
             }
           }
         } else {
-          // セッションがない場合はデフォルトキャラクター
-          const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+          // 繧ｻ繝・す繝ｧ繝ｳ縺後↑縺・ｴ蜷医・繝・ヵ繧ｩ繝ｫ繝医く繝｣繝ｩ繧ｯ繧ｿ繝ｼ
+          const defaultCharacter = CharacterLoader.getCharacterByName('繝翫Α');
           if (defaultCharacter) {
             setCurrentCharacter(defaultCharacter);
             setInitialMessage(defaultCharacter);
           }
         }
       } catch (error) {
-        console.error('セッション復元エラー:', error);
-        // エラー時はデフォルトキャラクター
-        const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+        console.error('繧ｻ繝・す繝ｧ繝ｳ蠕ｩ蜈・お繝ｩ繝ｼ:', error);
+        // 繧ｨ繝ｩ繝ｼ譎ゅ・繝・ヵ繧ｩ繝ｫ繝医く繝｣繝ｩ繧ｯ繧ｿ繝ｼ
+        const defaultCharacter = CharacterLoader.getCharacterByName('繝翫Α');
         if (defaultCharacter) {
           setCurrentCharacter(defaultCharacter);
           setInitialMessage(defaultCharacter);
@@ -403,13 +389,13 @@ export default function ChatPage() {
     initializeApp();
   }, []);
 
-  // 初期メッセージ設定のヘルパー関数
+  // 蛻晄悄繝｡繝・そ繝ｼ繧ｸ險ｭ螳壹・繝倥Ν繝代・髢｢謨ｰ
   const setInitialMessage = (character: Character) => {
     const firstMessage = Array.isArray(character.first_message) 
       ? character.first_message.join('\n') 
-      : (character.first_message || 'こんにちは！');
+      : (character.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
       
-    console.log('初期メッセージ設定:', firstMessage);
+    console.log('蛻晄悄繝｡繝・そ繝ｼ繧ｸ險ｭ螳・', firstMessage);
     
     setMessages([{
       id: '1',
@@ -419,7 +405,7 @@ export default function ChatPage() {
     }]);
   };
 
-  // タッチジェスチャーをDOM要素にアタッチ
+  // 繧ｿ繝・メ繧ｸ繧ｧ繧ｹ繝√Ε繝ｼ繧奪OM隕∫ｴ縺ｫ繧｢繧ｿ繝・メ
   useEffect(() => {
     if (touchGestureManager && mainContainerRef.current) {
       touchGestureManager.attach(mainContainerRef.current);
@@ -440,7 +426,7 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  // 自動保存機能
+  // 閾ｪ蜍穂ｿ晏ｭ俶ｩ溯・
   useEffect(() => {
     const saveCurrentSession = async () => {
       if (!currentCharacter || messages.length <= 1) return;
@@ -452,8 +438,7 @@ export default function ChatPage() {
         const session = {
           id: sessionId,
           characterId: currentCharacter.name,
-          character: currentCharacter, // キャラクター情報全体を保存
-          messages: messages,
+          character: currentCharacter, // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ諠・ｱ蜈ｨ菴薙ｒ菫晏ｭ・          messages: messages,
           title: title,
           createdAt: currentSessionId ? Date.now() : Date.now(),
           updatedAt: Date.now()
@@ -465,17 +450,16 @@ export default function ChatPage() {
           setCurrentSessionId(sessionId);
         }
         
-        // 履歴リストを更新
+        // 螻･豁ｴ繝ｪ繧ｹ繝医ｒ譖ｴ譁ｰ
         const allSessions = await historyManager.getAllSessions();
         setSessions(allSessions);
         
       } catch (error) {
-        console.error('セッション保存エラー:', error);
+        console.error('繧ｻ繝・す繝ｧ繝ｳ菫晏ｭ倥お繝ｩ繝ｼ:', error);
       }
     };
     
-    // メッセージが変更されたら3秒後に保存
-    const timer = setTimeout(saveCurrentSession, 3000);
+    // 繝｡繝・そ繝ｼ繧ｸ縺悟､画峩縺輔ｌ縺溘ｉ3遘貞ｾ後↓菫晏ｭ・    const timer = setTimeout(saveCurrentSession, 3000);
     return () => clearTimeout(timer);
   }, [messages, currentCharacter, currentSessionId]);
 
@@ -495,8 +479,7 @@ export default function ChatPage() {
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
 
     try {
-      // Gemini APIでチャット応答を生成（簡単版）
-      const chatResponse = await fetch('/api/simple-chat', {
+      // Gemini API縺ｧ繝√Ε繝・ヨ蠢懃ｭ斐ｒ逕滓・・育ｰ｡蜊倡沿・・      const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -517,28 +500,26 @@ export default function ChatPage() {
         content: '',
         timestamp: Date.now(),
       };
-      setMessages(prev => [...prev, aiResponse]); // 先に追加しておく
+      setMessages(prev => [...prev, aiResponse]); // 蜈医↓霑ｽ蜉縺励※縺翫￥
 
       const contentType = chatResponse.headers.get('Content-Type') || '';
 
       if (contentType.includes('application/json')) {
-        // JSON形式（通常 or インスピレーション）
-        const chatData = await chatResponse.json();
+        // JSON蠖｢蠑擾ｼ磯壼ｸｸ or 繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ・・        const chatData = await chatResponse.json();
         if (chatData.success) {
           if (chatData.candidates && chatData.candidates.length > 1) {
-            // インスピレーション候補がある場合
-            setInspirationCandidates(chatData.candidates);
+            // 繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ蛟呵｣懊′縺ゅｋ蝣ｴ蜷・            setInspirationCandidates(chatData.candidates);
             setShowInspiration(true);
             setIsLoading(false);
-            // AI返信は追加せず、候補選択を待つ
-            setMessages(prev => prev.slice(0, -1)); // 追加した空のAI返信を削除
+            // AI霑比ｿ｡縺ｯ霑ｽ蜉縺帙★縲∝呵｣憺∈謚槭ｒ蠕・▽
+            setMessages(prev => prev.slice(0, -1)); // 霑ｽ蜉縺励◆遨ｺ縺ｮAI霑比ｿ｡繧貞炎髯､
             return;
           } else {
             aiContent = chatData.content;
           }
         }
       } else {
-        // ストリーム読み取り
+        // 繧ｹ繝医Μ繝ｼ繝隱ｭ縺ｿ蜿悶ｊ
         const reader = chatResponse.body?.getReader();
         const decoder = new TextDecoder();
         if (reader) {
@@ -546,37 +527,35 @@ export default function ChatPage() {
             const { done, value } = await reader.read();
             if (done) break;
             aiContent += decoder.decode(value, { stream: true });
-            // 部分的に表示を更新
+            // 驛ｨ蛻・噪縺ｫ陦ｨ遉ｺ繧呈峩譁ｰ
             setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
           }
         }
       }
 
-      // 最終更新
+      // 譛邨よ峩譁ｰ
       setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
 
       if (aiContent) {
         
-        // 通知音
+        // 騾夂衍髻ｳ
         if (settings.chatNotificationSound) {
           VoiceManager.playNotificationSound(true, 0.3);
         }
 
-        // 画像生成を開始
-        if (settings.enableImageGeneration) {
+        // 逕ｻ蜒冗函謌舌ｒ髢句ｧ・        if (settings.enableImageGeneration) {
           setIsGeneratingImage(true);
         }
         
-        // 画像生成（非同期）
-        if (settings.enableImageGeneration) {
+        // 逕ｻ蜒冗函謌撰ｼ磯撼蜷梧悄・・        if (settings.enableImageGeneration) {
           handleImageGeneration(aiResponse, aiContent);
         }
       } else {
-        // エラー時のフォールバック
+        // 繧ｨ繝ｩ繝ｼ譎ゅ・繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ
         const errorResponse: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: 'ごめんなさい、今ちょっと調子が悪いみたい...もう一度話しかけてくれる？',
+          content: '縺斐ａ繧薙↑縺輔＞縲∽ｻ翫■繧・▲縺ｨ隱ｿ蟄舌′謔ｪ縺・∩縺溘＞...繧ゅ≧荳蠎ｦ隧ｱ縺励°縺代※縺上ｌ繧具ｼ・,
           timestamp: Date.now()
         };
         setMessages(prev => [...prev, errorResponse]);
@@ -586,7 +565,7 @@ export default function ChatPage() {
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'エラーが発生しました。もう一度お試しください。',
+        content: '繧ｨ繝ｩ繝ｼ縺檎匱逕溘＠縺ｾ縺励◆縲ゅｂ縺・ｸ蠎ｦ縺願ｩｦ縺励￥縺縺輔＞縲・,
         timestamp: Date.now()
       };
       setMessages(prev => [...prev, errorResponse]);
@@ -595,7 +574,7 @@ export default function ChatPage() {
     }
   };
 
-  // 画像生成処理を共通化
+  // 逕ｻ蜒冗函謌仙・逅・ｒ蜈ｱ騾壼喧
   const handleImageGeneration = async (aiResponse: Message, aiContent: string) => {
     if (!settings.enableImageGeneration || !currentCharacter) return;
     
@@ -640,11 +619,11 @@ export default function ChatPage() {
     }
   };
 
-  // ユーザーインスピレーション機能
+  // 繝ｦ繝ｼ繧ｶ繝ｼ繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ讖溯・
   const handleUserInspiration = async () => {
     if (!currentCharacter || isLoadingUserInspiration) return;
     
-    console.log('電球ボタンが押されました');
+    console.log('髮ｻ逅・・繧ｿ繝ｳ縺梧款縺輔ｌ縺ｾ縺励◆');
     setIsLoadingUserInspiration(true);
     try {
       const response = await fetch('/api/user-inspiration', {
@@ -653,23 +632,21 @@ export default function ChatPage() {
         body: JSON.stringify({
           character: currentCharacter,
           persona: currentPersona,
-          conversation: messages.slice(-8), // 直近8件
+          conversation: messages.slice(-8), // 逶ｴ霑・莉ｶ
           settings,
-          variantCount: 1 // 1本モード
-        })
+          variantCount: 1 // 1譛ｬ繝｢繝ｼ繝・        })
       });
       
       const data = await response.json();
-      console.log('インスピレーションAPI応答:', data);
-      console.log('候補配列:', data.candidates);
+      console.log('繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳAPI蠢懃ｭ・', data);
+      console.log('蛟呵｣憺・蛻・', data.candidates);
       if (data.success && data.candidates.length > 0) {
-        // 1本モードなので最初の候補を直接メッセージ欄に設定
-        const candidate = data.candidates[0];
-        console.log('候補をメッセージ欄に設定:', candidate);
+        // 1譛ｬ繝｢繝ｼ繝峨↑縺ｮ縺ｧ譛蛻昴・蛟呵｣懊ｒ逶ｴ謗･繝｡繝・そ繝ｼ繧ｸ谺・↓險ｭ螳・        const candidate = data.candidates[0];
+        console.log('蛟呵｣懊ｒ繝｡繝・そ繝ｼ繧ｸ谺・↓險ｭ螳・', candidate);
         if (candidate && candidate.trim()) {
           setMessage(candidate);
         } else {
-          console.error('候補が空です');
+          console.error('蛟呵｣懊′遨ｺ縺ｧ縺・);
         }
       }
     } catch (error) {
@@ -679,15 +656,14 @@ export default function ChatPage() {
     }
   };
 
-  // ユーザー文章強化実行
-  const handleUserTextEnhancement = async () => {
+  // 繝ｦ繝ｼ繧ｶ繝ｼ譁・ｫ蠑ｷ蛹門ｮ溯｡・  const handleUserTextEnhancement = async () => {
     if (!message.trim() || !currentCharacter) return;
     
     setIsEnhancingUserText(true);
     
     try {
-      console.log('キラキラボタンが押されました');
-      console.log('設定のAPIキー:', settings.geminiApiKey ? '設定済み' : '未設定');
+      console.log('繧ｭ繝ｩ繧ｭ繝ｩ繝懊ち繝ｳ縺梧款縺輔ｌ縺ｾ縺励◆');
+      console.log('險ｭ螳壹・API繧ｭ繝ｼ:', settings.geminiApiKey ? '險ｭ螳壽ｸ医∩' : '譛ｪ險ｭ螳・);
       const response = await fetch('/api/enhance-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -695,16 +671,15 @@ export default function ChatPage() {
           text: message,
           character: currentCharacter,
           context: messages.slice(-5),
-          variantCount: 1, // 1本モード
-          settings: settings,
-          isUserText: true // ユーザーテキスト強化フラグ
+          variantCount: 1, // 1譛ｬ繝｢繝ｼ繝・          settings: settings,
+          isUserText: true // 繝ｦ繝ｼ繧ｶ繝ｼ繝・く繧ｹ繝亥ｼｷ蛹悶ヵ繝ｩ繧ｰ
         })
       });
       
       const data = await response.json();
-      console.log('強化API応答:', data);
+      console.log('蠑ｷ蛹泡PI蠢懃ｭ・', data);
       if (data.success) {
-        console.log('強化されたテキスト:', data.enhancedText);
+        console.log('蠑ｷ蛹悶＆繧後◆繝・く繧ｹ繝・', data.enhancedText);
         setMessage(data.enhancedText);
       }
     } catch (error) {
@@ -714,10 +689,9 @@ export default function ChatPage() {
     }
   };
 
-  // 文章選択ハンドラー
+  // 譁・ｫ驕ｸ謚槭ワ繝ｳ繝峨Λ繝ｼ
   const handleTextSelection = (messageId: string) => {
-    // AIメッセージの範囲選択時は強化ボタンを表示しない（コピー阻害防止）
-    const targetMessage = messages.find(m => m.id === messageId);
+    // AI繝｡繝・そ繝ｼ繧ｸ縺ｮ遽・峇驕ｸ謚樊凾縺ｯ蠑ｷ蛹悶・繧ｿ繝ｳ繧定｡ｨ遉ｺ縺励↑縺・ｼ医さ繝斐・髦ｻ螳ｳ髦ｲ豁｢・・    const targetMessage = messages.find(m => m.id === messageId);
     if (targetMessage?.role === 'assistant') {
       setShowEnhanceButton(false);
       return;
@@ -735,8 +709,7 @@ export default function ChatPage() {
       return;
     }
 
-    // 選択位置を取得
-    const range = selection.getRangeAt(0);
+    // 驕ｸ謚樔ｽ咲ｽｮ繧貞叙蠕・    const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     
     setSelectedText(selectedText);
@@ -748,8 +721,7 @@ export default function ChatPage() {
     setShowEnhanceButton(true);
   };
 
-  // 文章強化実行
-  const handleTextEnhancement = async () => {
+  // 譁・ｫ蠑ｷ蛹門ｮ溯｡・  const handleTextEnhancement = async () => {
     if (!selectedText || !selectedMessageId || !currentCharacter) return;
     
     setIsEnhancing(true);
@@ -766,8 +738,7 @@ export default function ChatPage() {
           text: selectedText,
           character: currentCharacter,
           context: messages.slice(-5),
-          variantCount: 1, // 1本モード
-          settings: settings
+          variantCount: 1, // 1譛ｬ繝｢繝ｼ繝・          settings: settings
         })
       });
       
@@ -787,7 +758,7 @@ export default function ChatPage() {
     }
   };
 
-  // 強化された文章を適用
+  // 蠑ｷ蛹悶＆繧後◆譁・ｫ繧帝←逕ｨ
   const applyEnhancement = () => {
     if (!enhancementResult) return;
     
@@ -807,12 +778,12 @@ export default function ChatPage() {
     setEnhancementResult(null);
   };
 
-  // 選択解除ハンドラー
+  // 驕ｸ謚櫁ｧ｣髯､繝上Φ繝峨Λ繝ｼ
   const handleDocumentClick = () => {
     setShowEnhanceButton(false);
   };
 
-  // ドキュメントクリックイベント登録
+  // 繝峨く繝･繝｡繝ｳ繝医け繝ｪ繝・け繧､繝吶Φ繝育匳骭ｲ
   useEffect(() => {
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
@@ -825,11 +796,11 @@ export default function ChatPage() {
     }
   };
 
-  // 再生成機能
+  // 蜀咲函謌先ｩ溯・
   const handleRegenerate = async () => {
     if (!currentCharacter || isLoading || messages.length === 0) return;
     
-    // 最後のAIメッセージを削除
+    // 譛蠕後・AI繝｡繝・そ繝ｼ繧ｸ繧貞炎髯､
     const lastMessage = messages[messages.length - 1];
     if (lastMessage.role !== 'assistant') return;
     
@@ -839,17 +810,15 @@ export default function ChatPage() {
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
 
     try {
-      // 最後のユーザーメッセージを取得
-      const lastUserMessage = messagesWithoutLast.filter(m => m.role === 'user').pop();
+      // 譛蠕後・繝ｦ繝ｼ繧ｶ繝ｼ繝｡繝・そ繝ｼ繧ｸ繧貞叙蠕・      const lastUserMessage = messagesWithoutLast.filter(m => m.role === 'user').pop();
       if (!lastUserMessage) return;
 
-      // 会話履歴から最後のユーザーメッセージを除外してコンテキストを作成
+      // 莨夊ｩｱ螻･豁ｴ縺九ｉ譛蠕後・繝ｦ繝ｼ繧ｶ繝ｼ繝｡繝・そ繝ｼ繧ｸ繧帝勁螟悶＠縺ｦ繧ｳ繝ｳ繝・く繧ｹ繝医ｒ菴懈・
       const conversationContext = messagesWithoutLast
         .filter((m) => m.id !== lastUserMessage.id)
-        .slice(-20); // 直近20件
+        .slice(-20); // 逶ｴ霑・0莉ｶ
 
-      // APIを呼び出して新しい応答を生成（重複送信を防止）
-      const chatResponse = await fetch('/api/simple-chat', {
+      // API繧貞他縺ｳ蜃ｺ縺励※譁ｰ縺励＞蠢懃ｭ斐ｒ逕滓・・磯㍾隍・∽ｿ｡繧帝亟豁｢・・      const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -896,8 +865,7 @@ export default function ChatPage() {
           VoiceManager.playNotificationSound(true, 0.3);
         }
 
-        // 画像生成
-        if (settings.enableImageGeneration) {
+        // 逕ｻ蜒冗函謌・        if (settings.enableImageGeneration) {
           handleImageGeneration(aiResponse, aiContent);
         }
       }
@@ -908,20 +876,20 @@ export default function ChatPage() {
     }
   };
 
-  // 会話リセット機能
+  // 莨夊ｩｱ繝ｪ繧ｻ繝・ヨ讖溯・
   const handleReset = () => {
     if (!currentCharacter) return;
     
-    console.log('会話リセット:', currentCharacter.name);
+    console.log('莨夊ｩｱ繝ｪ繧ｻ繝・ヨ:', currentCharacter.name);
     
-    // 音声再生を停止
+    // 髻ｳ螢ｰ蜀咲函繧貞●豁｢
     VoiceManager.stopAudio();
     
     const firstMessage = Array.isArray(currentCharacter.first_message) 
       ? currentCharacter.first_message.join('\n') 
-      : (currentCharacter.first_message || 'こんにちは！');
+      : (currentCharacter.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
       
-    console.log('リセット後の初回メッセージ:', firstMessage);
+    console.log('繝ｪ繧ｻ繝・ヨ蠕後・蛻晏屓繝｡繝・そ繝ｼ繧ｸ:', firstMessage);
     
     setMessages([{
       id: Date.now().toString(),
@@ -931,7 +899,7 @@ export default function ChatPage() {
     }]);
   };
 
-  // 指定メッセージまでロールバック
+  // 謖・ｮ壹Γ繝・そ繝ｼ繧ｸ縺ｾ縺ｧ繝ｭ繝ｼ繝ｫ繝舌ャ繧ｯ
   const handleRollback = (messageId: string) => {
     const messageIndex = messages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
@@ -939,18 +907,18 @@ export default function ChatPage() {
     setMessages(messages.slice(0, messageIndex + 1));
   };
 
-  // 履歴削除
+  // 螻･豁ｴ蜑企勁
   const handleDeleteSession = async (sessionId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation(); // 履歴選択のクリックイベントを阻止
+    e?.stopPropagation(); // 螻･豁ｴ驕ｸ謚槭・繧ｯ繝ｪ繝・け繧､繝吶Φ繝医ｒ髦ｻ豁｢
     
-    if (!confirm('この履歴を削除しますか？')) return;
+    if (!confirm('縺薙・螻･豁ｴ繧貞炎髯､縺励∪縺吶°・・)) return;
     
     try {
       await historyManager.deleteSession(sessionId);
       const updatedSessions = await historyManager.getAllSessions();
       setSessions(updatedSessions);
       
-      // 削除した履歴が現在選択中の場合はリセット
+      // 蜑企勁縺励◆螻･豁ｴ縺檎樟蝨ｨ驕ｸ謚樔ｸｭ縺ｮ蝣ｴ蜷医・繝ｪ繧ｻ繝・ヨ
       if (currentSessionId === sessionId) {
         setCurrentSessionId(null);
         setMessages(currentCharacter ? [{
@@ -961,18 +929,17 @@ export default function ChatPage() {
         }] : []);
       }
     } catch (error) {
-      console.error('履歴削除エラー:', error);
-      alert('履歴の削除に失敗しました');
+      console.error('螻･豁ｴ蜑企勁繧ｨ繝ｩ繝ｼ:', error);
+      alert('螻･豁ｴ縺ｮ蜑企勁縺ｫ螟ｱ謨励＠縺ｾ縺励◆');
     }
   };
 
-  // テーマ変更ハンドラー
+  // 繝・・繝槫､画峩繝上Φ繝峨Λ繝ｼ
   const handleThemeChange = (themeId: string, customBackground?: string) => {
     const theme = getThemeById(themeId) || getDefaultTheme();
     ThemeManager.applyTheme(theme, customBackground);
     
-    // 設定に保存
-    const updatedSettings = {
+    // 險ｭ螳壹↓菫晏ｭ・    const updatedSettings = {
       ...settings,
       currentTheme: themeId,
       customBackground: customBackground
@@ -1035,8 +1002,7 @@ export default function ChatPage() {
     }
   };
 
-  // 画像のみ再生成（ランダムシード）
-  const handleImageReroll = async (msg: Message) => {
+  // 逕ｻ蜒上・縺ｿ蜀咲函謌撰ｼ医Λ繝ｳ繝繝繧ｷ繝ｼ繝会ｼ・  const handleImageReroll = async (msg: Message) => {
     if (!settings.enableImageGeneration || msg.role !== 'assistant' || isGeneratingImage) return;
 
     try {
@@ -1074,11 +1040,10 @@ export default function ChatPage() {
     }
   };
 
-  // チャットバブルのコピー処理
-  const handleCopy = (text: string) => {
+  // 繝√Ε繝・ヨ繝舌ヶ繝ｫ縺ｮ繧ｳ繝斐・蜃ｦ逅・  const handleCopy = (text: string) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        alert('コピーしました');
+        alert('繧ｳ繝斐・縺励∪縺励◆');
       });
     } else {
       // Fallback
@@ -1088,13 +1053,13 @@ export default function ChatPage() {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      alert('コピーしました');
+      alert('繧ｳ繝斐・縺励∪縺励◆');
     }
   };
 
   return (
       <div ref={mainContainerRef} className="flex h-screen theme-background relative">
-      {/* モバイル用オーバーレイ */}
+      {/* 繝｢繝舌う繝ｫ逕ｨ繧ｪ繝ｼ繝舌・繝ｬ繧､ */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -1102,15 +1067,19 @@ export default function ChatPage() {
         />
       )}
       
-      {/* サイドバー */}
+      {/* 繧ｵ繧､繝峨ヰ繝ｼ */}
       <div className={`
         ${isSidebarOpen ? 'w-80' : 'w-0'} 
         theme-sidebar border-r border-white/10 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
         ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
         ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
       `}>
+            {/* Navigation Buttons */}
+            <div className="p-4 border-b border-white/10">
+              <NavigationButtons />
+            </div>
         <div className="min-w-80 flex flex-col h-full">
-          {/* タブナビゲーション */}
+          {/* 繧ｿ繝悶リ繝薙ご繝ｼ繧ｷ繝ｧ繝ｳ */}
           <div className="flex-shrink-0 border-b border-white/10">
             <div className="flex">
               <button
@@ -1121,7 +1090,7 @@ export default function ChatPage() {
                     : 'theme-text-secondary hover:theme-text-primary hover:bg-white/5'
                 }`}
               >
-                👤 キャラクター
+                側 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ
               </button>
               <button
                 onClick={() => setActiveTab('personas')}
@@ -1131,8 +1100,7 @@ export default function ChatPage() {
                     : 'theme-text-secondary hover:theme-text-primary hover:bg-white/5'
                 }`}
               >
-                🎭 ペルソナ
-              </button>
+                鹿 繝壹Ν繧ｽ繝・              </button>
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
@@ -1141,37 +1109,34 @@ export default function ChatPage() {
                     : 'theme-text-secondary hover:theme-text-primary hover:bg-white/5'
                 }`}
               >
-                ⚙️ 設定
-              </button>
+                笞呻ｸ・險ｭ螳・              </button>
             </div>
         </div>
 
-          {/* タブコンテンツ */}
+          {/* 繧ｿ繝悶さ繝ｳ繝・Φ繝・*/}
           <div className="flex-1 overflow-hidden">
-            {/* キャラクタータブ */}
+            {/* 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧ｿ繝・*/}
             {activeTab === 'characters' && (
               <div className="h-full flex flex-col">
           <CharacterSelector
           characters={allCharacters}
           currentCharacter={currentCharacter}
           onSelectCharacter={(character: Character) => {
-            console.log('キャラクター変更:', character.name);
+            console.log('繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ螟画峩:', character.name);
             
-            // キャラクターを設定
-            setCurrentCharacter(character);
+            // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧定ｨｭ螳・            setCurrentCharacter(character);
             
-            // 現在のセッションをクリア
+            // 迴ｾ蝨ｨ縺ｮ繧ｻ繝・す繝ｧ繝ｳ繧偵け繝ｪ繧｢
             setCurrentSessionId(null);
             
-            // 音声再生を停止
+            // 髻ｳ螢ｰ蜀咲函繧貞●豁｢
             VoiceManager.stopAudio();
             
-            // 新しいキャラクターの初回メッセージを設定
-            const firstMessage = Array.isArray(character.first_message) 
+            // 譁ｰ縺励＞繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺ｮ蛻晏屓繝｡繝・そ繝ｼ繧ｸ繧定ｨｭ螳・            const firstMessage = Array.isArray(character.first_message) 
               ? character.first_message.join('\n') 
-              : (character.first_message || 'こんにちは！');
+              : (character.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
               
-            console.log('初回メッセージ設定:', firstMessage);
+            console.log('蛻晏屓繝｡繝・そ繝ｼ繧ｸ險ｭ螳・', firstMessage);
             
             setMessages([{
               id: crypto.randomUUID(),
@@ -1189,22 +1154,21 @@ export default function ChatPage() {
             setIsCharacterModalOpen(true);
           }}
           onDeleteCharacter={(character: Character) => {
-            if (confirm(`「${character.name}」を削除しますか？`)) {
+            if (confirm(`縲・{character.name}縲阪ｒ蜑企勁縺励∪縺吶°・歔)) {
               CharacterLoader.deleteCharacter(character.name);
               const updatedCharacters = CharacterLoader.getAllCharacters();
               setAllCharacters(updatedCharacters);
               
-              // 削除したキャラクターが現在選択中の場合
-              if (currentCharacter?.name === character.name) {
+              // 蜑企勁縺励◆繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺檎樟蝨ｨ驕ｸ謚樔ｸｭ縺ｮ蝣ｴ蜷・              if (currentCharacter?.name === character.name) {
                 const firstCharacter = updatedCharacters[0];
                 if (firstCharacter) {
-                  console.log('削除後の代替キャラクター:', firstCharacter.name);
+                  console.log('蜑企勁蠕後・莉｣譖ｿ繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ:', firstCharacter.name);
                   setCurrentCharacter(firstCharacter);
                   setCurrentSessionId(null);
                   
                   const firstMessage = Array.isArray(firstCharacter.first_message) 
                     ? firstCharacter.first_message.join('\n') 
-                    : (firstCharacter.first_message || 'こんにちは！');
+                    : (firstCharacter.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
                     
                   setMessages([{
                     id: crypto.randomUUID(),
@@ -1224,7 +1188,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* ペルソナタブ */}
+            {/* 繝壹Ν繧ｽ繝翫ち繝・*/}
             {activeTab === 'personas' && (
               <div className="h-full flex flex-col">
                 <PersonaSelector
@@ -1240,7 +1204,7 @@ export default function ChatPage() {
                     setIsPersonaModalOpen(true);
                   }}
                   onDeletePersona={(persona) => {
-                    if (confirm(`「${persona.name}」を削除しますか？`)) {
+                    if (confirm(`縲・{persona.name}縲阪ｒ蜑企勁縺励∪縺吶°・歔)) {
                       const updatedPersonas = allPersonas.filter(p => p.id !== persona.id);
                       setAllPersonas(updatedPersonas);
                       localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
@@ -1255,89 +1219,83 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* 設定タブ */}
+            {/* 險ｭ螳壹ち繝・*/}
             {activeTab === 'settings' && (
               <div className="h-full flex flex-col p-4 space-y-2">
-                {/* 電球（インスピレーション）ボタン */}
+                {/* 髮ｻ逅・ｼ医う繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ・峨・繧ｿ繝ｳ */}
                 <button
                   onClick={handleUserInspiration}
                   disabled={isLoadingUserInspiration || !currentCharacter}
                   className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  title="返信候補を提案"
+                  title="霑比ｿ｡蛟呵｣懊ｒ謠先｡・
                 >
-                  💡
-                  インスピレーション
+                  庁
+                  繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ
                 </button>
                 
-                {/* キラキラ（文章強化）ボタン */}
+                {/* 繧ｭ繝ｩ繧ｭ繝ｩ・域枚遶蠑ｷ蛹厄ｼ峨・繧ｿ繝ｳ */}
                 <button
                   onClick={handleUserTextEnhancement}
                   disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
                   className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  title="文章を強化"
+                  title="譁・ｫ繧貞ｼｷ蛹・
                 >
-                  ✨
-                  文章強化
-                </button>
+                  笨ｨ
+                  譁・ｫ蠑ｷ蛹・                </button>
                 
                 <button 
                   onClick={() => setIsAuthModalOpen(true)}
                   className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
                 >
                   <Cloud size={16} />
-                  クラウド同期
-                </button>
+                  繧ｯ繝ｩ繧ｦ繝牙酔譛・                </button>
                 <button 
                   onClick={() => setIsThemeModalOpen(true)}
                   className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
                 >
                   <Palette size={16} />
-                  テーマ変更
+                  繝・・繝槫､画峩
                 </button>
                 <button 
                   onClick={() => setIsSettingsOpen(true)}
                   className="w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
                 >
                   <Settings size={16} />
-                  設定
-                </button>
+                  險ｭ螳・                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* モバイル用クイック操作（設定・テーマ・同期） */}
+        {/* 繝｢繝舌う繝ｫ逕ｨ繧ｯ繧､繝・け謫堺ｽ懶ｼ郁ｨｭ螳壹・繝・・繝槭・蜷梧悄・・*/}
         <div className="p-4 border-t border-white/10 flex-shrink-0 space-y-2 md:hidden">
           <button 
             onClick={() => setIsAuthModalOpen(true)}
             className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Cloud size={16} />
-            クラウド同期
-          </button>
+            繧ｯ繝ｩ繧ｦ繝牙酔譛・          </button>
           <button 
             onClick={() => setIsThemeModalOpen(true)}
             className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Palette size={16} />
-            テーマ
-          </button>
+            繝・・繝・          </button>
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="touch-target w-full bg-white/10 backdrop-blur-sm theme-text-primary py-3 px-4 rounded-lg hover:bg-white/15 transition-colors flex items-center justify-center gap-2"
           >
             <Settings size={16} />
-            設定
-          </button>
+            險ｭ螳・          </button>
         </div>
 
-        {/* チャット履歴 */}
+        {/* 繝√Ε繝・ヨ螻･豁ｴ */}
         <div className="flex-1 flex flex-col min-h-0 safe-area-bottom">
           <div className="p-4 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="theme-text-primary font-semibold flex items-center gap-2">
                 <MessageSquare size={20} />
-                チャット履歴
+                繝√Ε繝・ヨ螻･豁ｴ
                 <span className="bg-white/20 text-white/80 px-2 py-1 rounded-full text-xs">
                   {sessions.length}
                 </span>
@@ -1346,24 +1304,24 @@ export default function ChatPage() {
                 <button
                   onClick={() => setIsChatHistoryOpen(true)}
                   className="text-white/70 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-                  title="履歴ギャラリー"
+                  title="螻･豁ｴ繧ｮ繝｣繝ｩ繝ｪ繝ｼ"
                 >
                   <Grid size={16} />
                 </button>
                 <button
                   onClick={() => {
-                    console.log('新しいチャット開始');
+                    console.log('譁ｰ縺励＞繝√Ε繝・ヨ髢句ｧ・);
                     setCurrentSessionId(null);
                   
-                  // 音声再生を停止
+                  // 髻ｳ螢ｰ蜀咲函繧貞●豁｢
                   VoiceManager.stopAudio();
                   
                   if (currentCharacter) {
                     const firstMessage = Array.isArray(currentCharacter.first_message) 
                       ? currentCharacter.first_message.join('\n') 
-                      : (currentCharacter.first_message || 'こんにちは！');
+                      : (currentCharacter.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
                     
-                    console.log('新しいチャットの初回メッセージ:', firstMessage);
+                    console.log('譁ｰ縺励＞繝√Ε繝・ヨ縺ｮ蛻晏屓繝｡繝・そ繝ｼ繧ｸ:', firstMessage);
                     
                     setMessages([{
                       id: crypto.randomUUID(),
@@ -1376,7 +1334,7 @@ export default function ChatPage() {
                   }
                 }}
                 className="touch-target theme-text-secondary hover:theme-text-primary p-2 rounded hover:bg-white/10 transition-colors"
-                title="新しいチャット"
+                title="譁ｰ縺励＞繝√Ε繝・ヨ"
               >
                 <Plus size={16} />
               </button>
@@ -1384,7 +1342,7 @@ export default function ChatPage() {
             </div>
           </div>
           
-          {/* スクロール可能な履歴エリア */}
+          {/* 繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ蜿ｯ閭ｽ縺ｪ螻･豁ｴ繧ｨ繝ｪ繧｢ */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 chat-history-scroll">
             {sessions.slice(0, 50).map((session) => (
               <div
@@ -1397,18 +1355,18 @@ export default function ChatPage() {
                       setCurrentSessionId(session.id);
                     }
                   } catch (error) {
-                    console.error('セッション読み込みエラー:', error);
+                    console.error('繧ｻ繝・す繝ｧ繝ｳ隱ｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ:', error);
                   }
                 }}
                 className={`group bg-white/10 backdrop-blur-sm rounded-lg p-3 cursor-pointer hover:bg-white/15 transition-all duration-200 relative ${
                   currentSessionId === session.id ? 'ring-2 ring-blue-400 bg-blue-400/20' : ''
                 } hover:shadow-lg hover:scale-[1.02]`}
               >
-                {/* 削除ボタン */}
+                {/* 蜑企勁繝懊ち繝ｳ */}
                 <button
                   onClick={(e) => handleDeleteSession(session.id, e)}
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/50 hover:text-red-400 hover:bg-red-500/20 rounded-full p-1"
-                  title="履歴を削除"
+                  title="螻･豁ｴ繧貞炎髯､"
                 >
                   <X size={12} />
                 </button>
@@ -1431,42 +1389,41 @@ export default function ChatPage() {
                   </div>
                   {currentSessionId === session.id && (
                     <div className="text-blue-400 text-xs font-medium">
-                      ● 現在
+                      笳・迴ｾ蝨ｨ
                     </div>
                   )}
                 </div>
               </div>
             ))}
             
-            {/* 履歴が多い場合の表示制限通知 */}
+            {/* 螻･豁ｴ縺悟､壹＞蝣ｴ蜷医・陦ｨ遉ｺ蛻ｶ髯宣夂衍 */}
             {sessions.length > 50 && (
               <div className="text-white/40 text-xs text-center py-2 px-3 bg-white/5 rounded-lg">
-                最新50件を表示中 (全{sessions.length}件)
+                譛譁ｰ50莉ｶ繧定｡ｨ遉ｺ荳ｭ (蜈ｨ{sessions.length}莉ｶ)
               </div>
             )}
             
             {sessions.length === 0 && (
               <div className="text-white/50 text-sm text-center py-8">
                 <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
-                まだ履歴がありません
+                縺ｾ縺螻･豁ｴ縺後≠繧翫∪縺帙ｓ
                 <p className="text-xs mt-1 text-white/40">
-                  最初のメッセージを送信すると履歴が作成されます
-                </p>
+                  譛蛻昴・繝｡繝・そ繝ｼ繧ｸ繧帝∽ｿ｡縺吶ｋ縺ｨ螻･豁ｴ縺御ｽ懈・縺輔ｌ縺ｾ縺・                </p>
               </div>
             )}
         </div>
         </div>
       </div>
 
-      {/* メインチャットエリア */}
+      {/* 繝｡繧､繝ｳ繝√Ε繝・ヨ繧ｨ繝ｪ繧｢ */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
-        {/* ヘッダー */}
+        {/* 繝倥ャ繝繝ｼ */}
         <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors"
-              title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+              title={isSidebarOpen ? '繧ｵ繧､繝峨ヰ繝ｼ繧帝哩縺倥ｋ' : '繧ｵ繧､繝峨ヰ繝ｼ繧帝幕縺・}
             >
               <Menu size={20} />
             </button>
@@ -1479,23 +1436,23 @@ export default function ChatPage() {
                 className="text-left w-full"
               >
                 <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors">
-                  {currentCharacter?.name || 'キャラクター'}
+                  {currentCharacter?.name || '繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ'}
                 </h3>
-                <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+                <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '闊ｪ豬ｷ螢ｫ'}</p>
               </button>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
-                title="設定"
+                title="險ｭ螳・
               >
                 <Settings size={18} />
               </button>
               <button
                 onClick={() => setIsThemeModalOpen(true)}
                 className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
-                title="テーマ"
+                title="繝・・繝・
               >
                 <Palette size={18} />
               </button>
@@ -1503,13 +1460,13 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* チャットメッセージエリア */}
+        {/* 繝√Ε繝・ヨ繝｡繝・そ繝ｼ繧ｸ繧ｨ繝ｪ繧｢ */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' ? (
                 <div className="max-w-2xl w-full">
-                  {/* キャラクター画像 */}
+                  {/* 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ逕ｻ蜒・*/}
                   {settings.enableImageGeneration && (msg.image || isGeneratingImage) && (
                     <div className="mb-3">
                       <div className="relative">
@@ -1531,7 +1488,7 @@ export default function ChatPage() {
                     </div>
                   )}
                   
-                  {/* メッセージバブル */}
+                  {/* 繝｡繝・そ繝ｼ繧ｸ繝舌ヶ繝ｫ */}
                   <div 
                     className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
                     style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
@@ -1562,7 +1519,7 @@ export default function ChatPage() {
                            volume: settings.voiceVolume,
                          }}
                        />
-                       {/* デスクトップ用メモボタン */}
+                       {/* 繝・せ繧ｯ繝医ャ繝礼畑繝｡繝｢繝懊ち繝ｳ */}
                        <div className="hidden md:block">
                          <MessageMemoButton 
                            messageId={msg.id}
@@ -1575,14 +1532,14 @@ export default function ChatPage() {
                          onClick={() => handleRegenerate()}
                          disabled={isLoading}
                          className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
-                         title="再生成"
+                         title="蜀咲函謌・
                        >
                          <RefreshCw size={16} />
                        </button>
                        <button 
                          onClick={() => handleRollback(msg.id)}
                          className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
-                         title="ここまで戻る"
+                         title="縺薙％縺ｾ縺ｧ謌ｻ繧・
                        >
                          <CornerUpLeft size={16} />
                        </button>
@@ -1590,16 +1547,16 @@ export default function ChatPage() {
                        <button
                          onClick={() => handleImageReroll(msg)}
                          className="touch-target text-yellow-500 hover:text-yellow-700 p-1 rounded"
-                         title="画像をランダムシードで再生成"
+                         title="逕ｻ蜒上ｒ繝ｩ繝ｳ繝繝繧ｷ繝ｼ繝峨〒蜀咲函謌・
                        >
-                         🎲
+                         軸
                        </button>
                        )}
-                       {/* コピー */}
+                       {/* 繧ｳ繝斐・ */}
                        <button
                          onClick={() => handleCopy(msg.content)}
                          className="touch-target text-gray-500 hover:text-blue-600 p-1 rounded"
-                         title="コピー"
+                         title="繧ｳ繝斐・"
                        >
                          <Copy size={16} />
                        </button>
@@ -1617,12 +1574,12 @@ export default function ChatPage() {
                         style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                       ></div>
                     <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{msg.content}</p>
-                    {/* コピー */}
+                    {/* 繧ｳ繝斐・ */}
                     <div className="flex justify-end mt-2">
                       <button
                         onClick={() => handleCopy(msg.content)}
                         className="touch-target text-white/80 hover:text-blue-200 p-1 rounded"
-                        title="コピー"
+                        title="繧ｳ繝斐・"
                       >
                         <Copy size={16} />
                       </button>
@@ -1635,11 +1592,11 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 入力エリア */}
+        {/* 蜈･蜉帙お繝ｪ繧｢ */}
         <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
-              {/* アスタリスクボタン（入力枠の前方） */}
+              {/* 繧｢繧ｹ繧ｿ繝ｪ繧ｹ繧ｯ繝懊ち繝ｳ・亥・蜉帶棧縺ｮ蜑肴婿・・*/}
               <button
                 onClick={() => {
                   const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
@@ -1649,7 +1606,7 @@ export default function ChatPage() {
                     const newValue = message.substring(0, start) + '*' + message.substring(end);
                     setMessage(newValue);
                     
-                    // カーソル位置を更新
+                    // 繧ｫ繝ｼ繧ｽ繝ｫ菴咲ｽｮ繧呈峩譁ｰ
                     setTimeout(() => {
                       textarea.setSelectionRange(start + 1, start + 1);
                       textarea.focus();
@@ -1657,7 +1614,7 @@ export default function ChatPage() {
                   }
                 }}
                 className="touch-target text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="アスタリスクを追加"
+                title="繧｢繧ｹ繧ｿ繝ｪ繧ｹ繧ｯ繧定ｿｽ蜉"
               >
                 *
               </button>
@@ -1666,7 +1623,7 @@ export default function ChatPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="メッセージを入力..."
+                placeholder="繝｡繝・そ繝ｼ繧ｸ繧貞・蜉・.."
                 className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] text-base"
                 rows={isInputExpanded ? (window.innerWidth < 768 ? 8 : 4) : 1}
                 style={{ 
@@ -1679,7 +1636,7 @@ export default function ChatPage() {
                 <button
                   onClick={() => setIsInputExpanded(!isInputExpanded)}
                   className="touch-target text-gray-400 hover:text-white p-2 rounded-full transition-colors"
-                  title={isInputExpanded ? '入力欄を縮小' : '入力欄を拡大'}
+                  title={isInputExpanded ? '蜈･蜉帶ｬ・ｒ邵ｮ蟆・ : '蜈･蜉帶ｬ・ｒ諡｡螟ｧ'}
                 >
                   {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
                 </button>
@@ -1695,7 +1652,7 @@ export default function ChatPage() {
             </div>
             
             <div className="flex justify-center mt-2 gap-1">
-              {/* 音声オン/オフ */}
+              {/* 髻ｳ螢ｰ繧ｪ繝ｳ/繧ｪ繝・*/}
               <button
                 onClick={() => {
                   const newSettings = { ...settings, voiceEnabled: !settings.voiceEnabled };
@@ -1707,12 +1664,12 @@ export default function ChatPage() {
                   }
                 }}
                 className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.voiceEnabled ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
-                title={settings.voiceEnabled ? '音声OFF' : '音声ON'}
+                title={settings.voiceEnabled ? '髻ｳ螢ｰOFF' : '髻ｳ螢ｰON'}
               >
-                {settings.voiceEnabled ? '🔊' : '🔇'}
+                {settings.voiceEnabled ? '矧' : '這'}
               </button>
               
-              {/* 画像生成 */}
+              {/* 逕ｻ蜒冗函謌・*/}
               <button
                 onClick={() => {
                   const newSettings = { ...settings, enableImageGeneration: !settings.enableImageGeneration };
@@ -1720,76 +1677,73 @@ export default function ChatPage() {
                   localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
                 }}
                 className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.enableImageGeneration ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
-                title={settings.enableImageGeneration ? '画像生成OFF' : '画像生成ON'}
+                title={settings.enableImageGeneration ? '逕ｻ蜒冗函謌唇FF' : '逕ｻ蜒冗函謌唇N'}
               >
-                {settings.enableImageGeneration ? '🖼️' : '📷'}
+                {settings.enableImageGeneration ? '名・・ : '胴'}
               </button>
               
-              {/* メモ一覧 */}
+              {/* 繝｡繝｢荳隕ｧ */}
               <button
                 onClick={() => {
-                  // MemoListButtonの機能を直接実行
-                  const memoListButton = document.querySelector('[data-memo-list-button]') as HTMLButtonElement;
+                  // MemoListButton縺ｮ讖溯・繧堤峩謗･螳溯｡・                  const memoListButton = document.querySelector('[data-memo-list-button]') as HTMLButtonElement;
                   if (memoListButton) memoListButton.click();
                 }}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="メモ一覧"
+                title="繝｡繝｢荳隕ｧ"
               >
-                📝
+                統
               </button>
               
-              {/* 要約 */}
+              {/* 隕∫ｴ・*/}
               <button 
                 onClick={handleGenerateSummary}
                 disabled={isLoading || messages.length < 3}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="会話要約を生成"
+                title="莨夊ｩｱ隕∫ｴ・ｒ逕滓・"
               >
-                📋
+                搭
               </button>
               
-              {/* 強化インプレッション */}
+              {/* 蠑ｷ蛹悶う繝ｳ繝励Ξ繝・す繝ｧ繝ｳ */}
               <button
                 onClick={handleGenerateEnhancedImpression}
                 disabled={isGeneratingImpression || messages.length < 3}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-pink-400 hover:text-pink-300"
-                title="会話インプレッション（3視点）"
+                title="莨夊ｩｱ繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ・・隕也せ・・
               >
-                💖
+                猪
               </button>
               
-              {/* 再生成 */}
+              {/* 蜀咲函謌・*/}
               <button 
                 onClick={handleRegenerate}
                 disabled={isLoading || messages.length === 0}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="再生成"
+                title="蜀咲函謌・
               >
-                🔄
+                売
               </button>
               
-              {/* 会話リセット */}
+              {/* 莨夊ｩｱ繝ｪ繧ｻ繝・ヨ */}
               <button 
                 onClick={handleReset}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="会話リセット"
+                title="莨夊ｩｱ繝ｪ繧ｻ繝・ヨ"
               >
-                🗑️
-              </button>
+                卵・・              </button>
               
-              {/* 続き */}
+              {/* 邯壹″ */}
               <button 
                 onClick={handleContinue}
                 disabled={isLoading || messages.length === 0}
                 className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="続きを生成"
+                title="邯壹″繧堤函謌・
               >
-                ▶️
-              </button>
+                笆ｶ・・              </button>
               
 
               
-              {/* 非表示のMemoListButton（機能用） */}
+              {/* 髱櫁｡ｨ遉ｺ縺ｮMemoListButton・域ｩ溯・逕ｨ・・*/}
               <div className="hidden">
                 <MemoListButton currentCharacterId={currentCharacter?.name} />
               </div>
@@ -1798,7 +1752,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* 浮動強化ボタン */}
+      {/* 豬ｮ蜍募ｼｷ蛹悶・繧ｿ繝ｳ */}
       {showEnhanceButton && (
         <button
           onClick={(e) => {
@@ -1812,31 +1766,29 @@ export default function ChatPage() {
           }}
           disabled={isEnhancing}
         >
-          {isEnhancing ? <Loader size={14} className="animate-spin" /> : '✨'}
-          強化
-        </button>
+          {isEnhancing ? <Loader size={14} className="animate-spin" /> : '笨ｨ'}
+          蠑ｷ蛹・        </button>
       )}
 
-      {/* 文章強化結果モーダル */}
+      {/* 譁・ｫ蠑ｷ蛹也ｵ先棡繝｢繝ｼ繝繝ｫ */}
       {showEnhancementModal && enhancementResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                ✨ 文章強化結果
+                笨ｨ 譁・ｫ蠑ｷ蛹也ｵ先棡
               </h2>
               <button
                 onClick={() => setShowEnhancementModal(false)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                ✕
-              </button>
+                笨・              </button>
             </div>
             
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  元の文章
+                  蜈・・譁・ｫ
                 </h3>
                 <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded border">
                   {enhancementResult?.originalText || ''}
@@ -1845,7 +1797,7 @@ export default function ChatPage() {
               
               <div>
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  強化された文章
+                  蠑ｷ蛹悶＆繧後◆譁・ｫ
                 </h3>
                 <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded border border-purple-200 dark:border-purple-700">
                   {enhancementResult?.enhancedText || ''}
@@ -1858,20 +1810,20 @@ export default function ChatPage() {
                 onClick={() => setShowEnhancementModal(false)}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               >
-                キャンセル
+                繧ｭ繝｣繝ｳ繧ｻ繝ｫ
               </button>
               <button
                 onClick={applyEnhancement}
                 className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
               >
-                適用
+                驕ｩ逕ｨ
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* キャラクターギャラリー */}
+      {/* 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧ｮ繝｣繝ｩ繝ｪ繝ｼ */}
       {isCharacterGalleryOpen && (
         <CharacterGallery
           characters={allCharacters}
@@ -1879,14 +1831,13 @@ export default function ChatPage() {
           onSelectCharacter={(character: Character) => {
             setCurrentCharacter(character);
             setIsCharacterGalleryOpen(false);
-            // 新しいキャラクターでセッションを開始
-            setCurrentSessionId(null);
+            // 譁ｰ縺励＞繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺ｧ繧ｻ繝・す繝ｧ繝ｳ繧帝幕蟋・            setCurrentSessionId(null);
             setMessages([{
               id: '1',
               role: 'assistant',
               content: Array.isArray(character.first_message) 
                 ? character.first_message.join('\n') 
-                : (character.first_message || 'こんにちは！'),
+                : (character.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・),
               timestamp: Date.now()
             }]);
           }}
@@ -1901,9 +1852,8 @@ export default function ChatPage() {
             setEditingCharacter(character);
           }}
           onDeleteCharacter={(character: Character) => {
-            if (confirm(`「${character.name}」を削除しますか？`)) {
-              // 削除処理（実装予定）
-              console.log('キャラクター削除:', character.name);
+            if (confirm(`縲・{character.name}縲阪ｒ蜑企勁縺励∪縺吶°・歔)) {
+              // 蜑企勁蜃ｦ逅・ｼ亥ｮ溯｣・ｺ亥ｮ夲ｼ・              console.log('繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ蜑企勁:', character.name);
             }
           }}
           onImportExport={() => {
@@ -1914,7 +1864,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* チャット履歴ギャラリー */}
+      {/* 繝√Ε繝・ヨ螻･豁ｴ繧ｮ繝｣繝ｩ繝ｪ繝ｼ */}
       {isChatHistoryOpen && (
         <ChatHistoryGallery
           sessions={sessions}
@@ -1925,7 +1875,7 @@ export default function ChatPage() {
               if (currentCharacter) {
                 const firstMessage = Array.isArray(currentCharacter.first_message) 
                   ? currentCharacter.first_message.join('\n') 
-                  : (currentCharacter.first_message || 'こんにちは！');
+                  : (currentCharacter.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
                 
                 setMessages([{
                   id: crypto.randomUUID(),
@@ -1949,7 +1899,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* 強化されたインプレッションモーダル */}
+      {/* 蠑ｷ蛹悶＆繧後◆繧､繝ｳ繝励Ξ繝・す繝ｧ繝ｳ繝｢繝ｼ繝繝ｫ */}
       <EnhancedImpressionModal
         isOpen={isEnhancedImpressionOpen}
         onClose={() => setIsEnhancedImpressionOpen(false)}
@@ -1959,28 +1909,26 @@ export default function ChatPage() {
         characterName={currentCharacter?.name}
       />
 
-      {/* 設定モーダル */}
+      {/* 險ｭ螳壹Δ繝ｼ繝繝ｫ */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={(newSettings) => {
-          // 不足しているプロパティを補完しつつ更新
+          // 荳崎ｶｳ縺励※縺・ｋ繝励Ο繝代ユ繧｣繧定｣懷ｮ後＠縺､縺､譖ｴ譁ｰ
           setSettings(prev => ({ ...prev, ...newSettings }));
 
           const mergedSettings = { ...settings, ...newSettings };
 
-          // ローカルストレージに保存
-          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSettings));
+          // 繝ｭ繝ｼ繧ｫ繝ｫ繧ｹ繝医Ξ繝ｼ繧ｸ縺ｫ菫晏ｭ・          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSettings));
 
-          // ElevenLabs APIキーを即座に設定
-          if (mergedSettings.elevenLabsApiKey) {
+          // ElevenLabs API繧ｭ繝ｼ繧貞叉蠎ｧ縺ｫ險ｭ螳・          if (mergedSettings.elevenLabsApiKey) {
             VoiceManager.setApiKey(mergedSettings.elevenLabsApiKey);
           }
         }}
       />
 
-      {/* キャラクターモーダル */}
+      {/* 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繝｢繝ｼ繝繝ｫ */}
       <CharacterModal
         isOpen={isCharacterModalOpen}
         onClose={() => {
@@ -1995,19 +1943,18 @@ export default function ChatPage() {
             CharacterLoader.addCharacter(character);
           }
           
-          // キャラクター一覧を更新
+          // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ荳隕ｧ繧呈峩譁ｰ
           const updatedCharacters = CharacterLoader.getAllCharacters();
           setAllCharacters(updatedCharacters);
           
-          // 新規作成または編集中のキャラクターを選択
-          setCurrentCharacter(character);
+          // 譁ｰ隕丈ｽ懈・縺ｾ縺溘・邱ｨ髮・ｸｭ縺ｮ繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧帝∈謚・          setCurrentCharacter(character);
           setCurrentSessionId(null);
           
           const firstMessage = Array.isArray(character.first_message) 
             ? character.first_message.join('\n') 
-            : (character.first_message || 'こんにちは！');
+            : (character.first_message || '縺薙ｓ縺ｫ縺｡縺ｯ・・);
             
-          console.log('保存後のキャラクター選択:', character.name, firstMessage);
+          console.log('菫晏ｭ伜ｾ後・繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ驕ｸ謚・', character.name, firstMessage);
           
           setMessages([{
             id: crypto.randomUUID(),
@@ -2018,7 +1965,7 @@ export default function ChatPage() {
         }}
       />
 
-      {/* Personaモーダル */}
+      {/* Persona繝｢繝ｼ繝繝ｫ */}
       <PersonaModal
         isOpen={isPersonaModalOpen}
         onClose={() => {
@@ -2037,42 +1984,40 @@ export default function ChatPage() {
           setAllPersonas(updatedPersonas);
           localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
           
-          // 新規作成または編集したPersonaを選択
-          setCurrentPersona(persona);
+          // 譁ｰ隕丈ｽ懈・縺ｾ縺溘・邱ｨ髮・＠縺蘖ersona繧帝∈謚・          setCurrentPersona(persona);
         }}
       />
 
-      {/* インポート/エクスポートモーダル */}
+      {/* 繧､繝ｳ繝昴・繝・繧ｨ繧ｯ繧ｹ繝昴・繝医Δ繝ｼ繝繝ｫ */}
       <CharacterImportExport
         isOpen={isImportExportOpen}
         onClose={() => setIsImportExportOpen(false)}
         allCharacters={allCharacters}
         onImport={(importedCharacters: Character[]) => {
-          // インポートされたキャラクターを追加
+          // 繧､繝ｳ繝昴・繝医＆繧後◆繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧定ｿｽ蜉
           importedCharacters.forEach((character: Character) => {
             CharacterLoader.addCharacter(character);
           });          
-          // キャラクター一覧を更新
+          // 繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ荳隕ｧ繧呈峩譁ｰ
           const updatedCharacters = CharacterLoader.getAllCharacters();
           setAllCharacters(updatedCharacters);
         }}
       />
 
-      {/* 会話要約モーダル */}
+      {/* 莨夊ｩｱ隕∫ｴ・Δ繝ｼ繝繝ｫ */}
       <ChatSummaryModal
         isOpen={isSummaryOpen}
         onClose={() => setIsSummaryOpen(false)}
         summary={currentSummary}
         isLoading={isGeneratingSummary}
-        sessionTitle={currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'}
+        sessionTitle={currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '譁ｰ縺励＞繝√Ε繝・ヨ' : '譁ｰ縺励＞繝√Ε繝・ヨ'}
         characterName={currentCharacter?.name || 'AI'}
         onSaveSummary={(summary) => {
-          // 要約保存機能（後で実装可能）
-          console.log('Summary saved:', summary);
+          // 隕∫ｴ・ｿ晏ｭ俶ｩ溯・・亥ｾ後〒螳溯｣・庄閭ｽ・・          console.log('Summary saved:', summary);
         }}
       />
 
-      {/* テーマモーダル */}
+      {/* 繝・・繝槭Δ繝ｼ繝繝ｫ */}
       <ThemeModal
         isOpen={isThemeModalOpen}
         onClose={() => setIsThemeModalOpen(false)}
@@ -2081,29 +2026,27 @@ export default function ChatPage() {
         onThemeChange={handleThemeChange}
       />
 
-      {/* 認証・クラウド同期モーダル */}
+      {/* 隱崎ｨｼ繝ｻ繧ｯ繝ｩ繧ｦ繝牙酔譛溘Δ繝ｼ繝繝ｫ */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onDataSync={(syncedData) => {
-          // 同期されたデータを反映
+          // 蜷梧悄縺輔ｌ縺溘ョ繝ｼ繧ｿ繧貞渚譏
           setAllCharacters(syncedData.characters)
           setAllPersonas(syncedData.personas)
           setSettings(syncedData.settings)
-          // メモデータも反映（chatStoreを使用）
-          localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
+          // 繝｡繝｢繝・・繧ｿ繧ょ渚譏・・hatStore繧剃ｽｿ逕ｨ・・          localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
           localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
           localStorage.setItem('ai-chat-settings', JSON.stringify(syncedData.settings))
         }}
       />
 
-      {/* インスピレーション候補選択モーダル */}
+      {/* 繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ蛟呵｣憺∈謚槭Δ繝ｼ繝繝ｫ */}
       <InspirationModal
         isOpen={showInspiration}
         candidates={inspirationCandidates}
         onSelect={(selectedText: string) => {
-          // 選択した候補をキャラクターの返信として確定
-          const aiResponse: Message = {
+          // 驕ｸ謚槭＠縺溷呵｣懊ｒ繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺ｮ霑比ｿ｡縺ｨ縺励※遒ｺ螳・          const aiResponse: Message = {
             id: Date.now().toString(),
             role: 'assistant',
             content: selectedText,
@@ -2113,13 +2056,11 @@ export default function ChatPage() {
           setShowInspiration(false);
           setInspirationCandidates([]);
           
-          // 通知音を再生
-          if (settings.chatNotificationSound) {
+          // 騾夂衍髻ｳ繧貞・逕・          if (settings.chatNotificationSound) {
             VoiceManager.playNotificationSound(true, 0.3);
           }
           
-          // 画像生成（必要な場合）
-          if (settings.enableImageGeneration) {
+          // 逕ｻ蜒冗函謌撰ｼ亥ｿ・ｦ√↑蝣ｴ蜷茨ｼ・          if (settings.enableImageGeneration) {
             handleImageGeneration(aiResponse, selectedText);
           }
         }}
@@ -2129,7 +2070,7 @@ export default function ChatPage() {
         }}
       />
 
-      {/* ユーザーインスピレーション候補選択モーダル */}
+      {/* 繝ｦ繝ｼ繧ｶ繝ｼ繧､繝ｳ繧ｹ繝斐Ξ繝ｼ繧ｷ繝ｧ繝ｳ蛟呵｣憺∈謚槭Δ繝ｼ繝繝ｫ */}
       <UserInspirationModal
         isOpen={showUserInspiration}
         candidates={userInspirationCandidates}
@@ -2144,22 +2085,21 @@ export default function ChatPage() {
         }}
       />
 
-      {/* Personaインポート/エクスポートモーダル */}
+      {/* Persona繧､繝ｳ繝昴・繝・繧ｨ繧ｯ繧ｹ繝昴・繝医Δ繝ｼ繝繝ｫ */}
       <PersonaImportExport
         isOpen={isPersonaImportExportOpen}
         onClose={() => setIsPersonaImportExportOpen(false)}
         allPersonas={allPersonas}
         onImport={(importedPersonas: UserPersona[]) => {
-          // インポートされたPersonaを追加
+          // 繧､繝ｳ繝昴・繝医＆繧後◆Persona繧定ｿｽ蜉
           const updatedPersonas = [...allPersonas];
           importedPersonas.forEach((importedPersona: UserPersona) => {
-            // 既存のPersonaと重複チェック（IDまたは名前）
-            const existingIndex = updatedPersonas.findIndex(p => p.id === importedPersona.id || p.name === importedPersona.name);
+            // 譌｢蟄倥・Persona縺ｨ驥崎､・メ繧ｧ繝・け・・D縺ｾ縺溘・蜷榊燕・・            const existingIndex = updatedPersonas.findIndex(p => p.id === importedPersona.id || p.name === importedPersona.name);
             if (existingIndex >= 0) {
-              // 既存のPersonaを更新
+              // 譌｢蟄倥・Persona繧呈峩譁ｰ
               updatedPersonas[existingIndex] = importedPersona;
             } else {
-              // 新しいPersonaを追加
+              // 譁ｰ縺励＞Persona繧定ｿｽ蜉
               updatedPersonas.push(importedPersona);
             }
           });
@@ -2171,3 +2111,5 @@ export default function ChatPage() {
     </div>
   );
 }
+
+
