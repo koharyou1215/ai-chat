@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+import ClientLayout from './ClientLayout'
 
 export const metadata: Metadata = {
   title: 'AI Chat',
@@ -16,12 +17,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${GeistSans.className} ${GeistMono.className} antialiased`}>
-        <div className="min-h-screen bg-black text-white">
-          <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">AI Chat</h1>
-            {children}
-          </div>
-        </div>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   )
