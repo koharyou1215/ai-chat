@@ -30,11 +30,11 @@ export default function CharacterGallery({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular'>('name');
 
-  // 全タグを取得
-  const allTags = Array.from(new Set(characters.flatMap(c => c.tags || [])));
+  // 全タグを取得（安全な処理）
+  const allTags = Array.from(new Set((characters || []).flatMap(c => c.tags || [])));
 
-  // フィルタリングとソート
-  const filteredCharacters = characters
+  // フィルタリングとソート（安全な処理）
+  const filteredCharacters = (characters || [])
     .filter(character => {
       const matchesSearch = character.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            character.personality?.toLowerCase().includes(searchTerm.toLowerCase()) ||

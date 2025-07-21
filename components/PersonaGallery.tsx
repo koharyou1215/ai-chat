@@ -29,8 +29,8 @@ export default function PersonaGallery({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular'>('name');
 
-  // フィルタリングとソート
-  const filteredPersonas = personas
+  // フィルタリングとソート（安全な処理）
+  const filteredPersonas = (personas || [])
     .filter(persona => {
       const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            persona.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -23,8 +23,8 @@ export default function ChatHistoryGallery({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'duration' | 'messages'>('recent');
 
-  // フィルタリングとソート
-  const filteredSessions = sessions
+  // フィルタリングとソート（安全な処理）
+  const filteredSessions = (sessions || [])
     .filter(session => {
       const matchesSearch = session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            session.characterName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
