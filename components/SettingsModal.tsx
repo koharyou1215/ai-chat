@@ -180,6 +180,38 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       🎤 高品質音声合成用（月10,000文字まで無料）
                     </p>
                   </div>
+
+                  {/* Runware Model ID */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Runware モデルID
+                    </label>
+                    <input
+                      type="text"
+                      value={formSettings.runwareModelId}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, runwareModelId: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      placeholder="例: model_xxxx"
+                    />
+                  </div>
+
+                  {/* Runware LORA IDs */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Runware LORA ID (複数)
+                    </label>
+                    <textarea
+                      value={formSettings.runwareLoraIds?.join(', ' )}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, runwareLoraIds: e.target.value.split(',').map(s => s.trim()) }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      rows={2}
+                      placeholder="例: lora_yyyy, lora_zzzz"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      カンマ区切りで複数指定できます。
+                    </p>
+                  </div>
+
                 </div>
               </section>
 
@@ -323,10 +355,17 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       onChange={(e) => setFormSettings(prev => ({ ...prev, model: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     >
-                      {(formSettings.provider === 'gemini'
-                        ? ['gemini-2.5-pro','gemini-2.5-flash','gemini-2.5-flash-lite-preview-06-17']
-                        : ['openai/gpt-4o-mini','openai/gpt-4o','x-ai/grok-beta','deepseek/deepseek-chat','anthropic/claude-3.5-sonnet','anthropic/claude-sonnet-4','anthropic/claude-3.7-sonnet:thinking','anthropic/claude-opus-4','thudm/glm-4.1v-9b-thinking','tngtech/deepseek-r1t2-chimera:free','google/gemini-pro-1.5']
-                      ).map(m => (
+                      {[ // OpenRouter Models
+                        'qwen/qwen3-235b-a22b-07-25:free',
+                        'x-ai/grok-4',
+                        'google/gemini-2.5-flash',
+                        'google/gemini-2.5-pro',
+                        'deepseek/deepseek-r1-0528-qwen3-8b:free',
+                        'deepseek/deepseek-chat-v3-0324:free',
+                        'anthropic/claude-opus-4',
+                        'anthropic/claude-sonnet-4',
+                        'anthropic/claude-3.7-sonnet:thinking',
+                      ].map(m => (
                         <option key={m} value={m}>{m}</option>
                       ))}
                     </select>
@@ -682,7 +721,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       placeholder="電球ボタン用のプロンプトを入力..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      電球ボタン（\uD83D\uDCA1）で使用されるプロンプトです。{character.name}、{persona}、{lastCharacterMessage}、{recentConversation} が変数として使用できます。
+                      電球ボタン（\uD83D\uDCA1）で使用されるプロンプトです。\u007Bcharacter.name\u007D、\u007Bpersona\u007D、\u007BlastCharacterMessage\u007D、\u007BrecentConversation\u007D が変数として使用できます。
                     </p>
                   </div>
 
@@ -699,7 +738,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       placeholder="キラキラボタン用のプロンプトを入力..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      キラキラボタン（\u2728）で使用されるプロンプトです。{text}、{conversationContext} が変数として使用できます。
+                      キラキラボタン（\u2728）で使用されるプロンプトです。\u007Btext\u007D、\u007BconversationContext\u007D が変数として使用できます。
                     </p>
                   </div>
                 </div>
