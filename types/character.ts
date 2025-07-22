@@ -171,7 +171,7 @@ export interface AppSettings {
   enableImageGeneration?: boolean; // オプショナルに変更
   loraSettings?: string;
   negativePrompt?: string;
-  imageEngine?: string;
+  imageEngine?: 'sd' | 'runware';
   chatNotificationSound?: boolean; // オプショナルに変更
   currentTheme?: string;
   customBackground?: string;

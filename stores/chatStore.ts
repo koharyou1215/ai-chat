@@ -72,7 +72,7 @@ const defaultSettings: AppSettings = {
   model: 'openai/gpt-4o-mini',
   enableImageGeneration: true,
   chatNotificationSound: true,
-  imageEngine: 'replicate',
+  imageEngine: 'runware',
   bubbleBlur: true,
   provider: 'openrouter',
   openRouterApiKey: '',

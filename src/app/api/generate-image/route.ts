@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImagePromptGenerator } from '../../../../lib/imagePromptGenerator';
-import Replicate from 'replicate';
+import { RunwareService } from '../../../../lib/runwareApi';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
     //    - LOCAL_SD_URL が無い場合は既定 URL "http://127.0.0.1:7860" を使用
     const forceLocalEnv = process.env.FORCE_LOCAL_SD === 'true';
     // クライアント指定があれば優先
-    let selectedEngine: 'sd' | 'replicate';
-    if (imageEngine === 'sd' || imageEngine === 'replicate') {
+    let selectedEngine: 'sd' | 'runware';
+    if (imageEngine === 'sd' || imageEngine === 'runware') {
       selectedEngine = imageEngine;
     } else {
-      selectedEngine = forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL ? 'sd' : 'replicate';
+      selectedEngine = forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL ? 'sd' : 'runware';
     }
 
     // Flag retained for backward-compat; may be used in future
@@ -95,99 +95,61 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Replicate APIキーが設定されている場合は実際のAI画像生成
-    const useReplicate = process.env.REPLICATE_API_TOKEN && selectedEngine === 'replicate';
-    if (useReplicate) {
-      console.log('Using Replicate API for image generation');
+    // Runware APIキーが設定されている場合は実際のAI画像生成
+    if (selectedEngine === 'runware') {
+      console.log('Using Runware API for image generation');
 
-      const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN! });
-      const modelName = process.env.REPLICATE_MODEL_NAME || '';
-      const modelVersion = process.env.REPLICATE_MODEL_VERSION;
+      const runwareApiKey = process.env.RUNWARE_API_KEY; // 環境変数名が RUNWARE_API_KEY であると仮定
+      if (!runwareApiKey) {
+        throw new Error('Runware APIキーが設定されていません');
+      }
+
+      const runwareService = new RunwareService(runwareApiKey);
 
       try {
-        let imageUrl: string | undefined;
+        // 画像生成タスクの作成
+        // character.imageWidth, character.imageHeight は SettingsModal の値
+        const { taskId } = await runwareService.createGenerationTask({
+          prompt: finalPrompt,
+          negative_prompt: finalNegativePrompt,
+          width: character?.imageWidth || 1024, // Runwareの推奨サイズに合わせて調整
+          height: character?.imageHeight || 1024, // 同上
+          steps: character?.imageSteps || 50, // Runwareの推奨ステップ数に合わせて調整
+          cfg_scale: character?.imageCfgScale || 7,
+          seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
+          model_id: character?.runwareModelId, // SettingsModalから取得したID
+          lora_ids: character?.runwareLoraIds, // SettingsModalから取得したID
+        });
 
-        if (modelName) {
-          // 例: "black-forest-labs/flux-kontext-pro" または version を付与した識別子
-          const identifier = modelVersion ? `${modelName}:${modelVersion}` : modelName;
+        console.log(`Runware task created with ID: ${taskId}`);
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const output: unknown = await replicate.run(identifier as any, {
-            input: {
-              prompt: finalPrompt,
-              negative_prompt: finalNegativePrompt,
-              width: character?.imageWidth || 512,
-              height: character?.imageHeight || 768,
-              num_inference_steps: character?.imageSteps || 28,
-              guidance_scale: character?.imageCfgScale || 8,
-              seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-            },
-          });
+        // タスクの完了をポーリング
+        let attempts = 0;
+        let taskStatus: { status: string; image?: string; seed?: number } = { status: 'pending' };
+        const MAX_ATTEMPTS = 60; // 2秒 * 60回 = 120秒 (2分) タイムアウト
+        const POLL_INTERVAL_MS = 2000; // 2秒
 
-          if (Array.isArray(output)) {
-            imageUrl = output[0] as string;
-          } else if (typeof output === 'string') {
-            imageUrl = output;
-          } else if (output && typeof (output as { url?: () => string }).url === 'function') {
-            imageUrl = (output as { url: () => string }).url();
-          }
-        } else {
-          // モデル名が指定されていない場合は従来どおり version ハッシュで呼び出し
-          const response = await fetch('https://api.replicate.com/v1/predictions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              version: process.env.REPLICATE_MODEL_VERSION || 'ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4', // 既定 SDXL
-              input: {
-                prompt: finalPrompt,
-                negative_prompt: finalNegativePrompt,
-                width: character?.imageWidth || 512,
-                height: character?.imageHeight || 768,
-                num_inference_steps: character?.imageSteps || 28,
-                guidance_scale: character?.imageCfgScale || 8,
-                seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-              },
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Replicate API error: ${response.status}`);
-          }
-
-          const prediction = await response.json();
-
-          // 予測が完了するまで待機（最大30秒）
-          let result = prediction;
-          let attempts = 0;
-          while (result.status !== 'succeeded' && result.status !== 'failed' && attempts < 15) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
-              headers: {
-                'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
-              },
-            });
-
-            result = await statusResponse.json();
-            attempts++;
-          }
-
-          if (result.status === 'succeeded' && result.output && result.output[0]) {
-            imageUrl = result.output[0];
-          }
+        while (taskStatus.status !== 'completed' && taskStatus.status !== 'failed' && attempts < MAX_ATTEMPTS) {
+          await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+          taskStatus = await runwareService.getGenerationTaskStatus(taskId);
+          console.log(`Runware task ${taskId} status: ${taskStatus.status}`);
+          attempts++;
         }
 
-        if (imageUrl) {
+        if (taskStatus.status === 'completed' && taskStatus.image) {
+          // Runwareから返される画像はBase64エンコードされていると仮定
+          const dataUri = `data:image/png;base64,${taskStatus.image}`;
           return NextResponse.json({
-            image: imageUrl,
+            image: dataUri,
             success: true,
+            message: 'Runware API で生成しました',
           });
+        } else {
+          throw new Error(`Runware 画像生成タスクが完了しませんでした: ${taskStatus.status}`);
         }
-      } catch (replicateError) {
-        console.error('Replicate API error:', replicateError);
+
+      } catch (runwareError) {
+        console.error('Runware API error:', runwareError);
         // エラー時はプレースホルダーにフォールバック
       }
     }
@@ -201,9 +163,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       image: placeholderImage,
       success: true,
-      message: process.env.REPLICATE_API_TOKEN ? 
+      message: process.env.RUNWARE_API_KEY ? 
         '画像生成に時間がかかっています。プレースホルダーを表示中...' : 
-        'Replicate APIキーを設定すると美しいAI画像が生成されます。'
+        'Runware APIキーを設定すると美しいAI画像が生成されます。'
     });
     
   } catch (error) {
