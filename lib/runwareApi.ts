@@ -9,6 +9,7 @@ export interface RunwareRequest {
   seed?: number;
   model_id?: string;
   lora_ids?: string[];
+  allow_nsfw?: boolean; // 新しく追加
 }
 
 export interface RunwareResponse {

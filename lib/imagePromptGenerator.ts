@@ -157,9 +157,29 @@ export class ImagePromptGenerator {
         prompt: 'kitchen setting, cooking, food preparation'
       },
       {
-        keywords: ['外', '散歩', '公園', '街', '外出', '買い物'],
-        name: '屋外',
-        prompt: 'outdoor setting, natural lighting, scenery background'
+        keywords: ['リビング', '居間', 'ソファ', 'テレビ', 'くつろぐ'],
+        name: 'リビングルーム',
+        prompt: 'living room, sofa, cozy, relaxed atmosphere, home interior'
+      },
+      {
+        keywords: ['カフェ', '喫茶店', 'コーヒーショップ', 'お茶', '軽食'],
+        name: 'カフェ',
+        prompt: 'cafe, coffee shop, casual setting, comfortable seating, window view'
+      },
+      {
+        keywords: ['オフィス', '職場', 'デスク', 'パソコン', '仕事'],
+        name: 'オフィス',
+        prompt: 'office, desk, computer, professional setting, workplace'
+      },
+      {
+        keywords: ['図書館', '本屋', '本', '静か', '勉強'],
+        name: '図書館',
+        prompt: 'library, bookstore, quiet atmosphere, shelves of books'
+      },
+      {
+        keywords: ['店', '買い物', 'デパート', 'モール', 'ショッピング'],
+        name: '店',
+        prompt: 'store, shop, shopping, retail environment'
       },
       {
         keywords: ['学校', '教室', '勉強', '宿題', '制服'],
@@ -167,14 +187,54 @@ export class ImagePromptGenerator {
         prompt: 'school setting, classroom, desk, school uniform'
       },
       {
-        keywords: ['海', 'ビーチ', '水着', '泳', '夏'],
-        name: 'ビーチ',
-        prompt: 'beach setting, ocean background, summer, swimwear'
+        keywords: ['電車', 'バス', '駅', '空港', '乗り物'],
+        name: '交通機関',
+        prompt: 'train, bus, station, transportation, indoor vehicle'
       },
       {
-        keywords: ['夜', '暗い', '月', '星', 'ライト'],
+        keywords: ['病院', '医者', '診察', '病室', 'クリニック'],
+        name: '病院',
+        prompt: 'hospital, clinic, medical setting, sterile environment'
+      },
+      {
+        keywords: ['屋外', '外', '散歩', '公園', '街', '外出', '買い物', '道', '広場', '広大な自然'],
+        name: '屋外',
+        prompt: 'outdoor setting, natural lighting, scenery background, street, public square'
+      },
+      {
+        keywords: ['森', '林', '木', '自然', '森林浴'],
+        name: '森',
+        prompt: 'forest, woods, trees, nature, sunlight filtering through leaves'
+      },
+      {
+        keywords: ['山', '登山', '頂上', '山脈', '高所'],
+        name: '山',
+        prompt: 'mountain, mountain peak, hiking, scenic view'
+      },
+      {
+        keywords: ['川', '湖', '水辺', '小川', '池'],
+        name: '水辺',
+        prompt: 'river, lake, waterside, calm water, serene landscape'
+      },
+      {
+        keywords: ['海', 'ビーチ', '水着', '泳', '夏', '砂浜', '波', '海岸'],
+        name: 'ビーチ',
+        prompt: 'beach setting, ocean background, summer, swimwear, sandy beach, waves'
+      },
+      {
+        keywords: ['夜', '暗い', '月', '星', 'ライト', '夜空', '星空', '月明かり'],
         name: '夜',
-        prompt: 'night setting, dark atmosphere, moonlight, soft lighting'
+        prompt: 'night setting, dark atmosphere, moonlight, starlight, soft artificial lighting'
+      },
+      {
+        keywords: ['雨', '傘', '水たまり', '雨具', '雨の日'],
+        name: '雨の日',
+        prompt: 'rainy day, umbrella, wet ground, reflections, gloomy atmosphere'
+      },
+      {
+        keywords: ['雪', '冬', '雪景色', '雪だるま', '寒い'],
+        name: '雪景色',
+        prompt: 'snowy landscape, winter, snow falling, cold atmosphere, cozy indoor view'
       }
     ];
 

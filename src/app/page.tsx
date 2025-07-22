@@ -315,6 +315,8 @@ export default function ChatPage() {
         bubbleBlur: parsed.bubbleBlur ?? true,
         openRouterApiKey: parsed.openRouterApiKey ?? '',
         candidateCount: parsed.candidateCount ?? 1,
+        runwareModelId: parsed.runwareModelId ?? '',
+        runwareLoraIds: parsed.runwareLoraIds ?? [],
       };
     }
     return { // Default values for SSR
@@ -353,6 +355,8 @@ export default function ChatPage() {
       bubbleBlur: true,
       openRouterApiKey: '',
       candidateCount: 1,
+      runwareModelId: '',
+      runwareLoraIds: [],
     };
   });
 
@@ -776,13 +780,15 @@ export default function ChatPage() {
           conversationContext: messages.slice(-5).map(m => m.content),
           loraSettings: settings.loraSettings,
           negativePrompt: settings.negativePrompt,
-          seed: imagePromptResult.seed,
           width: currentCharacter?.imageWidth,
           height: currentCharacter?.imageHeight,
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
           imageEngine: settings.imageEngine,
+          // Runware固有のモデルIDとLORA IDをsettingsから渡す
+          runwareModelId: settings.runwareModelId,
+          runwareLoraIds: settings.runwareLoraIds,
         }),
       });
 
@@ -1266,6 +1272,9 @@ export default function ChatPage() {
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
           imageEngine: settings.imageEngine,
+          // Runware固有のモデルIDとLORA IDをsettingsから渡す
+          runwareModelId: settings.runwareModelId,
+          runwareLoraIds: settings.runwareLoraIds,
         })
       });
 

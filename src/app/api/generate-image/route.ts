@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
           seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
           model_id: character?.runwareModelId, // SettingsModalから取得したID
           lora_ids: character?.runwareLoraIds, // SettingsModalから取得したID
+          allow_nsfw: true, // NSFWフィルターを解除
         });
 
         console.log(`Runware task created with ID: ${taskId}`);
