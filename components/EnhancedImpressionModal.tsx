@@ -53,9 +53,9 @@ export default function EnhancedImpressionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]"> {/* overflow-hidden を削除し、flex-col を追加 */}
         {/* ヘッダー */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200"> {/* flex-shrink-0 を追加 */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-purple-400 flex items-center justify-center">
               <Heart size={24} className="text-white" />

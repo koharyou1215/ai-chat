@@ -19,6 +19,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   const [showSDKey, setShowSDKey] = useState(false);
   const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
   const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
+  const [showRunwareKey, setShowRunwareKey] = useState(false); // Runware APIキー表示ステートを追加
   const [voiceList, setVoiceList] = useState<ElevenLabsVoice[]>([]);
 
   // ユーザー指定のカスタム音声プリセット
@@ -178,6 +179,32 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       🎤 高品質音声合成用（月10,000文字まで無料）
+                    </p>
+                  </div>
+
+                  {/* Runware API Key */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Runware API キー
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showRunwareKey ? 'text' : 'password'}
+                        value={formSettings.runwareApiKey}
+                        onChange={(e) => setFormSettings(prev => ({ ...prev, runwareApiKey: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
+                        placeholder="run_..."
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRunwareKey(!showRunwareKey)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showRunwareKey ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      🖼️ Runware画像生成用APIキー
                     </p>
                   </div>
 
@@ -587,14 +614,14 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </label>
                     <select
                       value={formSettings.imageEngine}
-                      onChange={(e) => setFormSettings(prev => ({ ...prev, imageEngine: e.target.value as 'replicate' | 'sd' }))}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, imageEngine: e.target.value as 'sd' | 'runware' }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     >
-                      <option value="replicate">Replicate (クラウド)</option>
+                      <option value="runware">Runware (クラウド)</option>
                       <option value="sd">Stable Diffusion (ローカル/URL)</option>
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
-                      Replicate はトークン必須、Stable Diffusion は環境変数 LOCAL_SD_URL を設定してください
+                      Runware は API キー必須、Stable Diffusion は環境変数 LOCAL_SD_URL を設定してください
                     </p>
                   </div>
                 </div>

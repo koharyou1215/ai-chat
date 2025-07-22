@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter'; // OpenRouterをインポート
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
+// const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? ''; // 削除
 
-if (!GEMINI_API_KEY) {
-  console.warn('[enhance-text] GEMINI_API_KEY が設定されていません');
-}
+// if (!GEMINI_API_KEY) { // 削除
+//   console.warn('[enhance-text] GEMINI_API_KEY が設定されていません');
+// }
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,24 +19,26 @@ export async function POST(request: NextRequest) {
     }
 
     // フロント側の設定からAPIキーを取得
-    const apiKey = settings?.geminiApiKey || GEMINI_API_KEY;
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // OpenRouter APIキーを取得
     
-    if (!apiKey) {
+    if (!openRouterApiKey) {
       return NextResponse.json({
         success: false,
-        error: 'Gemini APIキーが設定されていません'
+        error: 'OpenRouter APIキーが設定されていません'
       }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        temperature: 0.8,
-        topP: 0.9,
-        maxOutputTokens: variantCount === 1 ? 500 : 1000,
-      }
-    });
+    const modelToUse = settings?.model || 'anthropic/claude-sonnet-4'; // OpenRouterモデル
+
+    // const genAI = new GoogleGenerativeAI(apiKey); // 削除
+    // const model = genAI.getGenerativeModel({ // 削除
+    //   model: 'gemini-1.5-flash',
+    //   generationConfig: {
+    //     temperature: 0.8,
+    //     topP: 0.9,
+    //     maxOutputTokens: variantCount === 1 ? 500 : 1000,
+    //   }
+    // });
 
     // キャラクター情報を構築
     const characterInfo = character ? `
@@ -79,6 +81,8 @@ ${text}
 - 大幅に強化して魅力的にしてください
 - JSON形式ではなく、強化されたテキストのみを返してください
 - 遠慮せずに魅力的で面白い表現にしてください
+**- {{char}}のセリフや行動は絶対に含めないでください。**
+**- 強化された文章は必ず元のテキストの内容に関連付けてください。**
 
 強化されたテキスト:` :
         `以下のテキストを、より魅力的で表現豊かな文章に強化してください。
@@ -102,12 +106,19 @@ ${text}
 - 会話の流れを考慮して自然な表現にしてください
 - 過度に長くならないよう適切な長さに調整してください
 - JSON形式ではなく、強化されたテキストのみを返してください
+**- {{char}}のセリフや行動は絶対に含めないでください。**
+**- 強化された文章は必ず元のテキストの内容に関連付けてください。**
 
 強化されたテキスト:`;
 
-      const result = await model.generateContent(simplePrompt);
-      const response = await result.response;
-      const enhancedText = response.text().trim();
+      // OpenRouter API呼び出し
+      const enhancedText = await callOpenRouter({
+        apiKey: openRouterApiKey,
+        model: modelToUse,
+        messages: [{ role: 'user', content: simplePrompt }],
+        temperature: 0.8,
+        maxTokens: variantCount === 1 ? 500 : 1000,
+      });
 
       return NextResponse.json({
         success: true,
@@ -147,7 +158,7 @@ ${text}
     {
       "title": "詳細描写版", 
       "content": "強化されたテキスト2",
-      "description": "状況やBackgroundを詳しく説明したバージョン",
+      "description": "状況やBackgroundを詳しく説明したバージョン", 
       "improvements": ["状況の具体化", "Backgroundの説明", "文脈の明確化"]
     },
     {
@@ -165,69 +176,76 @@ ${text}
 - キャラクターの設定がある場合は、その個性を反映してください
 - 会話の流れを考慮して自然な表現にしてください
 - 過度に長くならないよう適切な長さに調整してください
+**- {{char}}のセリフや行動は絶対に含めないでください。**
+**- 強化された文章は必ず元のテキストの内容に関連付けてください。**
 
 JSON形式以外は出力しないでください。`;
 
-      const result = await model.generateContent(detailedPrompt);
-    const response = await result.response;
-    const responseText = response.text();
-
-    try {
-      const data = JSON.parse(responseText);
-      
-      // 各バージョンの文字数を計算
-      const enhancedVersionsWithStats = data.enhancedVersions.map((version: { content: string; [key: string]: unknown }) => ({
-        ...version,
-        originalLength: text.length,
-        enhancedLength: version.content.length,
-        improvementRatio: Math.round((version.content.length / text.length) * 100)
-      }));
-
-      return NextResponse.json({
-        success: true,
-        originalText: text,
-        enhancedVersions: enhancedVersionsWithStats
+      const openRouterResponseText = await callOpenRouter({
+        apiKey: openRouterApiKey,
+        model: modelToUse,
+        messages: [{ role: 'user', content: detailedPrompt }],
+        temperature: 0.8,
+        maxTokens: variantCount === 1 ? 500 : 1000,
       });
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-        console.error('Raw response:', responseText);
-      
-      // フォールバック: 基本的な強化を生成
-      const fallbackVersions = [
-        {
-          title: "感情重視版",
-          content: `${text} この気持ちを大切にしたいと思います。`,
-          description: "感情表現を豊かにしたバージョン",
-          improvements: ["感情の具体化", "共感の表現"],
-          originalLength: text.length,
-          enhancedLength: text.length + 15,
-          improvementRatio: Math.round(((text.length + 15) / text.length) * 100)
-        },
-        {
-          title: "詳細描写版",
-          content: `現在の状況を考えると、${text} ということがより明確になります。`,
-          description: "状況やBackgroundを詳しく説明したバージョン", 
-          improvements: ["状況の具体化", "Backgroundの説明"],
-          originalLength: text.length,
-          enhancedLength: text.length + 25,
-          improvementRatio: Math.round(((text.length + 25) / text.length) * 100)
-        },
-        {
-          title: "個性表現版",
-          content: `${text} これは私らしい考え方だと思います。`,
-          description: "キャラクターの個性を活かしたバージョン",
-          improvements: ["性格の反映", "個性の表現"],
-          originalLength: text.length,
-          enhancedLength: text.length + 20,
-          improvementRatio: Math.round(((text.length + 20) / text.length) * 100)
-        }
-      ];
+      const responseText = openRouterResponseText; // OpenRouterからの応答を使用
 
-      return NextResponse.json({
-        success: true,
-        originalText: text,
-        enhancedVersions: fallbackVersions
-      });
+      try {
+        const data = JSON.parse(responseText);
+        
+        // 各バージョンの文字数を計算
+        const enhancedVersionsWithStats = data.enhancedVersions.map((version: { content: string; [key: string]: unknown }) => ({
+          ...version,
+          originalLength: text.length,
+          enhancedLength: version.content.length,
+          improvementRatio: Math.round((version.content.length / text.length) * 100)
+        }));
+
+        return NextResponse.json({
+          success: true,
+          originalText: text,
+          enhancedVersions: enhancedVersionsWithStats
+        });
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+          console.error('Raw response:', responseText);
+        
+        // フォールバック: 基本的な強化を生成
+        const fallbackVersions = [
+          {
+            title: "感情重視版",
+            content: `${text} この気持ちを大切にしたいと思います。`,
+            description: "感情表現を豊かにしたバージョン",
+            improvements: ["感情の具体化", "共感の表現"],
+            originalLength: text.length,
+            enhancedLength: text.length + 15,
+            improvementRatio: Math.round(((text.length + 15) / text.length) * 100)
+          },
+          {
+            title: "詳細描写版",
+            content: `現在の状況を考えると、${text} ということがより明確になります。`,
+            description: "状況やBackgroundを詳しく説明したバージョン", 
+            improvements: ["状況の具体化", "Backgroundの説明"],
+            originalLength: text.length,
+            enhancedLength: text.length + 25,
+            improvementRatio: Math.round(((text.length + 25) / text.length) * 100)
+          },
+          {
+            title: "個性表現版",
+            content: `${text} これは私らしい考え方だと思います。`,
+            description: "キャラクターの個性を活かしたバージョン",
+            improvements: ["性格の反映", "個性の表現"],
+            originalLength: text.length,
+            enhancedLength: text.length + 20,
+            improvementRatio: Math.round(((text.length + 20) / text.length) * 100)
+          }
+        ];
+
+        return NextResponse.json({
+          success: true,
+          originalText: text,
+          enhancedVersions: fallbackVersions
+        });
       }
     }
   } catch (error) {

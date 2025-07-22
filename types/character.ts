@@ -195,6 +195,7 @@ export interface AppSettings {
   candidateCount?: number;
   runwareModelId?: string;
   runwareLoraIds?: string[];
+  runwareApiKey?: string; // Runware APIキーを追加
   inspirationPrompt?: string; // 追加
   enhancementPrompt?: string; // 追加
 } 

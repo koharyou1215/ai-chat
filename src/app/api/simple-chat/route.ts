@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { MemoryManager } from '../../../../lib/memoryManager';
 import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
@@ -9,16 +8,6 @@ import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter';
 
 
 // NOTE: セキュリティのため API キーはハードコードしない
-const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
-
-// --- インスタンスキャッシュ（APIキーごと） ---
-const genAiCache = new Map<string, GoogleGenerativeAI>();
-function getGenAI(key: string) {
-  if (!genAiCache.has(key)) {
-    genAiCache.set(key, new GoogleGenerativeAI(key));
-  }
-  return genAiCache.get(key)!;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,20 +39,18 @@ export async function POST(request: NextRequest) {
       console.log('Fallback to default character:', character?.name);
     }
     
-    // プロバイダを決定（未指定は gemini）
-    const provider: 'gemini' | 'openrouter' = settings?.provider || 'gemini';
-
-    // GEMINI APIキー（Gemini 利用時のみ必須）
-    const apiKey = settings?.geminiApiKey || SERVER_GEMINI_API_KEY;
-
-    if (provider === 'gemini' && !apiKey) {
-      console.error('GEMINI_API_KEY が設定されていません');
-      return NextResponse.json({
-        success: false,
-        error: 'Gemini APIキーが設定されていません'
-      }, { status: 500 });
-    }
+    // プロバイダを決定
+    let provider: 'gemini' | 'openrouter' = settings?.provider || 'openrouter'; // デフォルトをopenrouterに
     
+    // 設定されたモデルがOpenRouterのGeminiモデルの場合、プロバイダを強制的にopenrouterに
+    const openRouterGeminiModels = [
+      'google/gemini-2.5-flash',
+      'google/gemini-2.5-pro',
+    ];
+    if (settings?.model && openRouterGeminiModels.includes(settings.model)) {
+      provider = 'openrouter';
+    }
+
     // モデル設定（Gemini/OpenRouter 共通で使うパラメータをまとめて保持）
     const modelConfig = {
       model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-4o-mini'),
@@ -78,14 +65,8 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Gemini モデルは provider が gemini の時だけ初期化
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let model: any = null;
-    if (provider === 'gemini') {
-      const genAI = getGenAI(apiKey);
-      model = genAI.getGenerativeModel(modelConfig);
-    }
-    
+    console.log('Model config maxOutputTokens:', modelConfig.generationConfig.maxOutputTokens); // デバッグログ追加
+
     // キャラクター情報からプロンプトを生成
     let basePrompt = '';
     
@@ -213,18 +194,18 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        let openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+        const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // let から const に変更
         
-        // APIキーの重複を修正（重複している場合は半分にカット）
-        if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
-          const halfLength = openRouterApiKey.length / 2;
-          const firstHalf = openRouterApiKey.substring(0, halfLength);
-          const secondHalf = openRouterApiKey.substring(halfLength);
-          if (firstHalf === secondHalf) {
-            console.log('OpenRouter APIキーの重複を検出、修正しています');
-            openRouterApiKey = firstHalf;
-          }
-        }
+        // APIキーの重複を修正（重複している場合は半分にカット）を削除
+        // if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
+        //   const halfLength = openRouterApiKey.length / 2;
+        //   const firstHalf = openRouterApiKey.substring(0, halfLength);
+        //   const secondHalf = openRouterApiKey.substring(halfLength);
+        //   if (firstHalf === secondHalf) {
+        //     console.log('OpenRouter APIキーの重複を検出、修正しています');
+        //     openRouterApiKey = firstHalf;
+        //   }
+        // }
         
         console.log('OpenRouter API Key check:', {
           hasSettingsApiKey: !!settings?.openRouterApiKey,
@@ -312,65 +293,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     }
     
     // ---------- インスピレーション返信 (候補3つ) ----------
-    if (provider !== 'gemini' || !model) {
-      // ここに来ることは通常ないが型安全のため
-      return NextResponse.json({ success: false, error: 'Provider not supported' }, { status: 500 });
-    }
-
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-      generationConfig: {
-        ...modelConfig.generationConfig,
-        candidateCount: settings?.candidateCount || 1
-      }
-    });
-
-    const response = await result.response;
-    
-    // まず基本的な text() メソッドで取得を試行
-    let mainContent = '';
-    try {
-      mainContent = response.text();
-    } catch (textError) {
-      console.warn('response.text() failed:', textError);
-    }
-    
-    // 候補取得（フォールバック付き）
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const candidatesData = (response as any).candidates || [];
-    
-    const candidates = candidatesData.map((c: any) => {
-      try {
-        return c?.content?.parts?.[0]?.text || '';
-      } catch {
-        return '';
-      }
-    }).filter((text: string) => text.length > 0);
-
-    // メインコンテンツが空で候補もない場合のフォールバック
-    if (!mainContent && candidates.length === 0) {
-      console.warn('No content generated, using fallback');
-      mainContent = `すみません、今ちょっと調子が悪いみたい...もう一度話しかけてくれる？`;
-    }
-
-    // プレースホルダ置換を各候補に適用
-    const userName = persona?.name || 'あなた';
-    
-    // メインコンテンツがあればそれを使用、なければ最初の候補
-    const finalContent = mainContent || candidates[0] || 'エラーが発生しました';
-    const finalContentReplaced = finalContent
-      .replace(/\{\{char}}/g, character.name)
-      .replace(/\{\{user}}/g, userName);
-    
-    const replaced = candidates.map((t: string) => 
-      t.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
-    );
-
-    return NextResponse.json({
-      success: true,
-      content: finalContentReplaced,
-      candidates: replaced.length > 0 ? replaced : [finalContentReplaced]
-    });
+    // ここに来ることは通常ないが型安全のため
+    return NextResponse.json({ success: false, error: 'Provider not supported' }, { status: 500 });
     
   } catch (error) {
     console.error('Simple chat API error:', error);

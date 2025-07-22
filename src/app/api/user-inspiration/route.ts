@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-const SERVER_GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
-
-// --- インスタンスキャッシュ（APIキーごと） ---
-const genAiCache = new Map<string, GoogleGenerativeAI>();
-function getGenAI(key: string) {
-  if (!genAiCache.has(key)) {
-    genAiCache.set(key, new GoogleGenerativeAI(key));
-  }
-  return genAiCache.get(key)!;
-}
 
 interface Message {
   role: string;
@@ -30,17 +18,12 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     // プロバイダーに応じてAPIキーを選択
-    const provider = settings?.provider || 'gemini';
+    const provider = settings?.provider || 'openrouter'; // デフォルトをopenrouterに変更
     let apiKey = '';
     let modelName = '';
 
-    if (provider === 'openrouter') {
-      apiKey = settings?.openRouterApiKey || '';
-      modelName = settings?.model || 'anthropic/claude-sonnet-4';
-    } else {
-      apiKey = settings?.geminiApiKey || SERVER_GEMINI_API_KEY;
-      modelName = settings?.model || 'gemini-1.5-flash';
-    }
+    apiKey = settings?.openRouterApiKey || '';
+    modelName = settings?.model || 'anthropic/claude-sonnet-4';
 
     if (!apiKey) {
       return NextResponse.json({ 
@@ -129,29 +112,8 @@ ${recentConversation}
         }
 
         const data = await response.json();
+        console.log('OpenRouter API Response (Inspiration - Single):', data); // ここを追加
         const singleCandidate = data.choices[0]?.message?.content?.trim() || '';
-
-        return NextResponse.json({
-          success: true,
-          candidates: [singleCandidate]
-        });
-      } else {
-        // Gemini APIを使用
-        const genAI = getGenAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: modelName });
-
-        const result = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: simplePrompt }] }],
-          generationConfig: {
-            temperature: 1.2,
-            topP: 0.9,
-            maxOutputTokens: 200,
-            candidateCount: 1
-          }
-        });
-
-        const response = await result.response;
-        const singleCandidate = response.text().trim();
 
         return NextResponse.json({
           success: true,
@@ -248,123 +210,6 @@ JSON配列のみを出力してください。例：
           success: true,
           candidates: candidates
         });
-      } else {
-        // Gemini APIを使用
-        const genAI = getGenAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: modelName });
-
-    const requestPayload: any = {
-      contents: [{ role: 'user', parts: [{ text: inspirationPrompt }] }],
-      generationConfig: {
-            temperature: 1.8,
-        topP: 0.95,
-            topK: 80,
-        maxOutputTokens: 400,
-        candidateCount: 3
-      }
-    };
-
-    const result = await model.generateContent(requestPayload);
-
-    let candidates: string[] = [];
-    try {
-      const res: any = result.response as any;
-      if (res?.candidates) {
-        candidates = res.candidates
-          .map((cand: any) => cand.content?.parts?.[0]?.text || '')
-          .map((c: string) => c.trim())
-          .filter((c: string) => c.length > 0);
-      }
-    } catch (e) {
-      console.warn('candidate parse error', e);
-    }
-
-    if (candidates.length === 0) {
-          // 動的フォールバック生成
-          const dynamicFallbackPrompt = `{{char}}というキャラクターとの会話で、ユーザーが使いそうな自然な返事を3つ、それぞれ50-70文字で作成してください。
-
-【禁止語】「そうなんですね」「なるほど」「詳しく聞かせて」
-
-キャラクター: {{char}}
-最新発言: "${lastCharacterMessage || '始めまして！'}"
-
-候補1: [返事1]
-候補2: [返事2] 
-候補3: [返事3]`;
-
-      try {
-            if (provider === 'openrouter') {
-              const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${apiKey}`,
-                  'Content-Type': 'application/json',
-                  'HTTP-Referer': 'http://localhost:3003',
-                  'X-Title': 'AI Chat App'
-                },
-                body: JSON.stringify({
-                  model: modelName,
-                  messages: [
-                    { role: 'user', content: dynamicFallbackPrompt }
-                  ],
-                  temperature: 0.9,
-                  max_tokens: 300
-                })
-              });
-
-              if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                const fallbackText = fallbackData.choices[0]?.message?.content || '';
-                const fallbackCandidates = fallbackText
-                  .split(/候補[123]:\s*/)
-                  .slice(1)
-                  .map(candidate => candidate.trim())
-                  .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
-                  .map(candidate => candidate.replace(/^「|」$/g, ''))
-                  .filter(candidate => candidate.length > 0);
-
-                if (fallbackCandidates.length > 0) {
-                  return NextResponse.json({
-                    success: true,
-                    candidates: fallbackCandidates.slice(0, 3)
-                  });
-                }
-              }
-            } else {
-        const fallbackResult = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: dynamicFallbackPrompt }] }],
-          generationConfig: {
-            temperature: 0.9,
-            topP: 0.9,
-            maxOutputTokens: 300,
-          }
-        });
-
-        const fallbackText = fallbackResult.response.text();
-        const fallbackCandidates = fallbackText
-          .split(/候補[123]:\s*/)
-          .slice(1)
-          .map(candidate => candidate.trim())
-          .map(candidate => candidate.replace(/^\[.*?\]\s*/, ''))
-          .map(candidate => candidate.replace(/^「|」$/g, ''))
-          .filter(candidate => candidate.length > 0);
-
-        if (fallbackCandidates.length > 0) {
-          return NextResponse.json({
-            success: true,
-            candidates: fallbackCandidates.slice(0, 3)
-          });
-              }
-        }
-      } catch (fallbackError) {
-        console.warn('Dynamic fallback failed:', fallbackError);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-          candidates: candidates
-    });
       }
     }
   } catch (error) {

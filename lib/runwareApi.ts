@@ -1,15 +1,22 @@
 
 export interface RunwareRequest {
-  prompt: string;
-  negative_prompt?: string;
-  width?: number;
+  taskType: "imageInference";
+  outputType: "URL" | "base64Data" | "dataURI";
+  outputFormat?: "JPG" | "PNG" | "WEBP";
+  positivePrompt: string; // 'prompt' から変更
+  negativePrompt?: string; // 'negative_prompt' から変更
   height?: number;
+  width?: number;
+  model: string; // 'model_id' から変更、必須に
   steps?: number;
-  cfg_scale?: number;
+  CFGScale?: number; // 'cfg_scale' から変更
   seed?: number;
-  model_id?: string;
-  lora_ids?: string[];
-  allow_nsfw?: boolean; // 新しく追加
+  numberResults?: number;
+  checkNSFW?: boolean; // 'allow_nsfw' から変更
+  lora?: {
+    model: string;
+    weight?: number;
+  }[]; // LoRAの配列を追加
 }
 
 export interface RunwareResponse {
@@ -42,17 +49,26 @@ export class RunwareService {
       'Accept': 'application/json',
     };
 
-    const body = {
-      prompt: request.prompt,
-      negative_prompt: request.negative_prompt,
-      width: request.width || 1024,
+    const body: RunwareRequest = { // RunwareRequest 型を適用
+      taskType: "imageInference",
+      outputType: "URL",
+      outputFormat: "JPG",
+      positivePrompt: request.positivePrompt, // 'request.prompt' から変更
+      negativePrompt: request.negativePrompt, // 'request.negative_prompt' から変更
       height: request.height || 1024,
+      width: request.width || 1024,
+      model: request.model, // 'request.model_id' から変更
       steps: request.steps || 30,
-      cfg_scale: request.cfg_scale || 7,
+      CFGScale: request.CFGScale || 7, // 'request.cfg_scale' から変更
       seed: request.seed,
-      model_id: request.model_id,
-      lora_ids: request.lora_ids,
+      numberResults: request.numberResults || 1, // numberResults を request から取得
+      checkNSFW: request.checkNSFW, // 'request.allow_nsfw' から変更
     };
+
+    if (request.lora && request.lora.length > 0) { // 'request.lora_ids' から変更
+      // lora がある場合、lora オブジェクトの配列として追加
+      body.lora = request.lora; // lora は既に正しい形式で渡される
+    }
 
     try {
       // Runware APIのテキスト-画像生成タスク開始エンドポイント（仮）

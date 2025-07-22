@@ -1,11 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
-
-if (!GEMINI_API_KEY) {
-  console.warn('[enhanced-impression] GEMINI_API_KEY が設定されていません');
-}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -13,18 +6,22 @@ interface ChatMessage {
   timestamp: number;
 }
 
-interface Character {
-  name: string;
-  personality?: string;
-  occupation?: string;
-  tags?: string[];
+// `any` 型エラー解消のため Impression インターフェースを追加
+interface Impression {
+  title: string;
+  content: string;
+  perspective: string;
+  wordCount: number;
+  description?: string; // Optional if needed, based on typical usage
+  [key: string]: unknown; // Allow for other unknown properties
 }
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Enhanced impression API called');
     
-    const { messages, character, sessionTitle } = await request.json();
+    // request.json() の呼び出しを一本化
+    const { messages, character, sessionTitle, settings } = await request.json();
     console.log('Messages count:', messages?.length);
     
     if (!messages || messages.length === 0) {
@@ -61,17 +58,20 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        temperature: 0.7, // 創造性を重視
-        topP: 0.9,
-        maxOutputTokens: 2000,
-      }
-    });
+    // APIキーとモデル設定を取得
+    // const { settings } = await request.json(); // 削除：既に上で取得済み
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // settings のキーを優先
 
-    // 会話履歴を整理
+    if (!openRouterApiKey) {
+        return NextResponse.json({
+            success: false,
+            error: 'OpenRouter APIキーが設定されていません'
+        }, { status: 500 });
+    }
+
+    const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4'; // settings のモデルを優先
+
+    // プロンプトをOpenRouterに渡すメッセージ形式に変換
     const conversationText = messages
       .map((msg: ChatMessage) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`)
       .join('\n\n');
@@ -120,10 +120,11 @@ ${conversationText}
 6. 未来展望: 今後の関係性や会話の可能性
 7. 共感: 共感できる部分や理解
 8. 発見: 新しく発見したことや気づき
+9. キャラクターの本心: 会話の裏にあるキャラクターの真の感情や意図
 
 【重要な指示】:
 - 各インプレッションは200字程度（180-220字）にしてください
-- 3つの異なる視点から分析してください
+- 3つの異なる視点から分析してください。**必ず「キャラクターの本心」に関する視点を1つ含めてください。**
 - キャラクターの個性や特徴を活かしてください
 - 会話の流れや感情の変化を捉えてください
 - ユーザーが共感できる内容にしてください
@@ -131,20 +132,44 @@ ${conversationText}
 
 JSON形式以外は出力しないでください。`;
 
-    console.log('Sending enhanced impression request to Gemini');
+    const messagesForOpenRouter = [
+        { role: 'user' as const, content: prompt }
+    ];
+
+    // OpenRouterで生成
+    console.log('Sending enhanced impression request to OpenRouter');
     
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    console.log('Gemini response:', text);
+    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${openRouterApiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3003',
+            'X-Title': 'AI Chat App'
+        },
+        body: JSON.stringify({
+            model: openRouterModel,
+            messages: messagesForOpenRouter,
+            temperature: 0.7,
+            max_tokens: 2000,
+        })
+    });
+
+    if (!openRouterResponse.ok) {
+        throw new Error(`OpenRouter API error: ${openRouterResponse.status}`);
+    }
+
+    const openRouterData = await openRouterResponse.json();
+    const text = openRouterData.choices[0]?.message?.content || '';
+
+    console.log('OpenRouter response:', text);
 
     try {
       // JSONパースを試行
       const data = JSON.parse(text);
       
       // 文字数を正確に計算
-      const impressionsWithWordCount = data.impressions.map((impression: any) => ({
+      const impressionsWithWordCount = data.impressions.map((impression: Impression) => ({
         ...impression,
         wordCount: impression.content.length
       }));

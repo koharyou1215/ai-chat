@@ -4,7 +4,7 @@ import { RunwareService } from '../../../../lib/runwareApi';
 
 export async function POST(request: NextRequest) {
   try {
-    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, imageEngine } = await request.json();
+    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, settings } = await request.json(); // settings をデストラクチャリング
     
     // 新しいプロンプトジェネレータを使用
     const promptResult = ImagePromptGenerator.generateImagePrompt(
@@ -39,10 +39,16 @@ export async function POST(request: NextRequest) {
     const forceLocalEnv = process.env.FORCE_LOCAL_SD === 'true';
     // クライアント指定があれば優先
     let selectedEngine: 'sd' | 'runware';
-    if (imageEngine === 'sd' || imageEngine === 'runware') {
-      selectedEngine = imageEngine;
+
+    // 設定で選択されたエンジンを信頼し、Runware APIキーがあればRunwareを優先
+    if (settings?.imageEngine === 'runware' && process.env.RUNWARE_API_KEY) { // settings?.imageEngine に変更
+        selectedEngine = 'runware';
+    } else if (settings?.imageEngine === 'sd' || forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL) { // settings?.imageEngine に変更
+        selectedEngine = 'sd';
     } else {
-      selectedEngine = forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL ? 'sd' : 'runware';
+        // どちらも有効でない場合、Runware APIキーが存在すればRunware、そうでなければSD
+        selectedEngine = process.env.RUNWARE_API_KEY ? 'runware' : 'sd';
+        console.warn('Neither Runware nor local SD is explicitly selected or configured. Defaulting to:', selectedEngine);
     }
 
     // Flag retained for backward-compat; may be used in future
@@ -97,29 +103,31 @@ export async function POST(request: NextRequest) {
     
     // Runware APIキーが設定されている場合は実際のAI画像生成
     if (selectedEngine === 'runware') {
-      console.log('Using Runware API for image generation');
-
-      const runwareApiKey = process.env.RUNWARE_API_KEY; // 環境変数名が RUNWARE_API_KEY であると仮定
+      console.log('Using Runware API');
+      const runwareApiKey = settings?.runwareApiKey || process.env.RUNWARE_API_KEY; // settings から取得を優先
       if (!runwareApiKey) {
-        throw new Error('Runware APIキーが設定されていません');
+        return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 500 });
       }
-
-      const runwareService = new RunwareService(runwareApiKey);
+      const runwareService = new RunwareService(runwareApiKey); // 修正
 
       try {
         // 画像生成タスクの作成
         // character.imageWidth, character.imageHeight は SettingsModal の値
-        const { taskId } = await runwareService.createGenerationTask({
-          prompt: finalPrompt,
-          negative_prompt: finalNegativePrompt,
+        const taskId = await runwareService.createGenerationTask({
+          positivePrompt: finalPrompt, // 'positive_prompt' から変更
+          negativePrompt: finalNegativePrompt, // 'negative_prompt' から変更
           width: character?.imageWidth || 1024, // Runwareの推奨サイズに合わせて調整
           height: character?.imageHeight || 1024, // 同上
           steps: character?.imageSteps || 50, // Runwareの推奨ステップ数に合わせて調整
-          cfg_scale: character?.imageCfgScale || 7,
+          CFGScale: character?.imageCfgScale || 7, // 'cfg_scale' から変更
           seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-          model_id: character?.runwareModelId, // SettingsModalから取得したID
-          lora_ids: character?.runwareLoraIds, // SettingsModalから取得したID
-          allow_nsfw: true, // NSFWフィルターを解除
+          model: settings?.runwareModelId || '', // 'model_id' から変更、必須なので空文字をフォールバック
+          lora: settings?.runwareLoraIds?.map((id: string) => ({ model: id, weight: 1.0 })), // lora をオブジェクトの配列に変換し、idをstringに型指定
+          checkNSFW: true, // 'allow_nsfw' から変更 (一時的に true にハードコード)
+          taskType: "imageInference", // 追加
+          outputType: "URL", // 追加
+          outputFormat: "JPG", // 追加
+          numberResults: 1, // 追加
         });
 
         console.log(`Runware task created with ID: ${taskId}`);
@@ -132,7 +140,7 @@ export async function POST(request: NextRequest) {
 
         while (taskStatus.status !== 'completed' && taskStatus.status !== 'failed' && attempts < MAX_ATTEMPTS) {
           await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-          taskStatus = await runwareService.getGenerationTaskStatus(taskId);
+          taskStatus = await runwareService.getGenerationTaskStatus(taskId.taskId); // taskId.taskId に変更
           console.log(`Runware task ${taskId} status: ${taskStatus.status}`);
           attempts++;
         }

@@ -255,7 +255,8 @@ export default function ChatPage() {
         body: JSON.stringify({
           messages: messages,
           character: currentCharacter,
-          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'
+          sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット',
+          settings: settings, // settings オブジェクトを追加
         }),
       });
 
@@ -275,89 +276,65 @@ export default function ChatPage() {
       setIsGeneratingImpression(false);
     }
   };
+  
+  const defaultSettings: AppSettings = {
+    temperature: 0.7,
+    topP: 0.9,
+    maxTokens: 1024,
+    memorySize: 8000,
+    historySize: 15,
+    bubbleOpacity: 0.9,
+    geminiApiKey: '',
+    stableDiffusionApiKey: '',
+    elevenLabsApiKey: '',
+    loraSettings: '',
+    negativePrompt: '',
+    systemPrompt: '',
+    jailbreakPrompt: '',
+    responseFormat: 'normal',
+    enableJailbreak: false,
+    enableSystemPrompt: false,
+    currentTheme: 'ocean-sunset',
+    customBackground: undefined,
+    voiceEnabled: true,
+    voiceAutoPlay: false,
+    voiceId: 'pNInz6obpgDQGcFmaJgB',
+    voiceStability: 0.5,
+    voiceSimilarityBoost: 0.75,
+    voiceStyle: 0,
+    voiceUseSpeakerBoost: true,
+    voiceSpeed: 1.0,
+    voiceVolume: 0.8,
+    model: 'google/gemini-2.5-flash', // デフォルトモデルをOpenRouterのGemini Flashに
+    provider: 'openrouter', // デフォルトプロバイダをOpenRouterに
+    enableImageGeneration: true,
+    chatNotificationSound: true,
+    imageEngine: 'runware', // デフォルト画像エンジンをRunwareに
+    bubbleBlur: true,
+    openRouterApiKey: '',
+    candidateCount: 1,
+    runwareModelId: '',
+    runwareLoraIds: [],
+    inspirationPrompt: '',
+    enhancementPrompt: '',
+  };
+
   const [settings, setSettings] = useState<AppSettings>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('ai-chat-settings');
-      const parsed = saved ? JSON.parse(saved) : {};
-      return {
-        temperature: parsed.temperature ?? 0.7,
-        topP: parsed.topP ?? 0.9,
-        maxTokens: parsed.maxTokens ?? 1024,
-        memorySize: parsed.memorySize ?? 8000, // 4000→8000に増加
-        historySize: parsed.historySize ?? 15,  // 12→15に増加
-        bubbleOpacity: parsed.bubbleOpacity ?? 0.9,
-        geminiApiKey: parsed.geminiApiKey ?? '',
-        stableDiffusionApiKey: parsed.stableDiffusionApiKey ?? '',
-        elevenLabsApiKey: parsed.elevenLabsApiKey ?? '',
-        loraSettings: parsed.loraSettings ?? '',
-        negativePrompt: parsed.negativePrompt ?? '',
-        systemPrompt: parsed.systemPrompt ?? '',
-        jailbreakPrompt: parsed.jailbreakPrompt ?? '',
-        responseFormat: parsed.responseFormat ?? 'normal',
-        enableJailbreak: parsed.enableJailbreak ?? false,
-        enableSystemPrompt: parsed.enableSystemPrompt ?? false,
-        currentTheme: parsed.currentTheme ?? 'ocean-sunset',
-        customBackground: parsed.customBackground ?? undefined,
-        voiceEnabled: parsed.voiceEnabled ?? true,
-        voiceAutoPlay: parsed.voiceAutoPlay ?? false,
-        voiceId: parsed.voiceId ?? 'pNInz6obpgDQGcFmaJgB',
-        voiceStability: parsed.voiceStability ?? 0.5,
-        voiceSimilarityBoost: parsed.voiceSimilarityBoost ?? 0.75,
-        voiceStyle: parsed.voiceStyle ?? 0,
-        voiceUseSpeakerBoost: parsed.voiceUseSpeakerBoost ?? true,
-        voiceSpeed: parsed.voiceSpeed ?? 1.0,
-        voiceVolume: parsed.voiceVolume ?? 0.8,
-        model: parsed.model ?? 'google/gemini-2.5-pro',
-        provider: parsed.provider ?? 'openrouter',
-        enableImageGeneration: parsed.enableImageGeneration ?? true,
-        chatNotificationSound: parsed.chatNotificationSound ?? true,
-        imageEngine: parsed.imageEngine ?? 'replicate',
-        bubbleBlur: parsed.bubbleBlur ?? true,
-        openRouterApiKey: parsed.openRouterApiKey ?? '',
-        candidateCount: parsed.candidateCount ?? 1,
-        runwareModelId: parsed.runwareModelId ?? '',
-        runwareLoraIds: parsed.runwareLoraIds ?? [],
-      };
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          // デフォルト値をベースに、保存された値をマージする
+          return { ...defaultSettings, ...parsed };
+        } catch (e) {
+          console.error('Failed to parse saved settings from localStorage:', e);
+          // パース失敗時はデフォルト設定を返す
+          return defaultSettings;
+        }
+      }
     }
-    return { // Default values for SSR
-      temperature: 0.7,
-      topP: 0.9,
-      maxTokens: 1024,
-      memorySize: 8000, // 4000→8000に増加（現実的なトークン数に対応）
-      historySize: 15,  // 12→15に増加（設定値をより実用的に）
-      bubbleOpacity: 0.9,
-      geminiApiKey: '',
-      stableDiffusionApiKey: '',
-      elevenLabsApiKey: '',
-      loraSettings: '',
-      negativePrompt: '',
-      systemPrompt: '',
-      jailbreakPrompt: '',
-      responseFormat: 'normal',
-      enableJailbreak: false,
-      enableSystemPrompt: false,
-      currentTheme: 'ocean-sunset',
-      customBackground: undefined,
-      voiceEnabled: true,
-      voiceAutoPlay: false,
-      voiceId: 'pNInz6obpgDQGcFmaJgB',
-      voiceStability: 0.5,
-      voiceSimilarityBoost: 0.75,
-      voiceStyle: 0,
-      voiceUseSpeakerBoost: true,
-      voiceSpeed: 1.0,
-      voiceVolume: 0.8,
-      model: 'google/gemini-2.5-pro',
-      provider: 'openrouter',
-      enableImageGeneration: true,
-      chatNotificationSound: true,
-      imageEngine: 'replicate',
-      bubbleBlur: true,
-      openRouterApiKey: '',
-      candidateCount: 1,
-      runwareModelId: '',
-      runwareLoraIds: [],
-    };
+    return defaultSettings; // SSR時やlocalStorageにデータがない場合
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -391,12 +368,17 @@ export default function ChatPage() {
         const savedSettings = localStorage.getItem('ai-chat-settings');
         if (savedSettings) {
           const parsedSettings = JSON.parse(savedSettings);
-          setSettings(prev => ({ ...prev, ...parsedSettings }));
+          // ここでもdefaultSettingsとマージする
+          setSettings(prev => ({
+            ...defaultSettings, // 最新のデフォルトをベースに
+            ...prev,            // 現在のstateを上書き
+            ...parsedSettings   // 保存された設定で最終的に上書き
+          }));
           
           // 音声APIキーを設定
           if (parsedSettings.elevenLabsApiKey) {
             console.log('ElevenLabs APIキー設定:', parsedSettings.elevenLabsApiKey.substring(0, 10) + '...');
-            VoiceManager.setApiKey(parsedSettings.elevenLabsApiKey);
+            // VoiceManager.setApiKey(parsedSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
           } else {
             console.log('ElevenLabs APIキーが設定されていません（Web Speech API使用）');
           }
@@ -769,7 +751,7 @@ export default function ChatPage() {
         return;
       }
 
-      const imageResponse = await fetch('/api/generate-image', {
+      const imageResponse = await fetch('/api/generate-image/', { // 末尾にスラッシュを追加
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -785,10 +767,11 @@ export default function ChatPage() {
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
-          imageEngine: settings.imageEngine,
+          // imageEngine: settings.imageEngine, // 個別ではなく settings オブジェクト全体を渡すため削除
           // Runware固有のモデルIDとLORA IDをsettingsから渡す
-          runwareModelId: settings.runwareModelId,
-          runwareLoraIds: settings.runwareLoraIds,
+          // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
+          // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
+          settings: settings, // settings オブジェクト全体を渡す
         }),
       });
 
@@ -1256,7 +1239,7 @@ export default function ChatPage() {
 
       const recentMessages = messages.slice(-5).map(m => m.content);
 
-      const imageResponse = await fetch('/api/generate-image', {
+      const imageResponse = await fetch('/api/generate-image/', { // 末尾にスラッシュを追加
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1271,10 +1254,11 @@ export default function ChatPage() {
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
-          imageEngine: settings.imageEngine,
+          // imageEngine: settings.imageEngine, // 個別ではなく settings オブジェクト全体を渡すため削除
           // Runware固有のモデルIDとLORA IDをsettingsから渡す
-          runwareModelId: settings.runwareModelId,
-          runwareLoraIds: settings.runwareLoraIds,
+          // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
+          // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
+          settings: settings, // settings オブジェクト全体を渡す
         })
       });
 
@@ -1840,9 +1824,22 @@ export default function ChatPage() {
                         className="absolute -top-2 right-6 w-4 h-4 rotate-45"
                         style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
                       ></div>
-                    <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{msg.content}</p>
-                    {/* コピー */}
-                    <div className="flex justify-end mt-2">
+                    <div 
+                      className="leading-relaxed whitespace-pre-wrap text-sm sm:text-base"
+                      onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
+                      style={{ userSelect: 'text' }}
+                    >
+                      <FormattedText md={msg.content} />
+                    </div>
+                    {/* コピーとメモボタン */}
+                    <div className="flex justify-end mt-2 gap-1 flex-wrap"> {/* gap-1 flex-wrap を追加してレイアウト調整 */}
+                      {/* メモボタンをここに追加 */}
+                      <MessageMemoButton 
+                        messageId={msg.id}
+                        messageContent={msg.content}
+                        sessionId={currentSessionId || 'temp'}
+                        characterId={currentCharacter?.name || 'unknown'}
+                      />
                       <button
                         onClick={() => handleCopy(msg.content)}
                         className="touch-target text-white/80 hover:text-blue-200 p-1 rounded"
@@ -1922,12 +1919,15 @@ export default function ChatPage() {
               {/* 音声オン/オフ */}
               <button
                 onClick={() => {
-                  const newSettings = { ...settings, voiceEnabled: settings.voiceEnabled ?? true };
+                  const newVoiceEnabled = !(settings.voiceEnabled ?? true); // 現在の値を反転
+                  const newSettings = { ...settings, voiceEnabled: newVoiceEnabled };
                   setSettings(newSettings);
                   localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
                   
-                  if (newSettings.voiceEnabled && newSettings.elevenLabsApiKey) {
-                    VoiceManager.setApiKey(newSettings.elevenLabsApiKey);
+                  if (newVoiceEnabled && newSettings.elevenLabsApiKey) {
+                    // VoiceManager.setApiKey(newSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
+                  } else if (!newVoiceEnabled) {
+                    VoiceManager.stopAudio(); // 音声がオフになったら再生を停止
                   }
                 }}
                 className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.voiceEnabled ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
@@ -1959,7 +1959,8 @@ export default function ChatPage() {
               {/* 画像生成 */}
               <button
                 onClick={() => {
-                  const newSettings = { ...settings, enableImageGeneration: settings.enableImageGeneration ?? true };
+                  const newEnableImageGeneration = !(settings.enableImageGeneration ?? true); // 現在の値を反転
+                  const newSettings = { ...settings, enableImageGeneration: newEnableImageGeneration };
                   setSettings(newSettings);
                   localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
                 }}
@@ -2219,7 +2220,7 @@ export default function ChatPage() {
 
           // ElevenLabs APIキーを即座に設定
           if (mergedSettings.elevenLabsApiKey) {
-            VoiceManager.setApiKey(mergedSettings.elevenLabsApiKey);
+            // VoiceManager.setApiKey(mergedSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
           }
         }}
       />
@@ -2419,11 +2420,13 @@ export default function ChatPage() {
           // 同期されたデータを反映
           setAllCharacters(syncedData.characters)
           setAllPersonas(syncedData.personas)
-          setSettings(syncedData.settings)
+          // settingsもdefaultSettingsとマージしてから設定
+          const mergedSyncedSettings = { ...defaultSettings, ...syncedData.settings }; // defaultSettings を利用
+          setSettings(mergedSyncedSettings)
           // メモデータも反映（chatStoreを使用）
           localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
           localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
-          localStorage.setItem('ai-chat-settings', JSON.stringify(syncedData.settings))
+          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSyncedSettings))
         }}
       />
 
