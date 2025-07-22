@@ -157,53 +157,44 @@ export interface Theme {
 }
 
 export interface AppSettings {
-  temperature: number;
-  topP: number;
-  maxTokens: number;
-  memorySize: number;
-  historySize: number; // 履歴の件数を追加
-  bubbleOpacity: number;
   geminiApiKey: string;
-  stableDiffusionApiKey: string;
   elevenLabsApiKey: string;
-  loraSettings: string;
-  /**
-   * 追加のネガティブプロンプト（Stable Diffusion用）
-   */
-  negativePrompt: string;
-  systemPrompt: string;
-  jailbreakPrompt: string;
-  responseFormat: string;
-  enableJailbreak: boolean;
-  enableSystemPrompt: boolean;
-  currentTheme: string;
+  voiceEnabled?: boolean; // オプショナルに変更
+  voiceAutoPlay?: boolean; // オプショナルに変更
+  voiceId?: string;
+  voiceStability?: number;
+  voiceSimilarityBoost?: number;
+  voiceStyle?: number;
+  voiceUseSpeakerBoost?: boolean;
+  voiceSpeed?: number;
+  voiceVolume?: number;
+  enableImageGeneration?: boolean; // オプショナルに変更
+  loraSettings?: string;
+  negativePrompt?: string;
+  imageEngine?: string;
+  chatNotificationSound?: boolean; // オプショナルに変更
+  currentTheme?: string;
   customBackground?: string;
-  voiceEnabled: boolean;
-  voiceAutoPlay: boolean;
-  voiceId: string;
-  voiceStability: number;
-  voiceSimilarityBoost: number;
-  voiceStyle: number;
-  voiceUseSpeakerBoost: boolean;
-  voiceSpeed: number;
-  voiceVolume: number;
-  model: string;
-  enableImageGeneration: boolean;
-  chatNotificationSound: boolean;
-  /**
-   * 画像生成エンジン (replicate = Replicate API / sd = Stable Diffusion)
-   */
-  imageEngine: 'replicate' | 'sd';
-  /** 吹き出しに backdrop-blur を適用するか */
-  bubbleBlur: boolean;
-  /** 使用するLLMプロバイダ */
-  provider: 'gemini' | 'openrouter';
-  /** OpenRouter APIキー */
-  openRouterApiKey: string;
-  /** 生成候補数 (1-5 推奨) */
-  candidateCount: number;
-  /** 電球（インスピレーション）プロンプト */
-  inspirationPrompt?: string;
-  /** キラキラ（文章強化）プロンプト */
-  enhancementPrompt?: string;
+  bubbleOpacity?: number;
+  bubbleBlur?: boolean;
+  autoScroll?: boolean;
+  stableDiffusionApiKey?: string;
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  memorySize?: number;
+  historySize?: number;
+  systemPrompt?: string;
+  jailbreakPrompt?: string;
+  responseFormat?: string;
+  enableJailbreak?: boolean;
+  enableSystemPrompt?: boolean;
+  model?: string;
+  provider?: string;
+  openRouterApiKey?: string;
+  candidateCount?: number;
+  runwareModelId?: string;
+  runwareLoraIds?: string[];
+  inspirationPrompt?: string; // 追加
+  enhancementPrompt?: string; // 追加
 } 

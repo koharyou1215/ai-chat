@@ -66,6 +66,38 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
 
   return (
     <>
+      <style jsx>{`
+        .slider {
+          -webkit-appearance: none;
+          background: #e5e7eb;
+          outline: none;
+          border-radius: 8px;
+          height: 8px;
+        }
+        
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+      `}</style>
+      
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
           {/* ヘッダー */}
@@ -469,14 +501,14 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       チャット完了通知音
                     </label>
                     <span className="text-xs text-gray-500">
-                      \uD83D\uDD14 AIの返答完了時に優しい通知音を再生
+                      🔔 AIの返答完了時に優しい通知音を再生
                     </span>
                   </div>
 
                   {/* 吹き出し透過率 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      吹き出し透過率: {Math.round((formSettings.bubbleOpacity ?? 1) * 100)}%
+                      吹き出し透過率: {Math.round(formSettings.bubbleOpacity * 100)}%
                     </label>
                     <input
                       type="range"
@@ -578,12 +610,12 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       音声を有効化
                     </label>
                     <span className="text-xs text-gray-500">
-                      \uD83C\uDFA4 AIの返答を音声で読み上げ
+                      🎤 AIの返答を音声で読み上げ
                     </span>
                   </div>
 
                   {/* 自動再生 */}
-                  <div className={`${!formSettings.voiceEnabled ? 'opacity-50' : ''}`}>
+                  <div className={`flex items-center space-x-3 ${!formSettings.voiceEnabled ? 'opacity-50' : ''}`}>
                     <input
                       type="checkbox"
                       id="voiceAutoPlay"
@@ -596,11 +628,11 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       自動再生
                     </label>
                     <span className="text-xs text-gray-500">
-                      \uD83D\uDD04 AI返答完了時に自動で音声再生
+                      🔄 AI返答完了時に自動で音声再生
                     </span>
                   </div>
 
-                  <div className={`${!formSettings.voiceEnabled ? 'opacity-50' : ''} grid grid-cols-1 md:grid-cols-2 gap-4`}>
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${!formSettings.voiceEnabled ? 'opacity-50' : ''}`}>
                     {/* 音声速度 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -625,7 +657,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     {/* 音量 */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        音量: {Math.round((formSettings.voiceVolume ?? 1) * 100)}%
+                        音量: {Math.round(formSettings.voiceVolume * 100)}%
                       </label>
                       <input
                         type="range"
@@ -672,34 +704,34 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                   {/* 電球（インスピレーション）プロンプト */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      \uD83D\uDCA1 電球（インスピレーション）プロンプト
+                      💡 電球（インスピレーション）プロンプト
                     </label>
                     <textarea
-                      value={formSettings.inspirationPrompt || `あなたは創作的で自然なユーザー返信を提案する専門AIです.\n\n【キャラクター情報】\n名前: {{char}}\n性格・特徴: \u007Bcharacter.character_definition || character.description || '不明'\u007D\n\n【ユーザー情報】\n\u007Bpersona ? '名前: \u007Bpersona.name\u007D\n性格: \u007Bpersona.description\u007D\n好み: \u007Bpersona.likes?.join(', ') || 'なし'\u007D\n苦手: \u007Bpersona.dislikes?.join(', ') || 'なし'\u007D\n口調・特徴: \u007Bpersona.other_settings || 'なし'\u007D' : '一般的なユーザー（名前なし）'\u007D\n\n【最新のキャラクター発言】\n「\u007BlastCharacterMessage\u007D」\n\n【会話の文脈】\n\u007BrecentConversation\u007D\n\n【重要指示】\n上記の会話文脈を踏まえて、ユーザーが自然に返しそうな返信を1つ作成してください。\n\n【要件】\n- 50-70文字程度\n- ユーザーの性格・口調を反映\n- 会話を自然に発展させる内容\n- {{char}}との関係性に適した親しみ度\n- 創造的で自然な表現\n\n【禁止語】\n「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」\n\n自然な返信:`}
+                      value={formSettings.inspirationPrompt || 'あなたは創作的で自然なユーザー返信を提案する専門AIです。\n\n【キャラクター情報】\n名前: {{char}}\n性格・特徴: {character.character_definition || character.description || \'不明\'}\n\n【ユーザー情報】\n{persona ? \'名前: {persona.name}\\n性格: {persona.description}\\n好み: {persona.likes?.join(\', \') || \'なし\'}\\n苦手: {persona.dislikes?.join(\', \') || \'なし\'}\\n口調・特徴: {persona.other_settings || \'なし\'}\' : \'一般的なユーザー（名前なし）\'}\n\n【最新のキャラクター発言】\n「{lastCharacterMessage}」\n\n【会話の文脈】\n{recentConversation}\n\n【重要指示】\n上記の会話文脈を踏まえて、ユーザーが自然に返しそうな返信を1つ作成してください。\n\n【要件】\n- 50-70文字程度\n- ユーザーの性格・口調を反映\n- 会話を自然に発展させる内容\n- {{char}}との関係性に適した親しみ度\n- 創造的で自然な表現\n\n【禁止語】\n「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」\n\n自然な返信:'}
                       onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       rows={8}
                       placeholder="電球ボタン用のプロンプトを入力..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      電球ボタン（\uD83D\uDCA1）で使用されるプロンプトです。{character.name}、{persona}、{lastCharacterMessage}、{recentConversation} が変数として使用できます。
+                      電球ボタン（💡）で使用されるプロンプトです。{'{character.name}'}、{'{persona}'}、{'{lastCharacterMessage}'}、{'{recentConversation}'} が変数として使用できます。
                     </p>
                   </div>
 
                   {/* キラキラ（文章強化）プロンプト */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      \u2728 キラキラ（文章強化）プロンプト
+                      ✨ キラキラ（文章強化）プロンプト
                     </label>
                     <textarea
-                      value={formSettings.enhancementPrompt || `以下のユーザーのテキストを、より魅力的で表現豊かな文章に強化してください.\n\n\u007BconversationContext\u007D\n\n【元のテキスト】\n\u007Btext\u007D\n\n【強化の方向性】\n- 感情や気持ちをより具体的で魅力的に表現\n- 状況や背景をより詳しく魅力的に説明\n- ユーザーらしい自然で魅力的な表現\n- 会話の流れを考慮した自然な表現\n- 300-400字程度に大幅強化\n- 絵文字や感情表現を適切に追加\n- より魅力的で面白い表現に変更\n\n【重要な指示】\n- 元のテキストの意図や内容は保持してください\n- ユーザーとして自然で魅力的な表現にしてください\n- 会話の流れを考慮して自然な表現にしてください\n- 大幅に強化して魅力的にしてください\n- JSON形式ではなく、強化されたテキストのみを返してください\n- 遠慮せずに魅力的で面白い表現にしてください\n\n強化されたテキスト:`}
+                      value={formSettings.enhancementPrompt || '以下のユーザーのテキストを、より魅力的で表現豊かな文章に強化してください。\n\n{conversationContext}\n\n【元のテキスト】\n{text}\n\n【強化の方向性】\n- 感情や気持ちをより具体的で魅力的に表現\n- 状況や背景をより詳しく魅力的に説明\n- ユーザーらしい自然で魅力的な表現\n- 会話の流れを考慮した自然な表現\n- 300-400字程度に大幅強化\n- 絵文字や感情表現を適切に追加\n- より魅力的で面白い表現に変更\n\n【重要な指示】\n- 元のテキストの意図や内容は保持してください\n- ユーザーとして自然で魅力的な表現にしてください\n- 会話の流れを考慮して自然な表現にしてください\n- 大幅に強化して魅力的にしてください\n- JSON形式ではなく、強化されたテキストのみを返してください\n- 遠慮せずに魅力的で面白い表現にしてください\n\n強化されたテキスト:'}
                       onChange={(e) => setFormSettings(prev => ({ ...prev, enhancementPrompt: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       rows={8}
                       placeholder="キラキラボタン用のプロンプトを入力..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      キラキラボタン（\u2728）で使用されるプロンプトです。{text}、{conversationContext} が変数として使用できます。
+                      キラキラボタン（✨）で使用されるプロンプトです。{'{text}'}、{'{conversationContext}'} が変数として使用できます。
                     </p>
                   </div>
                 </div>
@@ -740,4 +772,4 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
       </div>
     </>
   );
-}
+} 
