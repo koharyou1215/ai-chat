@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
     const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, settings } = await request.json(); // settings をデストラクチャリング
     
     console.log('[/api/generate-image] 受信した設定:', settings); // settingsオブジェクトをログに出力
+    console.log('[/api/generate-image] 環境変数 RUNWARE_API_KEY:', process.env.RUNWARE_API_KEY ? '設定済み' : '未設定');
+    console.log('[/api/generate-image] 環境変数 RUNWARE_MODEL_ID:', process.env.RUNWARE_MODEL_ID || '未設定');
 
     // 新しいプロンプトジェネレータを使用
     const promptResult = ImagePromptGenerator.generateImagePrompt(
@@ -52,6 +54,8 @@ export async function POST(request: NextRequest) {
         selectedEngine = process.env.RUNWARE_API_KEY ? 'runware' : 'sd';
         console.warn('Neither Runware nor local SD is explicitly selected or configured. Defaulting to:', selectedEngine);
     }
+
+    console.log('[/api/generate-image] 選択されたエンジン:', selectedEngine);
 
     // Flag retained for backward-compat; may be used in future
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -107,13 +111,17 @@ export async function POST(request: NextRequest) {
     if (selectedEngine === 'runware') {
       console.log('Using Runware API');
       const runwareApiKey = settings?.runwareApikey || process.env.RUNWARE_API_KEY; // settings から取得を優先 (修正)
-      const runwareModelId = settings?.runwaremodelid; // RunwareモデルIDを取得 (小文字に修正)
+      const runwareModelId = settings?.runwaremodelid || process.env.RUNWARE_MODEL_ID; // 環境変数もチェック
+
+      console.log('[/api/generate-image] Runware API Key:', runwareApiKey ? '設定済み' : '未設定');
+      console.log('[/api/generate-image] Runware Model ID:', runwareModelId || '未設定');
 
       if (!runwareApiKey) {
-        return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 500 });
+        console.error('[/api/generate-image] Runware APIキーが設定されていません');
+        return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 400 });
       }
       if (!runwareModelId) { // モデルIDが設定されていない場合のエラーハンドリングを追加
-        console.error('Runware Image Model IDが設定されていません。');
+        console.error('[/api/generate-image] Runware Image Model IDが設定されていません。');
         return NextResponse.json({ success: false, error: 'Runware Image Model IDが設定されていません' }, { status: 400 });
       }
       const runwareService = new RunwareService(runwareApiKey);

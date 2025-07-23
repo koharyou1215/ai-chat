@@ -50,6 +50,8 @@ class HistoryManager {
   async saveSession(session: ChatSession): Promise<void> {
     if (!this.db) await this.init();
     
+    console.log('💾 セッション保存中:', session.id, session.title, session.messages.length, 'メッセージ');
+    
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['sessions'], 'readwrite');
       const store = transaction.objectStore('sessions');
@@ -59,8 +61,14 @@ class HistoryManager {
         updatedAt: Date.now()
       });
       
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        console.log('✅ セッション保存完了:', session.id);
+        resolve();
+      };
+      request.onerror = () => {
+        console.error('❌ セッション保存エラー:', request.error);
+        reject(request.error);
+      };
     });
   }
 
@@ -96,6 +104,8 @@ class HistoryManager {
           const session: ChatSession = cursor.value;
           const lastMessage = session.messages[session.messages.length - 1];
           
+          console.log('📚 セッション読み込み:', session.id, session.title, session.messages.length, 'メッセージ');
+          
           sessions.push({
             id: session.id,
             title: session.title,
@@ -112,6 +122,7 @@ class HistoryManager {
           
           cursor.continue();
         } else {
+          console.log('📚 全セッション読み込み完了:', sessions.length, '件');
           resolve(sessions);
         }
       };

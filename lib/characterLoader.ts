@@ -108,6 +108,8 @@ export class CharacterLoader {
   static addCharacter(character: Character): void {
     this.initialize();
     
+    console.log('👤 キャラクター追加中:', character.name);
+    
     // file-nameが未設定の場合は名前から生成
     if (!character['file-name']) {
       character['file-name'] = `${character.name.toLowerCase().replace(/\s+/g, '_')}.json`;
@@ -115,8 +117,10 @@ export class CharacterLoader {
     
     const existingIndex = this.characters.findIndex(char => char['file-name'] === character['file-name']);
     if (existingIndex >= 0) {
+      console.log('🔄 既存キャラクター更新:', character.name);
       this.characters[existingIndex] = character;
     } else {
+      console.log('➕ 新規キャラクター追加:', character.name);
       this.characters.push(character);
     }
     
@@ -142,9 +146,11 @@ export class CharacterLoader {
   private static saveToLocalStorage(): void {
     try {
       const customCharacters = this.characters.filter(char => char['file-name'] !== 'nami.json');
+      console.log('💾 キャラクター保存中:', customCharacters.length, '件');
       localStorage.setItem('ai-chat-characters', JSON.stringify(customCharacters));
+      console.log('✅ キャラクター保存完了');
     } catch (error) {
-      console.error('キャラクター保存エラー:', error);
+      console.error('❌ キャラクター保存エラー:', error);
     }
   }
 
@@ -160,8 +166,11 @@ export class CharacterLoader {
 
   static initialize() {
     if (this.characters.length === 0) {
+      console.log('🔄 キャラクター初期化中...');
       const customCharacters = this.loadFromLocalStorage();
+      console.log('📚 読み込み済みキャラクター:', customCharacters.length, '件');
       this.characters = [this.defaultCharacter, ...customCharacters];
+      console.log('✅ キャラクター初期化完了:', this.characters.length, '件');
     }
   }
 

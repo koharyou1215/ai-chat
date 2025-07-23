@@ -137,6 +137,12 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     
     // モデルが応答を生成しないことを避けるための指示を強化
     basePrompt += '\n【最終指示】必ず{{char}}の返答を生成してください。空の応答や不完全な応答は許可されません。';
+    
+    // Geminiの内部思考プロセスを防ぐための指示を追加
+    basePrompt += '\n【重要】あなたの内部的な思考プロセスや「Responding to the Situation」のようなメタ的な表現は一切含めず、直接的に{{char}}として返答してください。';
+    
+    // 日本語での応答を強制
+    basePrompt += '\n【言語指示】必ず日本語で返答してください。英語での返答は禁止です。';
 
     // レスポンス形式に応じた指示を追加
     if (settings?.responseFormat && settings.responseFormat !== 'normal') {

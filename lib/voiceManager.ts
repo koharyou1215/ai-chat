@@ -344,7 +344,7 @@ export class VoiceManager {
     return {
       enabled: settings.enabled ?? true,
       autoPlay: settings.autoPlay ?? false,
-      voiceId: settings.voiceId ?? 'pNInz6obpgDQGcFmaJgB', // Adam (デフォルト)
+      voiceId: settings.voiceId ?? '8EkOjt4xTPGMclNlh1pk', // ユーザー指定のデフォルト
       stability: Math.max(0, Math.min(1, settings.stability ?? 0.5)),
       similarityBoost: Math.max(0, Math.min(1, settings.similarityBoost ?? 0.75)),
       style: Math.max(0, Math.min(1, settings.style ?? 0)),
@@ -430,7 +430,7 @@ export class VoiceManager {
 export const defaultVoiceSettings: VoiceSettings = {
   enabled: true, // デフォルトで有効に変更
   autoPlay: false,
-  voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam
+      voiceId: '8EkOjt4xTPGMclNlh1pk', // ユーザー指定のデフォルト
   stability: 0.5,
   similarityBoost: 0.75,
   style: 0,
@@ -456,7 +456,7 @@ export const characterVoicePresets: { [key: string]: Partial<VoiceSettings> } = 
     style: 0.4
   },
   male_calm: {
-    voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam
+    voiceId: '8EkOjt4xTPGMclNlh1pk', // ユーザー指定のデフォルト
     stability: 0.4,
     similarityBoost: 0.8,
     style: 0.1
