@@ -48,9 +48,9 @@ const defaultSettings: AppSettings = {
   memorySize: 4000,
   historySize: 12, // デフォルトの履歴件数
   bubbleOpacity: 0.9,
-  geminiApiKey: '',
-  stableDiffusionApiKey: '',
-  elevenLabsApiKey: '',
+  geminiApikey: '',
+  stableDiffusionApikey: '',
+  elevenlabsApikey: '',
   loraSettings: '',
   negativePrompt: '',
   systemPrompt: '',
@@ -62,21 +62,25 @@ const defaultSettings: AppSettings = {
   customBackground: undefined,
   voiceEnabled: false,
   voiceAutoPlay: false,
-  voiceId: '',
+  voiceId: '8EkOjt4xTPGMclNlh1pk', // デフォルト音声IDを設定
   voiceStability: 0.5,
   voiceSimilarityBoost: 0.75,
   voiceStyle: 0,
   voiceUseSpeakerBoost: true,
   voiceSpeed: 1.0,
   voiceVolume: 0.8,
-  model: 'openai/gpt-4o-mini',
+  model: 'google/gemini-2.5-pro',
   enableImageGeneration: true,
   chatNotificationSound: true,
   imageEngine: 'runware',
   bubbleBlur: true,
   provider: 'openrouter',
-  openRouterApiKey: '',
-  candidateCount: 1
+  openRouterApikey: '',
+  candidateCount: 1,
+  runwareApikey: '',
+  runwaremodelid: '',
+  runwareLoraIds: [],
+  allowNsfw: false
 };
 
 export const useChatStore = create<ChatStore>()(

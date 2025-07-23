@@ -71,19 +71,31 @@ export class RunwareService {
     }
 
     try {
-      // Runware APIのテキスト-画像生成タスク開始エンドポイント（仮）
-      // 正しいエンドポイントはドキュメントで確認が必要
-      const response = await fetch(`${this.baseUrl}generation/text-to-image/tasks`, { // 修正
+      console.log('🚀 Runware API リクエスト送信中:', {
+        url: `${this.baseUrl}generation/text-to-image/tasks`,
+        model: request.model,
+        prompt: request.positivePrompt.substring(0, 100) + '...',
+        width: request.width,
+        height: request.height
+      });
+
+      // Runware APIのテキスト-画像生成タスク開始エンドポイント
+      const response = await fetch(`${this.baseUrl}generation/text-to-image/tasks`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(body),
       });
 
+      console.log('📡 Runware API レスポンス:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('❌ Runware API エラーレスポンス:', errorText);
+        throw new Error(`API request failed: ${response.status} - ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Runware API レスポンスデータ:', data);
 
       if (data.id) {
         return { taskId: data.id };

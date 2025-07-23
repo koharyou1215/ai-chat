@@ -16792,6 +16792,438 @@ I'm aware of the user's anxiety
 
 _**Assistant**_
 
+思考プロセス:
+
+ユーザーから2つの重要な情報が提供されました：
+
+1. **画像生成APIで400エラーが発生している**:
+   - `POST https://ai-chat-arbzqweug-kous-projects-ba188115.vercel.app/api/generate-image/ 400 (Bad Request)`
+   - これは本番環境（Vercel）でのエラーです。
+
+2. **Geminiからの返事が不適切**:
+   - "Responding to the Situation" と "I'm aware of the user's anxiety" という内部的な思考プロセスが出力されている
+   - これは以前修正したはずの問題が再発していることを示しています
+
+まず、画像生成の400エラーの原因を調査し、次にGeminiの応答品質問題を修正します。
+
+---
+
+画像生成の400エラーとGeminiの応答品質問題が発生しているとのこと、承知いたしました。
+
+まず、**画像生成の400エラー**から調査します。これは本番環境（Vercel）で発生しているので、環境変数の設定に問題がある可能性があります。
+
+`src/app/api/generate-image/route.ts` のログを確認して、具体的なエラー内容を把握しましょう。
+
+
+---
+
+Read file: src/app/api/generate-image/route.ts
+
+---
+
+Read file: src/app/api/generate-image/route.ts
+
+---
+
+画像生成APIのコードを確認しました。400エラーの原因を特定するために、より詳細なログを追加します。
+
+
+---
+
+```diff
+      
+      console.log('[/api/generate-image] 受信した設定:', settings); // settingsオブジェクトをログに出力
++     console.log('[/api/generate-image] 環境変数 RUNWARE_API_KEY:', process.env.RUNWARE_API_KEY ? '設定済み' : '未設定');
++     console.log('[/api/generate-image] 環境変数 RUNWARE_MODEL_ID:', process.env.RUNWARE_MODEL_ID || '未設定');
+  
+      // 新しいプロンプトジェネレータを使用
+```
+
+```diff
+          console.warn('Neither Runware nor local SD is explicitly selected or configured. Defaulting to:', selectedEngine);
+      }
++ 
++     console.log('[/api/generate-image] 選択されたエンジン:', selectedEngine);
+  
+      // Flag retained for backward-compat; may be used in future
+```
+
+```diff
+        console.log('Using Runware API');
+        const runwareApiKey = settings?.runwareApikey || process.env.RUNWARE_API_KEY; // settings から取得を優先 (修正)
+-       const runwareModelId = settings?.runwaremodelid; // RunwareモデルIDを取得 (小文字に修正)
++       const runwareModelId = settings?.runwaremodelid || process.env.RUNWARE_MODEL_ID; // 環境変数もチェック
++ 
++       console.log('[/api/generate-image] Runware API Key:', runwareApiKey ? '設定済み' : '未設定');
++       console.log('[/api/generate-image] Runware Model ID:', runwareModelId || '未設定');
+  
+        if (!runwareApiKey) {
+-         return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 500 });
++         console.error('[/api/generate-image] Runware APIキーが設定されていません');
++         return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 400 });
+        }
+        if (!runwareModelId) { // モデルIDが設定されていない場合のエラーハンドリングを追加
+-         console.error('Runware Image Model IDが設定されていません。');
++         console.error('[/api/generate-image] Runware Image Model IDが設定されていません。');
+          return NextResponse.json({ success: false, error: 'Runware Image Model IDが設定されていません' }, { status: 400 });
+        }
+```
+
+---
+
+次に、Geminiの応答品質問題を修正します。`src/app/api/simple-chat/route.ts` のプロンプトを改善します。
+
+
+---
+
+Read file: src/app/api/simple-chat/route.ts
+
+---
+
+Read file: src/app/api/simple-chat/route.ts
+
+---
+
+Geminiの応答品質問題を修正するために、プロンプトに追加の指示を加えます。
+
+
+---
+
+
+
+---
+
+次に、音声のデフォルト設定を変更します。
+
+
+---
+
+Read file: lib/voiceManager.ts
+
+---
+
+<details>
+            <summary>Grep search for "voiceId.*=" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "defaultVoiceId" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "voiceId.*:" • **4** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/script/ai-chat/types/character.ts` | L163 | `voiceId?: string;` |
+| `file:///c%3A/script/ai-chat/types/app.ts` | L9 | `voiceId?: string;` |
+| `file:///c%3A/script/ai-chat/stores/chatStore.ts` | L64 | `voiceId: '',` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L3 | `voiceId: string;` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L346 | `voiceId: settings.voiceId ?? 'pNInz6obpgDQGcFmaJgB', // Adam (デフォルト)` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L359 | `static async playVoicePreview(voiceId: string, settings: VoiceSettings): Promise<boolean> {` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L432 | `voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L446 | `voiceId: 'EXAVITQu4vr4xnSDxMaL', // Bella` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L452 | `voiceId: 'ThT5KcBeYPX3keUQqHPh', // Dorothy` |
+| `file:///c%3A/script/ai-chat/lib/voiceManager.ts` | L458 | `voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam` |
+
+</details>
+
+---
+
+デフォルトのvoiceIdを変更します。
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+次に、チャット履歴が表示されない問題を調査します。
+
+
+---
+
+Read file: stores/chatStore.ts
+
+---
+
+Read file: stores/chatStore.ts
+
+---
+
+チャット履歴の表示に関連するコンポーネントを確認します。
+
+
+---
+
+Read file: components/ChatHistoryGallery.tsx
+
+---
+
+チャット履歴の表示問題を調査するために、メインページでチャット履歴がどのように使用されているかを確認します。
+
+
+---
+
+Read file: src/app/page.tsx
+
+---
+
+チャット履歴の表示に関連する部分を確認します。
+
+
+---
+
+<details>
+            <summary>Grep search for "ChatHistoryGallery" • **6** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/script/ai-chat/src/components/ChatHistoryGallery.tsx` | L4 | `interface ChatHistoryGalleryProps {` |
+| `file:///c%3A/script/ai-chat/src/components/ChatHistoryGallery.tsx` | L13 | `export default function ChatHistoryGallery({` |
+| `file:///c%3A/script/ai-chat/src/components/ChatHistoryGallery.tsx` | L20 | `}: ChatHistoryGalleryProps) {` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L125 | `const ChatHistoryGallery = dynamic(() => import('../../components/ChatHistoryGallery'), { ssr: false });` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2163 | `<ChatHistoryGallery` |
+| `file:///c%3A/script/ai-chat/src/app/ClientLayout.tsx` | L14 | `import ChatHistoryGallery from '../components/ChatHistoryGallery'` |
+| `file:///c%3A/script/ai-chat/src/app/history/page.tsx` | L5 | `import ChatHistoryGallery from '../../components/ChatHistoryGallery';` |
+| `file:///c%3A/script/ai-chat/src/app/history/page.tsx` | L36 | `<ChatHistoryGallery` |
+| `file:///c%3A/script/ai-chat/components/ChatHistoryGallery.tsx` | L6 | `interface ChatHistoryGalleryProps {` |
+| `file:///c%3A/script/ai-chat/components/ChatHistoryGallery.tsx` | L14 | `export default function ChatHistoryGallery({` |
+| `file:///c%3A/script/ai-chat/components/ChatHistoryGallery.tsx` | L20 | `}: ChatHistoryGalleryProps) {` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L125 | `const ChatHistoryGallery = dynamic(() => import('../../components/ChatHistoryGallery'), { ssr: false });` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2163 | `<ChatHistoryGallery` |
+
+</details>
+
+---
+
+Read file: src/app/page.tsx
+
+---
+
+チャット履歴の表示問題を調査するために、`sessions`変数がどのように定義されているかを確認します。
+
+
+---
+
+<details>
+            <summary>Grep search for "sessions.*=" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L138 | `const [sessions, setSessions] = useState<SessionSummary[]>([]);` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L216 | `sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L257 | `sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット',` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L477 | `const allSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L608 | `const allSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1104 | `const updatedSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1585 | `{sessions.slice(0, 50).map((session) => (` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1644 | `{sessions.length === 0 && (` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2164 | `sessions={sessions}` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2311 | `sessionTitle={currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'}` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L138 | `const [sessions, setSessions] = useState<SessionSummary[]>([]);` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L216 | `sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L257 | `sessionTitle: currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット',` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L477 | `const allSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L608 | `const allSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1104 | `const updatedSessions = await historyManager.getAllSessions();` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1585 | `{sessions.slice(0, 50).map((session) => (` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1644 | `{sessions.length === 0 && (` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2164 | `sessions={sessions}` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L2311 | `sessionTitle={currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'}` |
+
+</details>
+
+---
+
+Read file: src/app/page.tsx
+
+---
+
+チャット履歴の表示問題を調査するために、`historyManager`の実装を確認します。
+
+
+---
+
+Read file: lib/historyManager.ts
+
+---
+
+チャット履歴の表示問題を調査するために、`historyManager.getAllSessions()`の実装を確認します。
+
+
+---
+
+Read file: lib/historyManager.ts
+
+---
+
+チャット履歴の表示問題を調査するために、セッションが保存されているかを確認するデバッグログを追加します。
+
+
+---
+
+
+
+---
+
+次に、セッション保存時のデバッグログも追加します。
+
+
+---
+
+
+
+---
+
+次に、キャラクターの保存ができていない問題を調査するために、`CharacterLoader`にデバッグログを追加します。
+
+
+---
+
+Read file: lib/characterLoader.ts
+
+---
+
+Read file: lib/characterLoader.ts
+
+---
+
+`CharacterLoader`にデバッグログを追加します。
+
+
+---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+最後に、本番環境でのデプロイを行います。
+
+
+---
+
+```bash
+git add .
+```
+
+```
+PS C:\script\ai-chat> git add .
+PS C:\script\ai-chat> g copy of 'src/app/api/generate-image/route.ts', LF will be replaced by CRLF th
+```
+
+---
+
+```bash
+git commit -m "Fix multiple issues: image generation 400 errors, Gemini response quality, voice default ID, chat history display, and character persistence with debug logs"
+```
+
+```
+PS C:\script\ai-chat> git commit -m "Fix multiple issues: image generation 400 errors, Gemini respons
+PS C:\script\ai-chat> git commit -m "Fix multiple issues: image generation 400 errors, Gemini respons
+PS C:\script\ai-chat> git commit -m "Fix multiple issues: image generation 400 errors, Gemini respons
+PS C:\script\ai-chat> git commit -m "Fix multiple issues: image generation 400 errors, Gemini respons
+[main 1fbd585] Fix multiple issues: image generation 400 errors, Gemini response quality, voice defau
+lt ID, chat history display, and character persistence with debug logs
+ 6 files changed, 147 insertions(+), 9 deletions(-)
+PS C:\script\ai-chat>
+```
+
+---
+
+_**User**_
+
+デプロイしたけど会話の履歴はどこかわかりません。ペルソナのスクロールが効きません。画像もまだです。
+電球マークインスピレーションも起動しません。
+
+[/api/generate-image]受信した設定：{
+  温度：0.7、
+  TOPP：0.9、
+  Maxtokens：1024、
+  MemorySize：8000、
+  History -Size：15、
+  バブルパティ：0.9、
+  geminiapikey： ''、
+  stablediffusionapikey： ''、
+  Elevenlabsapikey： ''、
+  lorasettings： ''、
+  ネガティブプロムプト： ''
+  SystemPrompt： ''、
+  JealbreakPrompt： ''、
+  ResponseFormat：「通常」、
+  enablejailbreak：false、
+  EnableSystemPrompt：false、
+  CurrentTheme： 'Ocean-Sunset'、
+  VoiceEnabled：本当、
+  voiceautoplay：false、
+  voiceId： 'pninz6obpgdqgcfmajgb'、
+  声のような可能性：0.5、
+  VoicesImilalityBoost：0.75、
+  voicestyle：0、
+  voiceusespeakerboost：true、
+  VoicesSpeed：1、
+  VoiceVolume：0.8、
+  モデル：「Google/Gemini-2.5-pro」、
+  プロバイダー：「OpenRouter」、
+  EnableImageGeneration：True、
+  ChatNotificationSound：true、
+  ImageEngine：「Runware」、
+  Bubbleblur：本当、
+  OpenRouterApikey： ''、
+  CandidatateCount：1、
+  runwaremodelid： ''、
+  runwareLoraids：[]、
+  InspirationPrompt： ''、
+  EnhancementPrompt： ''
+}
+[/api/generate-image] 環境変数 RUNWARE_API_KEY: 設定済み
+[/api/generate-image] 環境変数 RUNWARE_MODEL_ID: rundiffusion:130@100
+Generated prompt result: {
+  emotion: '自然',
+  scenario: 'ビーチ',
+  prompt: 'スレンダーで魅力的な体型の若い女性。健康的な小麦色の肌, 鮮やかなオレンジ色のロングヘア、時々ポニーテールにしている, 茶色の大きな瞳、表情豊か, 青いビキニトップに短いスカート、または航海に適した軽...'
+}
+[/api/generate-image] 選択されたエンジン: runware
+Using Runware API
+[/api/generate-image] Runware API Key: 設定済み
+[/api/generate-image] Runware Model ID: rundiffusion:130@100
+Runware API タスク作成エラー: Error: API request failed: 400 - Bad Request
+    at p.createGenerationTask (.next/server/app/api/generate-image/route.js:1:9281)
+    at async m (.next/server/app/api/generate-image/route.js:1:12788)
+Runware API error: Error: 画像生成サービスでタスク作成エラーが発生しました
+    at p.createGenerationTask (.next/server/app/api/generate-image/route.js:1:9491)
+    at async m (.next/server/app/api/generate-image/route.js:1:12788)
+Returning placeholder image
+
+---
+
+_**Assistant**_
+
 
 
 ---

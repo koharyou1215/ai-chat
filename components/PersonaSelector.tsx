@@ -55,7 +55,7 @@ export default function PersonaSelector({
       </div>
 
       {isExpanded && (
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-60 overflow-y-auto">
           {/* 現在のPersona */}
           <div className="space-y-2">
             <div className="text-white/70 text-sm font-medium">現在のPersona:</div>
