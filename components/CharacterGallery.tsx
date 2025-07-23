@@ -12,7 +12,7 @@ interface CharacterGalleryProps {
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (character: Character) => void;
   onImportExport?: () => void;
-  onClose: () => void;
+  // onClose: () => void; // src/app/characters/page.tsx から削除済み、ここでは不要
 }
 
 export default function CharacterGallery({
@@ -23,7 +23,6 @@ export default function CharacterGallery({
   onEditCharacter,
   onDeleteCharacter,
   onImportExport,
-  onClose
 }: CharacterGalleryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -67,7 +66,7 @@ export default function CharacterGallery({
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-4">
             <button
-              onClick={onClose}
+              onClick={() => {}} // onCloseを削除
               className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft size={24} />

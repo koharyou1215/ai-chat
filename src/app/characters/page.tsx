@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import CharacterGallery from '../../components/CharacterGallery';
 import CharacterModal from '../../components/CharacterModal';
-import { CharacterLoader } from '../../lib/characterLoader';
+import { CharacterLoader } from '../../../lib/characterLoader'; // パスを修正
+import { Character } from '../../../types/character'; // Character 型をインポート (パスを修正)
 
 export default function CharactersPage() {
   const router = useRouter();
@@ -86,7 +87,6 @@ export default function CharactersPage() {
             onEditCharacter={handleEditCharacter} // 編集ハンドラ
             onDeleteCharacter={handleDeleteCharacter} // 削除ハンドラ
             onImportExport={() => { /* インポート/エクスポートは別途実装 */ }} // TODO: 後で実装
-            onClose={() => { /* ギャラリー自体のクローズは不要か、別の場所で制御 */ }} // CharacterGalleryのonCloseは不要かも
           />
         </div>
       </div>
