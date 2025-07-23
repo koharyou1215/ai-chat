@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppSettings } from '../../types/app';
-import { OpenRouter } from '../../lib/openRouter';
+import { AppSettings } from '../../../../types/app';
+import { chatCompletion } from '../../../../lib/openRouter'; // OpenRouterクラスではなくchatCompletion関数をインポート
 
 export async function POST(req: NextRequest) {
   console.log('[/api/user-inspiration] POSTリクエストを受信しました'); // リクエスト開始ログ
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
     }
 
-    const openRouter = new OpenRouter(settings.openRouterApiKey);
+    // const openRouter = new OpenRouter(settings.openRouterApiKey); // OpenRouterクラスのインスタンス化は不要
     const model = settings.openRouterModel || 'mistralai/mistral-7b-instruct'; // Fallback to a default model
 
     console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`); // 使用モデルのログ
@@ -42,21 +42,20 @@ ${message}
 候補を生成してください。`;
 
     console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。'); // APIリクエスト前ログ
-    const response = await openRouter.chatCompletion(
-      [
-        { role: 'system', content: prompt },
-      ],
-      model,
-      0.7 // temperature
+    const response = await chatCompletion( // chatCompletion関数を直接呼び出し
+      {
+        apiKey: settings.openRouterApiKey,
+        model: model,
+        messages: [
+          { role: 'system', content: prompt },
+        ],
+        temperature: 0.7,
+      }
     );
     console.log(`[/api/user-inspiration] OpenRouter APIからの生レスポンス: ${JSON.stringify(response)}`); // 生レスポンスのログ
 
-    if (!response || !response.choices || response.choices.length === 0) {
-      console.error('[/api/user-inspiration] OpenRouterからの応答が無効です。候補が見つかりませんでした。'); // 無効な応答ログ
-      return NextResponse.json({ error: 'Invalid response from OpenRouter API' }, { status: 500 });
-    }
-
-    const content = response.choices[0].message.content;
+    // OpenRouterのchatCompletion関数は直接contentを返すため、responseオブジェクトの処理を変更
+    const content = response;
     console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`); // 応答内容のログ
 
     try {
