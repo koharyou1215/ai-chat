@@ -91,6 +91,9 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Gemini API キー
+                      <span className="text-xs text-gray-500 ml-2">
+                        {process.env.NEXT_PUBLIC_GEMINI_API_KEY ? '（環境変数設定済み）' : '（環境変数未設定）'}
+                      </span>
                     </label>
                     <div className="relative">
                       <input
@@ -114,6 +117,9 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       OpenRouter API キー
+                      <span className="text-xs text-gray-500 ml-2">
+                        {process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ? '（環境変数設定済み）' : '（環境変数未設定）'}
+                      </span>
                     </label>
                     <div className="relative">
                       <input

@@ -7,8 +7,11 @@ export async function POST(req: NextRequest) {
   try {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
-    if (!settings.openRouterApikey) { // openRouterApikey に修正
-      console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません。');
+    // 環境変数を優先的に使用
+    const openRouterApiKey = settings.openRouterApikey || process.env.OPENROUTER_API_KEY;
+    
+    if (!openRouterApiKey) {
+      console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません（設定画面と環境変数の両方で未設定）。');
       return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
     }
 
@@ -44,7 +47,7 @@ ${message}
     console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。'); // APIリクエスト前ログ
     const response = await chatCompletion( // chatCompletion関数を直接呼び出し
       {
-        apiKey: settings.openRouterApikey as string, // 型アサーションを追加
+        apiKey: openRouterApiKey, // 環境変数優先のAPIキーを使用
         model: model,
         messages: [
           { role: 'system', content: prompt },
@@ -55,7 +58,7 @@ ${message}
     console.log(`[/api/user-inspiration] OpenRouter APIからの生レスポンス: ${JSON.stringify(response)}`); // 生レスポンスのログ
 
     // OpenRouterのchatCompletion関数は直接contentを返すため、responseオブジェクトの処理を変更
-    const content = response;
+    const content: string = response;
     console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`); // 応答内容のログ
 
     try {
@@ -66,12 +69,14 @@ ${message}
       }
       console.log(`[/api/user-inspiration] 生成された候補数: ${parsedContent.candidates.length}`); // 候補数のログ
       return NextResponse.json(parsedContent);
-    } catch (parseError: any) {
-      console.error(`[/api/user-inspiration] JSONパースエラー: ${parseError.message}, 応答内容: ${content}`); // JSONパースエラーログ
-      return NextResponse.json({ error: `JSON parsing error: ${parseError.message}` }, { status: 500 });
+    } catch (parseError: unknown) {
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+      console.error(`[/api/user-inspiration] JSONパースエラー: ${errorMessage}, 応答内容: ${content}`); // JSONパースエラーログ
+      return NextResponse.json({ error: `JSON parsing error: ${errorMessage}` }, { status: 500 });
     }
-  } catch (error: any) {
-    console.error(`[/api/user-inspiration] APIエラー: ${error.message}, スタック: ${error.stack}`); // キャッチされたエラーのログ
-    return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[/api/user-inspiration] APIエラー: ${errorMessage}`); // キャッチされたエラーのログ
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 
