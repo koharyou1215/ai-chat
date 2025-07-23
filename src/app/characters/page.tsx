@@ -1,20 +1,64 @@
 ﻿'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import CharacterGallery from '../../components/CharacterGallery';
+import CharacterModal from '../../components/CharacterModal';
+import { CharacterLoader } from '../../lib/characterLoader';
 
 export default function CharactersPage() {
   const router = useRouter();
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+
+  useEffect(() => {
+    // キャラクターリストの初期ロード
+    loadCharacters();
+  }, []);
+
+  const loadCharacters = () => {
+    CharacterLoader.initialize(); // CharacterLoaderを初期化
+    setCharacters(CharacterLoader.getAllCharacters());
+  };
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleCharacterSelect = (character: any) => {
-    // キャラクター選択後、メインページに戻る
-    router.push('/');
+  const handleCharacterSelect = (character: Character) => {
+    // キャラクター選択後、メインページに戻る (ここでは何もしないか、選択されたキャラクターを渡すなど)
+    // 現状はrouter.push('/')のみで、キャラクター選択はuseChatStoreなどで別途行う想定のようです。
+    // router.push('/'); // ここは不要かもしれません
+  };
+
+  const handleAddCharacter = () => {
+    setEditingCharacter(null); // 新規作成のため既存キャラクターをクリア
+    setIsModalOpen(true);
+  };
+
+  const handleEditCharacter = (character: Character) => {
+    setEditingCharacter(character);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteCharacter = (characterToDelete: Character) => {
+    if (window.confirm(`${characterToDelete.name}を削除してもよろしいですか？`)) {
+      CharacterLoader.deleteCharacter(characterToDelete.name); // CharacterLoaderで削除
+      loadCharacters(); // リストを再ロード
+    }
+  };
+
+  const handleSaveCharacter = (character: Character) => {
+    CharacterLoader.addCharacter(character); // CharacterLoaderで追加/更新
+    loadCharacters(); // リストを再ロード
+    setIsModalOpen(false);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCharacter(null);
   };
 
   return (
@@ -35,11 +79,25 @@ export default function CharactersPage() {
         {/* キャラクターギャラリー */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6">
           <CharacterGallery 
-            onCharacterSelect={handleCharacterSelect}
-            showTitle={false}
+            characters={characters} // CharacterLoaderから取得したリストを渡す
+            currentCharacter={null} // ここでは選択状態を管理しない
+            onSelectCharacter={handleCharacterSelect} // キャラクター選択ハンドラ
+            onAddCharacter={handleAddCharacter} // 新規作成ハンドラ
+            onEditCharacter={handleEditCharacter} // 編集ハンドラ
+            onDeleteCharacter={handleDeleteCharacter} // 削除ハンドラ
+            onImportExport={() => { /* インポート/エクスポートは別途実装 */ }} // TODO: 後で実装
+            onClose={() => { /* ギャラリー自体のクローズは不要か、別の場所で制御 */ }} // CharacterGalleryのonCloseは不要かも
           />
         </div>
       </div>
+
+      {/* キャラクター編集/新規作成モーダル */}
+      <CharacterModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        character={editingCharacter}
+        onSave={handleSaveCharacter}
+      />
     </div>
   );
 }

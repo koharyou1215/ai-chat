@@ -135,8 +135,11 @@ export class VoiceManager {
       const AudioCtx = win.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
+        console.log('[VoiceManager] AudioContext state:', ctx.state); // AudioContextの状態をログ
         if (ctx.state === 'suspended') {
+          console.log('[VoiceManager] AudioContextが中断されているため、再開を試みます。');
           await ctx.resume();
+          console.log('[VoiceManager] AudioContext再開完了。');
           // すぐに閉じる（メモリリーク防止）
           ctx.close();
         }
@@ -181,9 +184,11 @@ export class VoiceManager {
 
           this.isPlaying = true;
           try {
+            console.log('[VoiceManager] Audio要素のplay()を呼び出します。');
             await this.currentAudio.play();
+            console.log('[VoiceManager] Audio要素のplay()成功。');
           } catch (playError) {
-            console.error('audio.play() 失敗:', playError);
+            console.error('[VoiceManager] audio.play() 失敗:', playError);
             throw playError;
           }
           console.log('ElevenLabs音声再生成功');
@@ -301,12 +306,13 @@ export class VoiceManager {
       };
 
       try {
+        console.log('[VoiceManager] Web Speech APIのspeak()を呼び出します。');
         speechSynthesis.speak(utterance);
-        console.log('Web Speech API再生指示完了');
+        console.log('[VoiceManager] Web Speech APIのspeak()成功。');
         // 即座にisPlayingをtrueに設定（onstartが呼ばれない場合のため）
         this.isPlaying = true;
       } catch (error) {
-        console.error('Web Speech API再生失敗:', error);
+        console.error('[VoiceManager] Web Speech API再生失敗:', error);
         this.isPlaying = false;
       }
     };
