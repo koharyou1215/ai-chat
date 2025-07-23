@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       .map((msg: ChatMessage) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`)
       .join('\n\n');
 
-    const prompt = `以下の会話を3つの異なる視点から分析して、それぞれ200字程度のインプレッションを生成してください。
+    let basePrompt = `以下の会話を3つの異なる視点から分析して、それぞれ200字程度のインプレッションを生成してください。
 
 【会話タイトル】: ${sessionTitle || '新しいチャット'}
 【キャラクター】: ${character?.name || 'AI'}
@@ -132,8 +132,18 @@ ${conversationText}
 
 JSON形式以外は出力しないでください。`;
 
+    if (settings?.enableJailbreak && settings?.jailbreakPrompt) {
+      basePrompt = `${settings.jailbreakPrompt}\n\n${basePrompt}`;
+    }
+
+    // ここで繰り返し禁止・心情変化指示を追加
+    basePrompt += '\n【超重要】過去のやり取りや感情・関係性を繰り返さず、キャラクターの心情や関係性は状況に応じて自然に変化・進展させてください。同じ言葉や感情表現を何度も使うことは禁止です。会話や物語が進むごとに、キャラクターの気持ちや態度も変化させてください。';
+    
+    // JSON形式の出力が途切れる問題への対策
+    basePrompt += '\n【最終重要指示】あなたはJSON形式で出力することに特化しています。**いかなる場合も、完全で正しいJSONのみを出力し、途中で途切れたり、余計な文字（説明、コメント、会話など）を含めたりしないでください。**';
+
     const messagesForOpenRouter = [
-        { role: 'user' as const, content: prompt }
+        { role: 'user' as const, content: basePrompt }
     ];
 
     // OpenRouterで生成
