@@ -166,7 +166,9 @@ JSON形式以外は出力しないでください。`;
 
     try {
       // JSONパースを試行
-      const data = JSON.parse(text);
+      // モデルが余計なバッククォートを含める場合があるので、JSONブロックのみを抽出
+      const jsonString = text.replace(/```json\n?|\n```/g, '').trim(); // ```json と ``` を除去
+      const data = JSON.parse(jsonString);
       
       // 文字数を正確に計算
       const impressionsWithWordCount = data.impressions.map((impression: Impression) => ({

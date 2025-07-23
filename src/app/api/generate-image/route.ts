@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
   try {
     const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, settings } = await request.json(); // settings をデストラクチャリング
     
+    console.log('[/api/generate-image] 受信した設定:', settings); // settingsオブジェクトをログに出力
+
     // 新しいプロンプトジェネレータを使用
     const promptResult = ImagePromptGenerator.generateImagePrompt(
       character,

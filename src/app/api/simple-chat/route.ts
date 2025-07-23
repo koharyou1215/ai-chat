@@ -135,6 +135,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ここで繰り返し禁止・心情変化指示を追加
     basePrompt += '\n【超重要】過去のやり取りや感情・関係性を繰り返さず、キャラクターの心情や関係性は状況に応じて自然に変化・進展させてください。同じ言葉や感情表現を何度も使うことは禁止です。会話や物語が進むごとに、キャラクターの気持ちや態度も変化させてください。';
     
+    // モデルが応答を生成しないことを避けるための指示を強化
+    basePrompt += '\n【最終指示】必ず{{char}}の返答を生成してください。空の応答や不完全な応答は許可されません。';
+
     // レスポンス形式に応じた指示を追加
     if (settings?.responseFormat && settings.responseFormat !== 'normal') {
       const formatInstructions = {
@@ -198,8 +201,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         
         // APIキーの重複を修正（重複している場合は半分にカット）を削除
         // if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
-        //   const halfLength = openRouterApiKey.length / 2;
-        //   const firstHalf = openRouterApiKey.substring(0, halfLength);
+        //   const halfLength = openRouterApiKey.substring(0, halfLength);
         //   const secondHalf = openRouterApiKey.substring(halfLength);
         //   if (firstHalf === secondHalf) {
         //     console.log('OpenRouter APIキーの重複を検出、修正しています');
@@ -303,4 +305,4 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}
