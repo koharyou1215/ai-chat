@@ -134,27 +134,31 @@ export async function POST(request: NextRequest) {
 
         // タスクの完了をポーリング
         let attempts = 0;
-        let taskStatus: { status: string; image?: string; seed?: number } = { status: 'pending' };
-        const MAX_ATTEMPTS = 60; // 2秒 * 60回 = 120秒 (2分) タイムアウト
-        const POLL_INTERVAL_MS = 2000; // 2秒
+        const MAX_ATTEMPTS = 60; // 60 seconds (60 * 1000ms / 1000ms)
+        const POLL_INTERVAL_MS = 1000; // Poll every 1 second
 
-        while (taskStatus.status !== 'completed' && taskStatus.status !== 'failed' && attempts < MAX_ATTEMPTS) {
+        let taskStatusResponse = await runwareService.getGenerationTaskStatus(taskId.taskId); // 初期状態を取得
+        console.log('Runware API Initial Task Status:', taskStatusResponse); // 初期状態をログ
+
+        while (taskStatusResponse.status !== 'completed' && taskStatusResponse.status !== 'failed' && attempts < MAX_ATTEMPTS) {
           await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-          taskStatus = await runwareService.getGenerationTaskStatus(taskId.taskId); // taskId.taskId に変更
-          console.log(`Runware task ${taskId} status: ${taskStatus.status}`);
+          taskStatusResponse = await runwareService.getGenerationTaskStatus(taskId.taskId); // ループ内で更新
+          console.log(`Runware task ${taskId.taskId} status: ${taskStatusResponse.status}`); // ログにtaskId.taskId を含める
           attempts++;
         }
 
-        if (taskStatus.status === 'completed' && taskStatus.image) {
+        console.log('Runware API Final Task Status Data:', taskStatusResponse); // 最終的なデータをログ
+
+        if (taskStatusResponse.status === 'completed') { // taskStatusResponse を使用
           // Runwareから返される画像はBase64エンコードされていると仮定
-          const dataUri = `data:image/png;base64,${taskStatus.image}`;
+          const dataUri = `data:image/png;base64,${taskStatusResponse.image}`;
           return NextResponse.json({
             image: dataUri,
             success: true,
             message: 'Runware API で生成しました',
           });
         } else {
-          throw new Error(`Runware 画像生成タスクが完了しませんでした: ${taskStatus.status}`);
+          throw new Error(`Runware 画像生成タスクが完了しませんでした: ${taskStatusResponse.status}`);
         }
 
       } catch (runwareError) {

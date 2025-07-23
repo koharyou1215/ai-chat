@@ -112,7 +112,7 @@ ${recentConversation}
         }
 
         const data = await response.json();
-        console.log('OpenRouter API Response (Inspiration - Single):', data); // ここを追加
+        console.log('OpenRouter API Response (Inspiration - Single):', data);
         const singleCandidate = data.choices[0]?.message?.content?.trim() || '';
 
         return NextResponse.json({
@@ -202,6 +202,7 @@ JSON配列のみを出力してください。例：
         }
 
         const data = await response.json();
+        console.log('OpenRouter API Response (Inspiration - Multiple):', data);
         const candidates = data.choices
           ?.map((choice: any) => choice.message?.content?.trim())
           .filter((c: string) => c && c.length > 0) || [];
