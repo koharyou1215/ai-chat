@@ -197,11 +197,11 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // let から const に変更
+        const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY; // let から const に変更、openRouterApikey に修正
         
         // APIキーの重複を修正（重複している場合は半分にカット）を削除
         // if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
-        //   const halfLength = openRouterApiKey.substring(0, halfLength);
+        //   const halfLength = openRouterApiKey.length / 2;
         //   const secondHalf = openRouterApiKey.substring(halfLength);
         //   if (firstHalf === secondHalf) {
         //     console.log('OpenRouter APIキーの重複を検出、修正しています');
@@ -210,9 +210,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         // }
         
         console.log('OpenRouter API Key check:', {
-          hasSettingsApiKey: !!settings?.openRouterApiKey,
+          hasSettingsApiKey: !!settings?.openRouterApikey, // openRouterApikey に修正
           hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-          settingsApiKeyLength: settings?.openRouterApiKey?.length || 0,
+          settingsApiKeyLength: settings?.openRouterApikey?.length || 0, // openRouterApikey に修正
           finalApiKeyLength: openRouterApiKey?.length || 0,
           finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none'
         });
@@ -239,7 +239,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
         const candidatePromises = Array.from({ length: candidateCount }, () =>
           callOpenRouter({
-            apiKey: openRouterApiKey,
+            apiKey: openRouterApiKey as string, // 型アサーションを追加
             model: openRouterModel,
             messages: messagesForOpenRouter,
             temperature: modelConfig.generationConfig.temperature,
@@ -267,7 +267,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           
           // フォールバック: 1つだけ生成
           const openRouterText = await callOpenRouter({
-            apiKey: openRouterApiKey,
+            apiKey: openRouterApiKey as string, // 型アサーションを追加
             model: openRouterModel,
             messages: messagesForOpenRouter,
             temperature: modelConfig.generationConfig.temperature,

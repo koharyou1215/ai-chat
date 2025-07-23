@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (selectedEngine === 'runware') {
       console.log('Using Runware API');
       const runwareApiKey = settings?.runwareApiKey || process.env.RUNWARE_API_KEY; // settings から取得を優先
-      const runwareModelId = settings?.runwareImageModelId; // RunwareモデルIDを取得
+      const runwareModelId = settings?.runwaremodelid; // RunwareモデルIDを取得 (小文字に修正)
 
       if (!runwareApiKey) {
         return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 500 });

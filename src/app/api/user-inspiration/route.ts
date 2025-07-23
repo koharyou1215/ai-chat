@@ -7,12 +7,12 @@ export async function POST(req: NextRequest) {
   try {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
-    if (!settings.openRouterApiKey) {
+    if (!settings.openRouterApikey) { // openRouterApikey に修正
       console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません。');
       return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
     }
 
-    // const openRouter = new OpenRouter(settings.openRouterApiKey); // OpenRouterクラスのインスタンス化は不要
+    // const openRouter = new OpenRouter(settings.openRouterApikey); // OpenRouterクラスのインスタンス化は不要
     const model = settings.openRouterModel || 'mistralai/mistral-7b-instruct'; // Fallback to a default model
 
     console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`); // 使用モデルのログ
@@ -44,7 +44,7 @@ ${message}
     console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。'); // APIリクエスト前ログ
     const response = await chatCompletion( // chatCompletion関数を直接呼び出し
       {
-        apiKey: settings.openRouterApiKey,
+        apiKey: settings.openRouterApikey as string, // 型アサーションを追加
         model: model,
         messages: [
           { role: 'system', content: prompt },
