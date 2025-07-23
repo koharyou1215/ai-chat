@@ -105,29 +105,37 @@ export async function POST(request: NextRequest) {
     if (selectedEngine === 'runware') {
       console.log('Using Runware API');
       const runwareApiKey = settings?.runwareApiKey || process.env.RUNWARE_API_KEY; // settings から取得を優先
+      const runwareModelId = settings?.runwareImageModelId; // RunwareモデルIDを取得
+
       if (!runwareApiKey) {
         return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 500 });
       }
-      const runwareService = new RunwareService(runwareApiKey); // 修正
+      if (!runwareModelId) { // モデルIDが設定されていない場合のエラーハンドリングを追加
+        console.error('Runware Image Model IDが設定されていません。');
+        return NextResponse.json({ success: false, error: 'Runware Image Model IDが設定されていません' }, { status: 400 });
+      }
+      const runwareService = new RunwareService(runwareApiKey);
 
       try {
         // 画像生成タスクの作成
-        // character.imageWidth, character.imageHeight は SettingsModal の値
         const taskId = await runwareService.createGenerationTask({
-          positivePrompt: finalPrompt, // 'positive_prompt' から変更
-          negativePrompt: finalNegativePrompt, // 'negative_prompt' から変更
-          width: character?.imageWidth || 1024, // Runwareの推奨サイズに合わせて調整
-          height: character?.imageHeight || 1024, // 同上
-          steps: character?.imageSteps || 50, // Runwareの推奨ステップ数に合わせて調整
-          CFGScale: character?.imageCfgScale || 7, // 'cfg_scale' から変更
+          positivePrompt: finalPrompt,
+          negativePrompt: finalNegativePrompt,
+          width: character?.imageWidth || 1024,
+          height: character?.imageHeight || 1024,
+          steps: character?.imageSteps || 50,
+          CFGScale: character?.imageCfgScale || 7,
           seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-          model: settings?.runwareModelId || '', // 'model_id' から変更、必須なので空文字をフォールバック
-          lora: settings?.runwareLoraIds?.map((id: string) => ({ model: id, weight: 1.0 })), // lora をオブジェクトの配列に変換し、idをstringに型指定
-          checkNSFW: true, // 'allow_nsfw' から変更 (一時的に true にハードコード)
-          taskType: "imageInference", // 追加
-          outputType: "URL", // 追加
-          outputFormat: "JPG", // 追加
-          numberResults: 1, // 追加
+          model: runwareModelId, // settings?.runwareModelId から変更
+          lora: settings?.runwareLoraIds?.map((id: string) => ({
+            model: id,
+            weight: 1.0
+          })),
+          checkNSFW: settings?.allowNsfw || false, // settings?.allowNsfw から変更
+          taskType: "imageInference",
+          outputType: "URL",
+          outputFormat: "JPG",
+          numberResults: 1,
         });
 
         console.log(`Runware task created with ID: ${taskId}`);
