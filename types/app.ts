@@ -1,12 +1,12 @@
 export interface AppSettings {
   provider: string;
-  openRouterApiKey?: string;
+  openRouterApikey?: string; // APIに合わせる
   openRouterModel?: string;
-  geminiApiKey?: string;
+  geminiApikey?: string; // APIに合わせる
   geminiModel?: string;
-  runwareApiKey?: string;
-  runwareImageModelId?: string;
-  elevenlabsApiKey?: string;
+  runwareApikey?: string; // APIに合わせる
+  runwaremodelid?: string; // APIに合わせる
+  elevenlabsApikey?: string; // APIに合わせる
   voiceId?: string;
   useStream?: boolean;
   useTextToSpeech?: boolean;
@@ -18,5 +18,7 @@ export interface AppSettings {
   isMobile?: boolean;
   theme?: string;
   accentColor?: string;
+  stableDiffusionApikey?: string; // APIに合わせる
+  runwareLoraIds?: string[]; // Runware LORA IDを追加
   [key: string]: any; // その他の未知のプロパティを許可
 } 

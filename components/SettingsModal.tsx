@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
 import BackupControls from './BackupControls';
-import { AppSettings } from '../types/character';
+import { AppSettings } from '../types/app'; // types/app からインポートするように修正 (修正済み)
 import { VoiceManager, ElevenLabsVoice } from '../lib/voiceManager';
 
 interface SettingsModalProps {
@@ -41,7 +41,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
     const fetchVoices = async () => {
       try {
         if (formSettings.elevenLabsApiKey) {
-          VoiceManager.setApiKey(formSettings.elevenLabsApiKey);
+          
           const voices = await VoiceManager.getAvailableVoices();
           // APIから取得した音声とカスタムをマージ（重複除外）
           const merged = [...customVoices, ...voices.filter(v => !customVoices.some(c => c.voice_id === v.voice_id))];
@@ -95,8 +95,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showGeminiKey ? 'text' : 'password'}
-                        value={formSettings.geminiApiKey}
-                        onChange={(e) => setFormSettings(prev => ({ ...prev, geminiApiKey: e.target.value }))}
+                        value={formSettings.geminiApikey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, geminiApikey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="AIzaSy..."
                       />
@@ -118,8 +118,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showOpenRouterKey ? 'text' : 'password'}
-                        value={formSettings.openRouterApiKey}
-                        onChange={(e) => setFormSettings(prev => ({ ...prev, openRouterApiKey: e.target.value }))}
+                        value={formSettings.openRouterApikey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, openRouterApikey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="sk-or-..."
                       />
@@ -141,8 +141,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showSDKey ? 'text' : 'password'}
-                        value={formSettings.stableDiffusionApiKey}
-                        onChange={(e) => setFormSettings(prev => ({ ...prev, stableDiffusionApiKey: e.target.value }))}
+                        value={formSettings.stableDiffusionApikey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, stableDiffusionApikey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="ローカル実行の場合は空白でOK"
                       />
@@ -164,8 +164,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showElevenLabsKey ? 'text' : 'password'}
-                        value={formSettings.elevenLabsApiKey}
-                        onChange={(e) => setFormSettings(prev => ({ ...prev, elevenLabsApiKey: e.target.value }))}
+                        value={formSettings.elevenlabsApikey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, elevenlabsApikey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="sk_..."
                       />
@@ -190,8 +190,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showRunwareKey ? 'text' : 'password'}
-                        value={formSettings.runwareApiKey}
-                        onChange={(e) => setFormSettings(prev => ({ ...prev, runwareApiKey: e.target.value }))}
+                        value={formSettings.runwareApikey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareApikey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="run_..."
                       />
@@ -215,8 +215,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </label>
                     <input
                       type="text"
-                      value={formSettings.runwareModelId}
-                      onChange={(e) => setFormSettings(prev => ({ ...prev, runwareModelId: e.target.value }))}
+                      value={formSettings.runwaremodelid}
+                      onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwaremodelid: e.target.value }))} // prevの型を明示
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       placeholder="例: model_xxxx"
                     />
@@ -229,7 +229,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </label>
                     <textarea
                       value={formSettings.runwareLoraIds?.join(', ' )}
-                      onChange={(e) => setFormSettings(prev => ({ ...prev, runwareLoraIds: e.target.value.split(',').map(s => s.trim()) }))}
+                      onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareLoraIds: e.target.value.split(',').map(s => s.trim()) }))} // prevの型を明示
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       rows={2}
                       placeholder="例: lora_yyyy, lora_zzzz"

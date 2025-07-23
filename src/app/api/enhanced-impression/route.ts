@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     
     // APIキーとモデル設定を取得
     // const { settings } = await request.json(); // 削除：既に上で取得済み
-    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // settings のキーを優先
+    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY; // settings のキーを優先 (修正)
 
     if (!openRouterApiKey) {
         return NextResponse.json({

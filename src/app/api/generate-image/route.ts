@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Runware APIキーが設定されている場合は実際のAI画像生成
     if (selectedEngine === 'runware') {
       console.log('Using Runware API');
-      const runwareApiKey = settings?.runwareApiKey || process.env.RUNWARE_API_KEY; // settings から取得を優先
+      const runwareApiKey = settings?.runwareApikey || process.env.RUNWARE_API_KEY; // settings から取得を優先 (修正)
       const runwareModelId = settings?.runwaremodelid; // RunwareモデルIDを取得 (小文字に修正)
 
       if (!runwareApiKey) {
