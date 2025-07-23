@@ -166,7 +166,7 @@ export default function ChatPage() {
   const [isEnhancingUserText, setIsEnhancingUserText] = useState(false);
   
   // タブ管理
-  const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'settings'>('characters');
+  const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'history' | 'settings'>('characters');
 
   // 文章強化機能
   const [selectedText, setSelectedText] = useState('');
@@ -1353,6 +1353,16 @@ export default function ChatPage() {
                 🎭 ペルソナ
               </button>
               <button
+                onClick={() => setActiveTab('history')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  activeTab === 'history' 
+                    ? 'text-white border-b-2 border-blue-400 bg-white/10' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                📚 履歴
+              </button>
+              <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
                   activeTab === 'settings' 
@@ -1471,6 +1481,83 @@ export default function ChatPage() {
                   }}
                   onImportExport={() => setIsPersonaImportExportOpen(true)}
                 />
+              </div>
+            )}
+
+            {/* 履歴タブ */}
+            {activeTab === 'history' && (
+              <div className="h-full flex flex-col">
+                {/* スクロール可能な履歴エリア */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 chat-history-scroll">
+                  {sessions.slice(0, 50).map((session) => (
+                    <div
+                      key={session.id}
+                      onClick={async () => {
+                        try {
+                          const loadedSession = await historyManager.loadSession(session.id);
+                          if (loadedSession) {
+                            setMessages(loadedSession.messages);
+                            setCurrentSessionId(session.id);
+                          }
+                        } catch (error) {
+                          console.error('セッション読み込みエラー:', error);
+                        }
+                      }}
+                      className={`group bg-white/20 backdrop-blur-md rounded-lg p-3 cursor-pointer hover:bg-white/30 transition-all duration-200 relative ${
+                        currentSessionId === session.id ? 'ring-2 ring-blue-400 bg-blue-400/30' : ''
+                      } hover:shadow-lg hover:scale-[1.02]`}
+                    >
+                      {/* 削除ボタン */}
+                      <button
+                        onClick={(e) => handleDeleteSession(session.id, e)}
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/70 hover:text-red-400 hover:bg-red-500/30 rounded-full p-1"
+                        title="履歴を削除"
+                      >
+                        <X size={12} />
+                      </button>
+
+                      <div className="text-white text-sm font-medium truncate mb-1 pr-6">
+                        {session.title}
+                      </div>
+                      <div className="text-white/90 text-xs truncate mb-2 leading-relaxed">
+                        {session.lastMessage}
+                      </div>
+                      <div className="text-white/70 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <Clock size={10} />
+                          {new Date(session.updatedAt).toLocaleDateString('ja-JP', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                        {currentSessionId === session.id && (
+                          <div className="text-blue-400 text-xs font-medium">
+                            ● 現在
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* 履歴が多い場合の表示制限通知 */}
+                  {sessions.length > 50 && (
+                    <div className="text-white/40 text-xs text-center py-2 px-3 bg-white/5 rounded-lg">
+                      最新50件を表示中 (全{sessions.length}件)
+                    </div>
+                  )}
+                  
+                  {sessions.length === 0 && (
+                    <div className="text-white/80 text-sm text-center py-8">
+                      <MessageSquare size={24} className="mx-auto mb-2 opacity-70" />
+                      まだ履歴がありません
+                      <p className="text-xs mt-1 text-white/60">
+                        最初のメッセージを送信すると履歴が作成されます
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

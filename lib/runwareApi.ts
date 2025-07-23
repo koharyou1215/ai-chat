@@ -49,20 +49,19 @@ export class RunwareService {
       'Accept': 'application/json',
     };
 
-    const body: RunwareRequest = { // RunwareRequest 型を適用
-      taskType: "imageInference",
-      outputType: "URL",
-      outputFormat: "JPG",
-      positivePrompt: request.positivePrompt, // 'request.prompt' から変更
-      negativePrompt: request.negativePrompt, // 'request.negative_prompt' から変更
-      height: request.height || 1024,
+    const body = {
+      prompt: request.positivePrompt,
+      negative_prompt: request.negativePrompt || '',
       width: request.width || 1024,
-      model: request.model, // 'request.model_id' から変更
+      height: request.height || 1024,
       steps: request.steps || 30,
-      CFGScale: request.CFGScale || 7, // 'request.cfg_scale' から変更
-      seed: request.seed,
-      numberResults: request.numberResults || 1, // numberResults を request から取得
-      checkNSFW: request.checkNSFW, // 'request.allow_nsfw' から変更
+      cfg_scale: request.CFGScale || 7,
+      seed: request.seed || -1,
+      model: request.model,
+      lora: request.lora || [],
+      allow_nsfw: request.checkNSFW || false,
+      output_format: request.outputFormat || 'JPG',
+      output_type: request.outputType || 'URL'
     };
 
     if (request.lora && request.lora.length > 0) { // 'request.lora_ids' から変更
@@ -80,7 +79,7 @@ export class RunwareService {
       });
 
       // Runware APIのテキスト-画像生成タスク開始エンドポイント
-      const response = await fetch(`${this.baseUrl}generation/text-to-image/tasks`, {
+      const response = await fetch(`${this.baseUrl}generation/tasks`, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(body),
