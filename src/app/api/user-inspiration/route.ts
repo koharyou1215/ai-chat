@@ -7,16 +7,19 @@ export async function POST(req: NextRequest) {
   try {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
-    // 環境変数を優先的に使用
-    const openRouterApiKey = settings?.OpenRouterApikey || process.env.OPENROUTER_API_KEY;
+    // 環境変数を最優先で取得
+    const envApiKey = process.env.OPENROUTER_API_KEY;
+    const settingsApiKey = settings?.OpenRouterApikey;
+    const openRouterApiKey = envApiKey || settingsApiKey;
     
     console.log('[/api/user-inspiration] OpenRouter API Key check:', {
-      hasSettingsApiKey: !!settings?.OpenRouterApikey,
-      hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-      settingsApiKeyLength: settings?.OpenRouterApikey?.length || 0,
+      hasSettingsApiKey: !!settingsApiKey,
+      hasEnvApiKey: !!envApiKey,
+      settingsApiKeyLength: settingsApiKey?.length || 0,
+      envApiKeyLength: envApiKey?.length || 0,
       finalApiKeyLength: openRouterApiKey?.length || 0,
       finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
-      envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
+      envApiKeyStart: envApiKey?.substring(0, 15) || 'none',
       isProduction: process.env.NODE_ENV === 'production',
       apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
     });
