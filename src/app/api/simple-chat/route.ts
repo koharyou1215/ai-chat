@@ -203,22 +203,12 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY; // 環境変数を優先的に使用
-        
-        // APIキーの重複を修正（重複している場合は半分にカット）を削除
-        // if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
-        //   const halfLength = openRouterApiKey.length / 2;
-        //   const secondHalf = openRouterApiKey.substring(halfLength);
-        //   if (firstHalf === secondHalf) {
-        //     console.log('OpenRouter APIキーの重複を検出、修正しています');
-        //     openRouterApiKey = firstHalf;
-        //   }
-        // }
+        const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // 環境変数を優先的に使用
         
         console.log('OpenRouter API Key check:', {
-          hasSettingsApiKey: !!settings?.openRouterApikey,
+          hasSettingsApiKey: !!settings?.openRouterApiKey,
           hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-          settingsApiKeyLength: settings?.openRouterApikey?.length || 0,
+          settingsApiKeyLength: settings?.openRouterApiKey?.length || 0,
           finalApiKeyLength: openRouterApiKey?.length || 0,
           finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
           envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',

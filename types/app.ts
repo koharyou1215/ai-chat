@@ -8,12 +8,12 @@ export interface AppSettings {
   bubbleOpacity: number;
   
   // APIキー
-  openRouterApikey?: string;
-  geminiApikey?: string;
-  runwareApikey?: string;
-  runwaremodelid?: string;
-  elevenlabsApikey?: string;
-  stableDiffusionApikey?: string;
+  openRouterApiKey?: string;
+  geminiApiKey?: string;
+  runwareApiKey?: string;
+  runwareModelId?: string;
+  elevenLabsApiKey?: string;
+  stableDiffusionApiKey?: string;
   
   // プロンプト設定
   loraSettings?: string;
@@ -61,4 +61,4 @@ export interface AppSettings {
   
   // その他
   [key: string]: unknown;
-} 
+}

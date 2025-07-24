@@ -8,12 +8,12 @@ export async function POST(req: NextRequest) {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
     // 環境変数を優先的に使用
-    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
     
     console.log('[/api/user-inspiration] OpenRouter API Key check:', {
-      hasSettingsApiKey: !!settings?.openRouterApikey,
+      hasSettingsApiKey: !!settings?.openRouterApiKey,
       hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-      settingsApiKeyLength: settings?.openRouterApikey?.length || 0,
+      settingsApiKeyLength: settings?.openRouterApiKey?.length || 0,
       finalApiKeyLength: openRouterApiKey?.length || 0,
       finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
       envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const model = settings?.model || 'openai/gpt-4o-mini';
     
     // インスピレーション用の専用トークン数設定（デフォルト500）
-    const inspirationMaxTokens = settings.inspirationMaxTokens || 500;
+    const inspirationMaxTokens = settings?.inspirationMaxTokens || 500;
 
     console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`);
     console.log(`[/api/user-inspiration] インスピレーション用トークン数: ${inspirationMaxTokens}`);
