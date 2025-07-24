@@ -1,0 +1,6 @@
+---
+
+description: すべてのターミナル操作は自動実行し、小学生でも理解できる丁寧な説明を提供
+globs: ["**/*"]
+alwaysApply: true
+---

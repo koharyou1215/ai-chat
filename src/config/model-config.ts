@@ -4,6 +4,7 @@
 export const OPENROUTER_MODELS = {
   // Qwen系
   QWEN_3_235B: 'qwen/qwen3-235b-a22b-07-25:free',
+  QWEN_3_CODER: 'qwen/qwen3-coder',
   
   // xAI Grok系
   GROK_4: 'x-ai/grok-4',
@@ -25,6 +26,7 @@ export const OPENROUTER_MODELS = {
 
 export const MODEL_DISPLAY_NAMES = {
   [OPENROUTER_MODELS.QWEN_3_235B]: 'Qwen 3 235B (Free)',
+  [OPENROUTER_MODELS.QWEN_3_CODER]: 'Qwen 3 Coder',
   [OPENROUTER_MODELS.GROK_4]: 'Grok-4',
   [OPENROUTER_MODELS.GEMINI_2_5_FLASH]: 'Gemini 2.5 Flash',
   [OPENROUTER_MODELS.GEMINI_2_5_PRO]: 'Gemini 2.5 Pro',
