@@ -222,13 +222,22 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           finalApiKeyLength: openRouterApiKey?.length || 0,
           finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
           envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
-          isProduction: process.env.NODE_ENV === 'production'
+          isProduction: process.env.NODE_ENV === 'production',
+          apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
         });
         
         if (!openRouterApiKey) {
           return NextResponse.json({
             success: false,
             error: 'OpenRouter APIキーが設定されていません。設定画面でAPIキーを入力してください。'
+          }, { status: 500 });
+        }
+
+        // APIキーの形式チェック
+        if (!openRouterApiKey.startsWith('sk-or-v1-')) {
+          return NextResponse.json({
+            success: false,
+            error: 'OpenRouter APIキーの形式が正しくありません。正しいAPIキーを設定してください。'
           }, { status: 500 });
         }
 

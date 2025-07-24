@@ -25,3 +25,5 @@ Thumbs.db
 ai-chat-standalone/.next/
 
 .vercel
+
+.env*.local

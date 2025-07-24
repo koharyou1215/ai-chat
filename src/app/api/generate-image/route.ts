@@ -113,7 +113,15 @@ export async function POST(request: NextRequest) {
       const runwareApiKey = settings?.runwareApikey || process.env.RUNWARE_API_KEY; // settings から取得を優先 (修正)
       const runwareModelId = settings?.runwaremodelid || process.env.RUNWARE_MODEL_ID; // 環境変数もチェック
 
-      console.log('[/api/generate-image] Runware API Key:', runwareApiKey ? '設定済み' : '未設定');
+      console.log('[/api/generate-image] Runware API Key check:', {
+        hasSettingsApiKey: !!settings?.runwareApikey,
+        hasEnvApiKey: !!process.env.RUNWARE_API_KEY,
+        settingsApiKeyLength: settings?.runwareApikey?.length || 0,
+        finalApiKeyLength: runwareApiKey?.length || 0,
+        finalApiKeyStart: runwareApiKey?.substring(0, 15) || 'none',
+        envApiKeyStart: process.env.RUNWARE_API_KEY?.substring(0, 15) || 'none',
+        isProduction: process.env.NODE_ENV === 'production'
+      });
       console.log('[/api/generate-image] Runware Model ID:', runwareModelId || '未設定');
 
       if (!runwareApiKey) {
