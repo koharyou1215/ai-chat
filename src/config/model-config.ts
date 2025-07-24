@@ -11,6 +11,7 @@ export const OPENROUTER_MODELS = {
   // Google Gemini 2.5系
   GEMINI_2_5_FLASH: 'google/gemini-2.5-flash',
   GEMINI_2_5_PRO: 'google/gemini-2.5-pro',
+  GEMINI_2_5_FLASH_FREE: 'google/gemini-2.5-flash-exp:free',
   
   // DeepSeek系
   DEEPSEEK_R1: 'deepseek/deepseek-r1-0528-qwen3-8b:free',

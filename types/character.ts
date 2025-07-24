@@ -198,4 +198,5 @@ export interface AppSettings {
   runwareApiKey?: string; // Runware APIキーを追加
   inspirationPrompt?: string; // 追加
   enhancementPrompt?: string; // 追加
+  inspirationMaxTokens?: number;
 } 
