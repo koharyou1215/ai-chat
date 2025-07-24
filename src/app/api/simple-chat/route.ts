@@ -220,7 +220,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
           settingsApiKeyLength: settings?.openRouterApikey?.length || 0, // openRouterApikey に修正
           finalApiKeyLength: openRouterApiKey?.length || 0,
-          finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none'
+          finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
+          envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
+          isProduction: process.env.NODE_ENV === 'production'
         });
         
         if (!openRouterApiKey) {
@@ -233,7 +235,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo';
 
         // Geminiモデルの場合の特別な処理
-        let messagesForOpenRouter = [
+        const messagesForOpenRouter = [
           { role: 'system' as const, content: basePrompt },
           ...filteredConversation.map((msg: { role: 'user' | 'assistant'; content: string }) => ({
             role: msg.role,
