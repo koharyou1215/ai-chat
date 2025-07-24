@@ -56,22 +56,8 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // 環境変数を最優先で取得
-    const envApiKey = process.env.OPENROUTER_API_KEY;
-    const settingsApiKey = settings?.OpenRouterApikey;
-    const openRouterApiKey = envApiKey || settingsApiKey;
-
-    console.log('Enhanced impression OpenRouter API Key check:', {
-      hasSettingsApiKey: !!settingsApiKey,
-      hasEnvApiKey: !!envApiKey,
-      settingsApiKeyLength: settingsApiKey?.length || 0,
-      envApiKeyLength: envApiKey?.length || 0,
-      finalApiKeyLength: openRouterApiKey?.length || 0,
-      finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
-      envApiKeyStart: envApiKey?.substring(0, 15) || 'none',
-      isProduction: process.env.NODE_ENV === 'production',
-      apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
-    });
+    // APIキーとモデル設定を取得
+    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
 
     if (!openRouterApiKey) {
         return NextResponse.json({
@@ -80,15 +66,7 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
     }
 
-    // APIキーの形式チェック
-    if (!openRouterApiKey.startsWith('sk-or-v1-')) {
-        return NextResponse.json({
-            success: false,
-            error: 'OpenRouter APIキーの形式が正しくありません'
-        }, { status: 500 });
-    }
-
-    const openRouterModel = settings?.model || 'openai/gpt-4o-mini';
+    const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4';
     
     // インスピレーション用の専用トークン数設定（デフォルト1000）
     const impressionMaxTokens = settings?.impressionMaxTokens || 1000;
@@ -264,4 +242,4 @@ JSON形式以外は出力しないでください。`;
       error: error instanceof Error ? error.message : 'インプレッション生成に失敗しました'
     }, { status: 500 });
   }
-}
+} 

@@ -203,26 +203,27 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        // 環境変数を最優先で取得
-        const envApiKey = process.env.OPENROUTER_API_KEY;
-        const settingsApiKey = settings?.OpenRouterApikey;
-        const openRouterApiKey = envApiKey || settingsApiKey;
+        const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY; // 環境変数を優先的に使用
+        
+        // APIキーの重複を修正（重複している場合は半分にカット）を削除
+        // if (openRouterApiKey && openRouterApiKey.length > 100 && openRouterApiKey.startsWith('sk-or-v1-')) {
+        //   const halfLength = openRouterApiKey.length / 2;
+        //   const secondHalf = openRouterApiKey.substring(halfLength);
+        //   if (firstHalf === secondHalf) {
+        //     console.log('OpenRouter APIキーの重複を検出、修正しています');
+        //     openRouterApiKey = firstHalf;
+        //   }
+        // }
         
         console.log('OpenRouter API Key check:', {
-          hasSettingsApiKey: !!settingsApiKey,
-          hasEnvApiKey: !!envApiKey,
-          settingsApiKeyLength: settingsApiKey?.length || 0,
-          envApiKeyLength: envApiKey?.length || 0,
+          hasSettingsApiKey: !!settings?.openRouterApikey, // openRouterApikey に修正
+          hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
+          settingsApiKeyLength: settings?.openRouterApikey?.length || 0, // openRouterApikey に修正
           finalApiKeyLength: openRouterApiKey?.length || 0,
           finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
-          envApiKeyStart: envApiKey?.substring(0, 15) || 'none',
+          envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
           isProduction: process.env.NODE_ENV === 'production',
-          apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid',
-          allEnvVars: {
-            nodeEnv: process.env.NODE_ENV,
-            vercelEnv: process.env.VERCEL_ENV,
-            hasEnvKey: !!process.env.OPENROUTER_API_KEY
-          }
+          apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
         });
         
         if (!openRouterApiKey) {

@@ -726,24 +726,22 @@ export default function ChatPage() {
     console.log('電球ボタンが押されました');
     setIsLoadingUserInspiration(true);
     try {
-      // 最新の会話履歴を文字列として結合
-      const conversationText = messages.slice(-8).map(msg => 
-        `${msg.role === 'user' ? 'ユーザー' : currentCharacter.name}: ${msg.content}`
-      ).join('\n\n');
-      
       const response = await fetch('/api/user-inspiration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: conversationText, // APIが期待するパラメータ名に修正
-          settings
+          character: currentCharacter,
+          persona: currentPersona,
+          conversation: messages.slice(-8), // 直近8件
+          settings,
+          variantCount: 1 // 1本モード
         })
       });
       
       const data = await response.json();
       console.log('インスピレーションAPI応答:', data);
       console.log('候補配列:', data.candidates);
-      if (data.candidates && data.candidates.length > 0) {
+      if (data.success && data.candidates.length > 0) {
         // 1本モードなので最初の候補を直接メッセージ欄に設定
         const candidate = data.candidates[0];
         console.log('候補をメッセージ欄に設定:', candidate);
@@ -752,8 +750,6 @@ export default function ChatPage() {
         } else {
           console.error('候補が空です');
         }
-      } else {
-        console.error('候補が取得できませんでした:', data);
       }
     } catch (error) {
       console.error('User inspiration error:', error);

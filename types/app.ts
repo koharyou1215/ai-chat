@@ -7,13 +7,13 @@ export interface AppSettings {
   historySize: number;
   bubbleOpacity: number;
   
-  // APIキー（フロントエンドからの実際の送信名に合わせる）
-  OpenRouterApikey?: string;
-  geminiApiKey?: string;
-  Runwareapikey?: string;
+  // APIキー
+  openRouterApikey?: string;
+  geminiApikey?: string;
+  runwareApikey?: string;
   runwaremodelid?: string;
-  elevenLabsApiKey?: string;
-  stableDiffusionApiKey?: string;
+  elevenlabsApikey?: string;
+  stableDiffusionApikey?: string;
   
   // プロンプト設定
   loraSettings?: string;
@@ -61,4 +61,4 @@ export interface AppSettings {
   
   // その他
   [key: string]: unknown;
-}
+} 
