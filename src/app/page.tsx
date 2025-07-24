@@ -594,9 +594,16 @@ export default function ChatPage() {
             // AI返信は追加せず、候補選択を待つ
             setMessages(prev => prev.slice(0, -1)); // 追加した空のAI返信を削除
             return;
-          } else {
+          } else if (chatData.content) {
+            // 通常の返信
             aiContent = chatData.content;
+          } else {
+            // コンテンツがない場合のフォールバック
+            aiContent = 'ごめんなさい、応答を生成できませんでした。もう一度お試しください。';
           }
+        } else {
+          // APIエラーの場合
+          aiContent = chatData.error || 'エラーが発生しました。もう一度お試しください。';
         }
       } else {
         // ストリーム読み取り
@@ -616,7 +623,7 @@ export default function ChatPage() {
       // 最終更新
       setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
 
-      if (aiContent) {
+      if (aiContent && aiContent.trim()) {
         
         // 通知音
         if (settings.chatNotificationSound) {
@@ -1210,6 +1217,8 @@ export default function ChatPage() {
       alert('コピーしました');
     }
   };
+
+
 
   return (
       <div 
