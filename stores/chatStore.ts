@@ -48,9 +48,9 @@ const defaultSettings: AppSettings = {
   memorySize: 4000,
   historySize: 12, // デフォルトの履歴件数
   bubbleOpacity: 0.9,
-  geminiApikey: '',
-  stableDiffusionApikey: '',
-  elevenlabsApikey: '',
+  geminiApiKey: '',
+  stableDiffusionApiKey: '',
+  elevenLabsApiKey: '',
   loraSettings: '',
   negativePrompt: '',
   systemPrompt: '',
@@ -75,12 +75,13 @@ const defaultSettings: AppSettings = {
   imageEngine: 'runware',
   bubbleBlur: true,
   provider: 'openrouter',
-  openRouterApikey: '',
+  openRouterApiKey: '',
   candidateCount: 1,
-  runwareApikey: '',
-  runwaremodelid: '',
+  runwareApiKey: '',
+  runwareModelId: '',
   runwareLoraIds: [],
-  allowNsfw: false
+  inspirationPrompt: '',
+  enhancementPrompt: ''
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -309,13 +310,23 @@ export const useChatStore = create<ChatStore>()(
 // ===== バックアップユーティリティ =====
 export const exportChatData = () => {
   const { sessions, userPersonas, settings, memos } = useChatStore.getState();
-  return JSON.stringify({
+  
+  // デバッグ用：現在の設定をログ出力
+  console.log('バックアップ出力 - 現在の設定:', settings);
+  console.log('バックアップ出力 - セッション数:', sessions.length);
+  console.log('バックアップ出力 - Persona数:', userPersonas.length);
+  console.log('バックアップ出力 - メモ数:', memos.length);
+  
+  const backupData = {
     version: 1,
     sessions,
     userPersonas,
     settings,
-    memos
-  }, null, 2);
+    memos,
+    exportTimestamp: new Date().toISOString()
+  };
+  
+  return JSON.stringify(backupData, null, 2);
 };
 
 export const importChatData = (json: string) => {
@@ -323,12 +334,22 @@ export const importChatData = (json: string) => {
     const data = JSON.parse(json);
     if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Invalid backup');
 
+    // デバッグ用：インポートするデータをログ出力
+    console.log('バックアップインポート - 読み込むデータ:', data);
+    console.log('バックアップインポート - 設定:', data.settings);
+    
+    // 設定のマージ処理を改善
+    const mergedSettings = { ...defaultSettings, ...(data.settings ?? {}) };
+    console.log('バックアップインポート - マージ後の設定:', mergedSettings);
+
     useChatStore.setState({
       sessions: data.sessions ?? [],
       userPersonas: data.userPersonas ?? [],
-      settings: { ...defaultSettings, ...(data.settings ?? {}) },
+      settings: mergedSettings,
       memos: data.memos ?? [],
     });
+    
+    console.log('バックアップインポート - 完了');
   } catch (e) {
     console.error('Import failed', e);
     throw e;

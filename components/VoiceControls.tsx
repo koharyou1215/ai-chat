@@ -8,9 +8,10 @@ interface VoiceControlsProps {
   text: string;
   settings: VoiceSettings;
   className?: string;
+  apiKey?: string; // APIキーを追加
 }
 
-export default function VoiceControls({ text, settings, className = '' }: VoiceControlsProps) {
+export default function VoiceControls({ text, settings, className = '', apiKey }: VoiceControlsProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -33,7 +34,13 @@ export default function VoiceControls({ text, settings, className = '' }: VoiceC
     console.log('音声再生ボタンクリック:', { text: text.substring(0, 50), settings });
     setIsGenerating(true);
     try {
-      const success = await VoiceManager.playAudio(text, settings);
+      // APIキーを含む設定を作成
+      const settingsWithApiKey = {
+        ...settings,
+        apiKey: apiKey
+      };
+      
+      const success = await VoiceManager.playAudio(text, settingsWithApiKey);
       console.log('音声再生結果:', success);
       if (success) {
         setIsPlaying(true);

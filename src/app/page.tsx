@@ -189,7 +189,8 @@ export default function ChatPage() {
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
 
-  const { memos } = useChatStore();
+  // Zustandストアから設定を取得
+  const { memos, settings, updateSettings } = useChatStore();
 
   // タッチジェスチャー管理
   const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
@@ -277,65 +278,7 @@ export default function ChatPage() {
     }
   };
   
-  const defaultSettings: AppSettings = {
-    temperature: 0.7,
-    topP: 0.9,
-    maxTokens: 1024,
-    memorySize: 8000,
-    historySize: 15,
-    bubbleOpacity: 0.9,
-    geminiApiKey: '',
-    stableDiffusionApiKey: '',
-    elevenLabsApiKey: '',
-    loraSettings: '',
-    negativePrompt: '',
-    systemPrompt: '',
-    jailbreakPrompt: '',
-    responseFormat: 'normal',
-    enableJailbreak: false,
-    enableSystemPrompt: false,
-    currentTheme: 'ocean-sunset',
-    customBackground: undefined,
-    voiceEnabled: true,
-    voiceAutoPlay: false,
-    voiceId: 'pNInz6obpgDQGcFmaJgB',
-    voiceStability: 0.5,
-    voiceSimilarityBoost: 0.75,
-    voiceStyle: 0,
-    voiceUseSpeakerBoost: true,
-    voiceSpeed: 1.0,
-    voiceVolume: 0.8,
-    model: 'google/gemini-2.5-flash', // デフォルトモデルをOpenRouterのGemini Flashに
-    provider: 'openrouter', // デフォルトプロバイダをOpenRouterに
-    enableImageGeneration: true,
-    chatNotificationSound: true,
-    imageEngine: 'runware', // デフォルト画像エンジンをRunwareに
-    bubbleBlur: true,
-    openRouterApiKey: '',
-    candidateCount: 1,
-    runwareModelId: '',
-    runwareLoraIds: [],
-    inspirationPrompt: '',
-    enhancementPrompt: '',
-  };
 
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('ai-chat-settings');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          // デフォルト値をベースに、保存された値をマージする
-          return { ...defaultSettings, ...parsed };
-        } catch (e) {
-          console.error('Failed to parse saved settings from localStorage:', e);
-          // パース失敗時はデフォルト設定を返す
-          return defaultSettings;
-        }
-      }
-    }
-    return defaultSettings; // SSR時やlocalStorageにデータがない場合
-  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
@@ -363,29 +306,7 @@ export default function ChatPage() {
         setTouchGestureManager(gestureManager);
       }
 
-      // 設定を読み込み
-      try {
-        const savedSettings = localStorage.getItem('ai-chat-settings');
-        if (savedSettings) {
-          const parsedSettings = JSON.parse(savedSettings);
-          // ここでもdefaultSettingsとマージする
-          setSettings(prev => ({
-            ...defaultSettings, // 最新のデフォルトをベースに
-            ...prev,            // 現在のstateを上書き
-            ...parsedSettings   // 保存された設定で最終的に上書き
-          }));
-          
-          // 音声APIキーを設定
-          if (parsedSettings.elevenLabsApiKey) {
-            console.log('ElevenLabs APIキー設定:', parsedSettings.elevenLabsApiKey.substring(0, 10) + '...');
-            // VoiceManager.setApiKey(parsedSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
-          } else {
-            console.log('ElevenLabs APIキーが設定されていません（Web Speech API使用）');
-          }
-        }
-      } catch (error) {
-        console.error('設定読み込みエラー:', error);
-      }
+      // 設定はZustandストアから自動的に読み込まれるため、ここでの読み込みは不要
 
       // 強制的に白背景でスタート（紫背景を完全に削除）
       try {
@@ -1172,8 +1093,7 @@ export default function ChatPage() {
       ...settings,
       customBackground: customBackground || undefined
     };
-    setSettings(updatedSettings);
-    localStorage.setItem('ai-chat-settings', JSON.stringify(updatedSettings));
+    updateSettings(updatedSettings);
   };
 
   const handleContinue = async () => {
@@ -1847,6 +1767,7 @@ export default function ChatPage() {
                            speed: settings.voiceSpeed ?? 1.0,
                            volume: settings.voiceVolume ?? 0.8,
                          }}
+                         apiKey={settings.elevenLabsApiKey}
                        />
                        {/* デスクトップ用メモボタン */}
                        <div className="hidden md:block">
@@ -2008,8 +1929,7 @@ export default function ChatPage() {
                 onClick={() => {
                   const newVoiceEnabled = !(settings.voiceEnabled ?? true); // 現在の値を反転
                   const newSettings = { ...settings, voiceEnabled: newVoiceEnabled };
-                  setSettings(newSettings);
-                  localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
+                  updateSettings(newSettings);
                   
                   if (newVoiceEnabled && newSettings.elevenLabsApiKey) {
                     // VoiceManager.setApiKey(newSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
@@ -2048,8 +1968,7 @@ export default function ChatPage() {
                 onClick={() => {
                   const newEnableImageGeneration = !(settings.enableImageGeneration ?? true); // 現在の値を反転
                   const newSettings = { ...settings, enableImageGeneration: newEnableImageGeneration };
-                  setSettings(newSettings);
-                  localStorage.setItem('ai-chat-settings', JSON.stringify(newSettings));
+                  updateSettings(newSettings);
                 }}
                 className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.enableImageGeneration ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
                 title={settings.enableImageGeneration ? '画像生成OFF' : '画像生成ON'}
@@ -2297,13 +2216,14 @@ export default function ChatPage() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onSave={(newSettings) => {
-          // 不足しているプロパティを補完しつつ更新
-          setSettings(prev => ({ ...prev, ...newSettings }));
+          console.log('設定保存処理開始 - 新しい設定:', newSettings);
+          
+          const mergedSettings = { ...settings, ...newSettings } as AppSettings;
+          console.log('設定保存処理 - マージ後の設定:', mergedSettings);
 
-          const mergedSettings = { ...settings, ...newSettings };
-
-          // ローカルストレージに保存
-          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSettings));
+          // Zustandストアに保存
+          updateSettings(mergedSettings);
+          console.log('設定保存処理完了 - Zustandストアに保存済み');
 
           // ElevenLabs APIキーを即座に設定
           if (mergedSettings.elevenLabsApiKey) {
@@ -2507,13 +2427,11 @@ export default function ChatPage() {
           // 同期されたデータを反映
           setAllCharacters(syncedData.characters)
           setAllPersonas(syncedData.personas)
-          // settingsもdefaultSettingsとマージしてから設定
-          const mergedSyncedSettings = { ...defaultSettings, ...syncedData.settings }; // defaultSettings を利用
-          setSettings(mergedSyncedSettings)
+          // 設定をZustandストアに反映
+          updateSettings(syncedData.settings)
           // メモデータも反映（chatStoreを使用）
           localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
           localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
-          localStorage.setItem('ai-chat-settings', JSON.stringify(mergedSyncedSettings))
         }}
       />
 

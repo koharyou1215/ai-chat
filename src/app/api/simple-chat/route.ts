@@ -230,7 +230,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           }, { status: 500 });
         }
 
-        const messagesForOpenRouter = [
+        const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo';
+
+        // Geminiモデルの場合の特別な処理
+        let messagesForOpenRouter = [
           { role: 'system' as const, content: basePrompt },
           ...filteredConversation.map((msg: { role: 'user' | 'assistant'; content: string }) => ({
             role: msg.role,
@@ -239,7 +242,23 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           ...(doContinue ? [] : [{ role: 'user' as const, content: message }])
         ];
 
-        const openRouterModel = settings?.model || 'openai/gpt-3.5-turbo';
+        // Gemini 2.5 Proの場合は日本語出力を強制
+        if (openRouterModel.includes('gemini-2.5-pro')) {
+          // システムメッセージを最初のユーザーメッセージに統合
+          if (messagesForOpenRouter[0].role === 'system') {
+            const systemContent = messagesForOpenRouter[0].content;
+            if (messagesForOpenRouter[1] && messagesForOpenRouter[1].role === 'user') {
+              messagesForOpenRouter[1].content = `${systemContent}\n\n${messagesForOpenRouter[1].content}`;
+              messagesForOpenRouter.shift(); // システムメッセージを削除
+            }
+          }
+          
+          // 最後のメッセージに日本語出力を強制する指示を追加
+          const lastMessage = messagesForOpenRouter[messagesForOpenRouter.length - 1];
+          if (lastMessage && lastMessage.role === 'user') {
+            lastMessage.content += '\n\n（必ず日本語で詳しく返答してください。最低でも3-4文以上の充実した返答をしてください。英語は絶対に使わないでください。）';
+          }
+        }
 
         // OpenRouterで複数候補を生成（並列リクエスト）
         const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで

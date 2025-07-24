@@ -57,6 +57,7 @@ export interface AppSettings {
   // インスピレーション設定
   inspirationPrompt?: string;
   enhancementPrompt?: string;
+  inspirationMaxTokens?: number;
   
   // その他
   [key: string]: unknown;

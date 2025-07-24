@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
 import BackupControls from './BackupControls';
-import { AppSettings } from '../types/app'; // types/app からインポートするように修正 (修正済み)
+import { AppSettings } from '../types/character'; // types/character からインポートするように修正
 import { VoiceManager, ElevenLabsVoice } from '../lib/voiceManager';
 
 interface SettingsModalProps {
@@ -41,6 +41,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
     const fetchVoices = async () => {
       try {
         if (formSettings.elevenLabsApiKey) {
+          // APIキーをVoiceManagerに設定
+          VoiceManager.setApiKey(formSettings.elevenLabsApiKey);
           
           const voices = await VoiceManager.getAvailableVoices();
           // APIから取得した音声とカスタムをマージ（重複除外）
@@ -55,7 +57,9 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   }, [formSettings.elevenLabsApiKey]);
 
   const handleSave = () => {
+    console.log('設定保存開始 - 保存する設定:', formSettings);
     onSave(formSettings);
+    console.log('設定保存完了');
     onClose();
   };
 
@@ -98,8 +102,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showGeminiKey ? 'text' : 'password'}
-                        value={formSettings.geminiApikey}
-                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, geminiApikey: e.target.value }))} // prevの型を明示
+                        value={formSettings.geminiApiKey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, geminiApiKey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="AIzaSy..."
                       />
@@ -124,8 +128,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showOpenRouterKey ? 'text' : 'password'}
-                        value={formSettings.openRouterApikey}
-                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, openRouterApikey: e.target.value }))} // prevの型を明示
+                        value={formSettings.openRouterApiKey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, openRouterApiKey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="sk-or-..."
                       />
@@ -147,8 +151,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showSDKey ? 'text' : 'password'}
-                        value={formSettings.stableDiffusionApikey}
-                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, stableDiffusionApikey: e.target.value }))} // prevの型を明示
+                        value={formSettings.stableDiffusionApiKey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, stableDiffusionApiKey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="ローカル実行の場合は空白でOK"
                       />
@@ -170,8 +174,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showElevenLabsKey ? 'text' : 'password'}
-                        value={formSettings.elevenlabsApikey}
-                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, elevenlabsApikey: e.target.value }))} // prevの型を明示
+                        value={formSettings.elevenLabsApiKey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, elevenLabsApiKey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="sk_..."
                       />
@@ -196,8 +200,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     <div className="relative">
                       <input
                         type={showRunwareKey ? 'text' : 'password'}
-                        value={formSettings.runwareApikey}
-                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareApikey: e.target.value }))} // prevの型を明示
+                        value={formSettings.runwareApiKey}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareApiKey: e.target.value }))} // prevの型を明示
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 text-gray-800"
                         placeholder="run_..."
                       />
@@ -221,8 +225,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                     </label>
                     <input
                       type="text"
-                      value={formSettings.runwaremodelid}
-                      onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwaremodelid: e.target.value }))} // prevの型を明示
+                                              value={formSettings.runwareModelId}
+                        onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareModelId: e.target.value }))} // prevの型を明示
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       placeholder="例: model_xxxx"
                     />
@@ -333,6 +337,33 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       onChange={(e) => setFormSettings(prev => ({ ...prev, maxTokens: parseInt(e.target.value) || 100 }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     />
+                  </div>
+
+                  {/* Inspiration Max Tokens */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      インスピレーション用トークン数: {formSettings.inspirationMaxTokens || 500}
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="2000"
+                      step="50"
+                      value={formSettings.inspirationMaxTokens || 500}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationMaxTokens: parseInt(e.target.value) }))}
+                      className="w-full slider mb-2"
+                    />
+                    <input
+                      type="number"
+                      min="100"
+                      max="2000"
+                      value={formSettings.inspirationMaxTokens || 500}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationMaxTokens: parseInt(e.target.value) || 500 }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡の返信サポートとハートマークのインスピレーション機能で使用するトークン数です。少なく設定するとトークン消費を抑えられます。
+                    </p>
                   </div>
 
                   {/* Memory Size */}

@@ -6,21 +6,19 @@ interface ChatMessage {
   timestamp: number;
 }
 
-// `any` 型エラー解消のため Impression インターフェースを追加
 interface Impression {
   title: string;
   content: string;
   perspective: string;
   wordCount: number;
-  description?: string; // Optional if needed, based on typical usage
-  [key: string]: unknown; // Allow for other unknown properties
+  description?: string;
+  [key: string]: unknown;
 }
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Enhanced impression API called');
     
-    // request.json() の呼び出しを一本化
     const { messages, character, sessionTitle, settings } = await request.json();
     console.log('Messages count:', messages?.length);
     
@@ -59,8 +57,7 @@ export async function POST(request: NextRequest) {
     }
     
     // APIキーとモデル設定を取得
-    // const { settings } = await request.json(); // 削除：既に上で取得済み
-    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY; // settings のキーを優先 (修正)
+    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
 
     if (!openRouterApiKey) {
         return NextResponse.json({
@@ -69,7 +66,10 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
     }
 
-    const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4'; // settings のモデルを優先
+    const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4';
+    
+    // インスピレーション用の専用トークン数設定（デフォルト1000）
+    const impressionMaxTokens = settings?.impressionMaxTokens || 1000;
 
     // プロンプトをOpenRouterに渡すメッセージ形式に変換
     const conversationText = messages
@@ -148,6 +148,7 @@ JSON形式以外は出力しないでください。`;
 
     // OpenRouterで生成
     console.log('Sending enhanced impression request to OpenRouter');
+    console.log('Impression max tokens:', impressionMaxTokens);
     
     const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -161,7 +162,7 @@ JSON形式以外は出力しないでください。`;
             model: openRouterModel,
             messages: messagesForOpenRouter,
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: impressionMaxTokens,
         })
     });
 
@@ -175,10 +176,21 @@ JSON形式以外は出力しないでください。`;
     console.log('OpenRouter response:', text);
 
     try {
-      // JSONパースを試行
-      // モデルが余計なバッククォートを含める場合があるので、JSONブロックのみを抽出
-      const jsonString = text.replace(/```json\n?|\n```/g, '').trim(); // ```json と ``` を除去
-      const data = JSON.parse(jsonString);
+      // JSONパースの改善
+      let cleanedResponse = text
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*$/g, '')
+        .trim();
+
+      // 不完全なJSONを検出して修正
+      if (!cleanedResponse.endsWith(']}')) {
+        const lastCompleteObject = cleanedResponse.lastIndexOf('"}');
+        if (lastCompleteObject > 0) {
+          cleanedResponse = cleanedResponse.substring(0, lastCompleteObject + 2) + ']}';
+        }
+      }
+
+      const data = JSON.parse(cleanedResponse);
       
       // 文字数を正確に計算
       const impressionsWithWordCount = data.impressions.map((impression: Impression) => ({

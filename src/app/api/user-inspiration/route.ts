@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppSettings } from '../../../../types/app';
-import { chatCompletion } from '../../../../lib/openRouter'; // OpenRouterクラスではなくchatCompletion関数をインポート
+import { chatCompletion } from '../../../../lib/openRouter';
 
 export async function POST(req: NextRequest) {
-  console.log('[/api/user-inspiration] POSTリクエストを受信しました'); // リクエスト開始ログ
+  console.log('[/api/user-inspiration] POSTリクエストを受信しました');
   try {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
@@ -11,15 +11,18 @@ export async function POST(req: NextRequest) {
     const openRouterApiKey = settings.openRouterApikey || process.env.OPENROUTER_API_KEY;
     
     if (!openRouterApiKey) {
-      console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません（設定画面と環境変数の両方で未設定）。');
+      console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません');
       return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
     }
 
-    // const openRouter = new OpenRouter(settings.openRouterApikey); // OpenRouterクラスのインスタンス化は不要
-    const model = settings.openRouterModel || 'mistralai/mistral-7b-instruct'; // Fallback to a default model
+    const model = settings.openRouterModel || 'mistralai/mistral-7b-instruct';
+    
+    // インスピレーション用の専用トークン数設定（デフォルト500）
+    const inspirationMaxTokens = settings.inspirationMaxTokens || 500;
 
-    console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`); // 使用モデルのログ
-    console.log(`[/api/user-inspiration] プロンプトメッセージの長さ: ${message.length}`); // メッセージの長さのログ
+    console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`);
+    console.log(`[/api/user-inspiration] インスピレーション用トークン数: ${inspirationMaxTokens}`);
+    console.log(`[/api/user-inspiration] プロンプトメッセージの長さ: ${message.length}`);
 
     const prompt = `あなたは「ユーザーのメッセージから次のチャットのインスピレーションの候補を提示する」ことに特化したAIアシスタントです。
 あなたの役割は、ユーザーの過去のメッセージや現在の状況を考慮し、会話をさらに面白く、深く、または新しい方向に進めるための、簡潔で魅力的な発言の候補を3つ提案することです。
@@ -44,39 +47,65 @@ ${message}
 
 候補を生成してください。`;
 
-    console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。'); // APIリクエスト前ログ
-    const response = await chatCompletion( // chatCompletion関数を直接呼び出し
-      {
-        apiKey: openRouterApiKey, // 環境変数優先のAPIキーを使用
-        model: model,
-        messages: [
-          { role: 'system', content: prompt },
-        ],
-        temperature: 0.7,
-      }
-    );
-    console.log(`[/api/user-inspiration] OpenRouter APIからの生レスポンス: ${JSON.stringify(response)}`); // 生レスポンスのログ
+    console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。');
+    const response = await chatCompletion({
+      apiKey: openRouterApiKey,
+      model: model,
+      messages: [
+        { role: 'system', content: prompt },
+      ],
+      temperature: 0.7,
+      maxTokens: inspirationMaxTokens, // 専用のトークン数を使用
+    });
+    console.log(`[/api/user-inspiration] OpenRouter APIからの生レスポンス: ${JSON.stringify(response)}`);
 
-    // OpenRouterのchatCompletion関数は直接contentを返すため、responseオブジェクトの処理を変更
     const content: string = response;
-    console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`); // 応答内容のログ
+    console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`);
 
     try {
-      const parsedContent = JSON.parse(content);
+      // JSONパースの改善
+      let cleanedContent = content
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*$/g, '')
+        .trim();
+
+      // 不完全なJSONを検出して修正
+      if (!cleanedContent.endsWith('}')) {
+        const lastCompleteObject = cleanedContent.lastIndexOf('"');
+        if (lastCompleteObject > 0) {
+          const lastBrace = cleanedContent.lastIndexOf('}');
+          if (lastBrace > lastCompleteObject) {
+            cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+          }
+        }
+      }
+
+      const parsedContent = JSON.parse(cleanedContent);
       if (!parsedContent.candidates || !Array.isArray(parsedContent.candidates)) {
-        console.error('[/api/user-inspiration] 応答のJSON形式が不正です。candidates配列が見つかりません。'); // JSONパース後のエラーログ
+        console.error('[/api/user-inspiration] 応答のJSON形式が不正です。candidates配列が見つかりません。');
         return NextResponse.json({ error: 'Invalid JSON format from OpenRouter API: missing candidates array' }, { status: 500 });
       }
-      console.log(`[/api/user-inspiration] 生成された候補数: ${parsedContent.candidates.length}`); // 候補数のログ
+      console.log(`[/api/user-inspiration] 生成された候補数: ${parsedContent.candidates.length}`);
       return NextResponse.json(parsedContent);
     } catch (parseError: unknown) {
       const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
-      console.error(`[/api/user-inspiration] JSONパースエラー: ${errorMessage}, 応答内容: ${content}`); // JSONパースエラーログ
-      return NextResponse.json({ error: `JSON parsing error: ${errorMessage}` }, { status: 500 });
+      console.error(`[/api/user-inspiration] JSONパースエラー: ${errorMessage}, 応答内容: ${content}`);
+      
+      // フォールバック: 基本的な候補を生成
+      const fallbackCandidates = [
+        "もう少し詳しく教えてください",
+        "それは面白いですね。他には？",
+        "なるほど、それでどうなりましたか？"
+      ];
+      
+      return NextResponse.json({ 
+        candidates: fallbackCandidates,
+        fallback: true 
+      });
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[/api/user-inspiration] APIエラー: ${errorMessage}`); // キャッチされたエラーのログ
+    console.error(`[/api/user-inspiration] APIエラー: ${errorMessage}`);
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 } 

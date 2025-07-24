@@ -8,6 +8,7 @@ export interface VoiceSettings {
   useSpeakerBoost: boolean;
   speed: number;
   volume: number;
+  apiKey?: string; // APIキーを追加
 }
 
 export interface ElevenLabsVoice {
@@ -22,14 +23,22 @@ export interface ElevenLabsVoice {
 export class VoiceManager {
   private static currentAudio: HTMLAudioElement | null = null;
   private static isPlaying: boolean = false;
+  private static apiKey: string = '';
+
+  /**
+   * APIキーを設定
+   */
+  static setApiKey(key: string) {
+    this.apiKey = key;
+  }
 
   /**
    * 利用可能な音声リストを取得
    */
   static async getAvailableVoices(): Promise<ElevenLabsVoice[]> {
-    const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = this.apiKey || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     if (!ELEVENLABS_API_KEY) {
-      console.warn('ElevenLabs APIキーが環境変数に設定されていません。');
+      console.warn('ElevenLabs APIキーが設定されていません。');
       return [];
     }
 
@@ -59,9 +68,9 @@ export class VoiceManager {
     text: string,
     settings: VoiceSettings
   ): Promise<ArrayBuffer | null> {
-    const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+    const ELEVENLABS_API_KEY = settings.apiKey || this.apiKey || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
     if (!ELEVENLABS_API_KEY) {
-      console.warn('ElevenLabs APIキーが環境変数に設定されていません。');
+      console.warn('ElevenLabs APIキーが設定されていません。');
       return null;
     }
 
@@ -129,13 +138,13 @@ export class VoiceManager {
   ): Promise<boolean> {
     if (!settings.enabled) return false;
 
-    // iOS Safariなどでの自動再生制限対策
+    // モバイル版での自動再生制限対策を強化
     try {
       const win = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
       const AudioCtx = win.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
-        console.log('[VoiceManager] AudioContext state:', ctx.state); // AudioContextの状態をログ
+        console.log('[VoiceManager] AudioContext state:', ctx.state);
         if (ctx.state === 'suspended') {
           console.log('[VoiceManager] AudioContextが中断されているため、再開を試みます。');
           await ctx.resume();
@@ -155,7 +164,7 @@ export class VoiceManager {
       console.log('音声再生開始:', { text: text.substring(0, 50), settings });
       
       // ElevenLabsのAPIキーがある場合はElevenLabsを試行
-      const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
+      const ELEVENLABS_API_KEY = settings.apiKey || this.apiKey || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
       if (ELEVENLABS_API_KEY) {
         console.log('ElevenLabs APIを使用します');
         const audioData = await this.textToSpeech(text, settings);
@@ -166,11 +175,23 @@ export class VoiceManager {
 
           // Audio要素を作成して再生
           this.currentAudio = new Audio(audioUrl);
+          
+          // モバイル版での音声再生対策
           this.currentAudio.setAttribute('playsinline', 'true');
+          this.currentAudio.setAttribute('webkit-playsinline', 'true');
           this.currentAudio.setAttribute('autoplay', 'true');
           this.currentAudio.setAttribute('preload', 'auto');
           this.currentAudio.volume = settings.volume;
           this.currentAudio.playbackRate = settings.speed;
+
+          // モバイル版での音声再生イベントを追加
+          this.currentAudio.oncanplaythrough = () => {
+            console.log('[VoiceManager] Audio can play through');
+          };
+
+          this.currentAudio.onloadeddata = () => {
+            console.log('[VoiceManager] Audio data loaded');
+          };
 
           this.currentAudio.onended = () => {
             this.isPlaying = false;
@@ -185,17 +206,24 @@ export class VoiceManager {
           this.isPlaying = true;
           try {
             console.log('[VoiceManager] Audio要素のplay()を呼び出します。');
-            await this.currentAudio.play();
-            console.log('[VoiceManager] Audio要素のplay()成功。');
+            // モバイル版での音声再生を確実にするため、ユーザーインタラクションを待つ
+            const playPromise = this.currentAudio.play();
+            if (playPromise !== undefined) {
+              await playPromise;
+              console.log('[VoiceManager] Audio要素のplay()成功。');
+            }
           } catch (playError) {
             console.error('[VoiceManager] audio.play() 失敗:', playError);
-            throw playError;
+            // モバイル版での自動再生制限の場合、Web Speech APIにフォールバック
+            console.log('モバイル版での自動再生制限のため、Web Speech APIにフォールバック');
+            this.speakWithWebAPI(text, settings);
+            return true;
           }
           console.log('ElevenLabs音声再生成功');
           return true;
         }
       } else {
-        console.warn('ElevenLabs APIキーが環境変数に設定されていないため、ElevenLabs APIは使用できません。');
+        console.warn('ElevenLabs APIキーが設定されていないため、ElevenLabs APIは使用できません。');
       }
       
       // ElevenLabsが使えない場合やAPIキーがない場合はWeb Speech APIを使用
