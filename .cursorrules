@@ -41,6 +41,7 @@
 - ログ出力の追加
 - バックアップの作成
 - 既存機能との整合性確認
+- 問題解決後は`PROJECT_FEEDBACK.md`に記録
 
 ### 3. プロジェクト構造の理解
 
@@ -133,14 +134,16 @@ cat PROJECT_REFERENCE.md
 #### 必須ドキュメント
 - `PROJECT_REFERENCE.md` - プロジェクト概要（最重要）
 - `PROJECT_RULES.md` - 開発ルール
+- `PROJECT_FEEDBACK.md` - フィードバック記録（重要）
 - `README.md` - セットアップガイド
 - `CHANGELOG.md` - 変更履歴
 
 #### 更新タイミング
 - 新機能追加時（`PROJECT_REFERENCE.md`も更新）
-- バグ修正時
+- バグ修正時（`PROJECT_FEEDBACK.md`に記録）
 - 設定変更時
 - アーキテクチャ変更時
+- エラー解決時（`PROJECT_FEEDBACK.md`に記録）
 
 ---
 

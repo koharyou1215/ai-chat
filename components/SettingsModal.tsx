@@ -833,6 +833,17 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       詳細ルールを確認
                     </button>
                   </div>
+                  
+                  {/* フィードバック記録リンク */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => window.open('/PROJECT_FEEDBACK.md', '_blank')}
+                      className="text-green-600 hover:text-green-800 text-sm underline"
+                    >
+                      フィードバック記録を確認
+                    </button>
+                  </div>
                 </div>
               </section>
 
