@@ -51,8 +51,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      // OpenRouter の利用規約に基づき、Referer と X-Title を送付します
-      'Referer': process.env.OPENROUTER_REFERER || 'https://example.com',
+      'User-Agent': 'AI-Chat-App/1.0',
+      'Referer': process.env.OPENROUTER_REFERER || 'https://ai-chat-app.vercel.app',
       'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
     },
     body: JSON.stringify(requestBody),
