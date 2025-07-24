@@ -62,6 +62,12 @@ export async function POST(request: NextRequest) {
     const forceLocal = selectedEngine === 'sd';
     const localSdEnabled = selectedEngine === 'sd';
     const localSdBaseUrl = (process.env.LOCAL_SD_URL || 'http://127.0.0.1:7860').replace(/\/$/, '');
+    
+    // 無効なSD URLをチェック
+    if (localSdEnabled && localSdBaseUrl.includes('your-sd.example.com')) {
+      console.warn('無効なローカルSD URLが検出されました、Runwareにフォールバック');
+      selectedEngine = 'runware';
+    }
 
     if (localSdEnabled) {
       try {
@@ -246,4 +252,3 @@ function generateSimplePlaceholder(characterName: string, emotion: string): stri
   const base64 = Buffer.from(svg, 'utf8').toString('base64');
   return `data:image/svg+xml;base64,${base64}`;
 }
-

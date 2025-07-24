@@ -216,9 +216,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         // }
         
         console.log('OpenRouter API Key check:', {
-          hasSettingsApiKey: !!settings?.openRouterApikey, // openRouterApikey に修正
+          hasSettingsApiKey: !!settings?.openRouterApikey,
           hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-          settingsApiKeyLength: settings?.openRouterApikey?.length || 0, // openRouterApikey に修正
+          settingsApiKeyLength: settings?.openRouterApikey?.length || 0,
           finalApiKeyLength: openRouterApiKey?.length || 0,
           finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
           envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',

@@ -8,14 +8,30 @@ export async function POST(req: NextRequest) {
     const { message, settings }: { message: string; settings: AppSettings } = await req.json();
 
     // 環境変数を優先的に使用
-    const openRouterApiKey = settings.openRouterApikey || process.env.OPENROUTER_API_KEY;
+    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
+    
+    console.log('[/api/user-inspiration] OpenRouter API Key check:', {
+      hasSettingsApiKey: !!settings?.openRouterApikey,
+      hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
+      settingsApiKeyLength: settings?.openRouterApikey?.length || 0,
+      finalApiKeyLength: openRouterApiKey?.length || 0,
+      finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
+      envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
+      isProduction: process.env.NODE_ENV === 'production',
+      apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
+    });
     
     if (!openRouterApiKey) {
       console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません');
       return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
     }
 
-    const model = settings.openRouterModel || 'mistralai/mistral-7b-instruct';
+    // APIキーの形式チェック
+    if (!openRouterApiKey.startsWith('sk-or-v1-')) {
+      return NextResponse.json({ error: 'OpenRouter APIキーの形式が正しくありません。' }, { status: 400 });
+    }
+
+    const model = settings?.model || 'openai/gpt-4o-mini';
     
     // インスピレーション用の専用トークン数設定（デフォルト500）
     const inspirationMaxTokens = settings.inspirationMaxTokens || 500;
@@ -108,4 +124,4 @@ ${message}
     console.error(`[/api/user-inspiration] APIエラー: ${errorMessage}`);
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
-} 
+}

@@ -59,6 +59,17 @@ export async function POST(request: NextRequest) {
     // APIキーとモデル設定を取得
     const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
 
+    console.log('Enhanced impression OpenRouter API Key check:', {
+      hasSettingsApiKey: !!settings?.openRouterApikey,
+      hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
+      settingsApiKeyLength: settings?.openRouterApikey?.length || 0,
+      finalApiKeyLength: openRouterApiKey?.length || 0,
+      finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
+      envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',
+      isProduction: process.env.NODE_ENV === 'production',
+      apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
+    });
+
     if (!openRouterApiKey) {
         return NextResponse.json({
             success: false,
@@ -66,7 +77,15 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
     }
 
-    const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4';
+    // APIキーの形式チェック
+    if (!openRouterApiKey.startsWith('sk-or-v1-')) {
+        return NextResponse.json({
+            success: false,
+            error: 'OpenRouter APIキーの形式が正しくありません'
+        }, { status: 500 });
+    }
+
+    const openRouterModel = settings?.model || 'openai/gpt-4o-mini';
     
     // インスピレーション用の専用トークン数設定（デフォルト1000）
     const impressionMaxTokens = settings?.impressionMaxTokens || 1000;
@@ -242,4 +261,4 @@ JSON形式以外は出力しないでください。`;
       error: error instanceof Error ? error.message : 'インプレッション生成に失敗しました'
     }, { status: 500 });
   }
-} 
+}
