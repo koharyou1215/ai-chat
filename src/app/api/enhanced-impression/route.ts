@@ -57,12 +57,12 @@ export async function POST(request: NextRequest) {
     }
     
     // APIキーとモデル設定を取得
-    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+    const openRouterApiKey = settings?.OpenRouterApikey || process.env.OPENROUTER_API_KEY;
 
     console.log('Enhanced impression OpenRouter API Key check:', {
-      hasSettingsApiKey: !!settings?.openRouterApiKey,
+      hasSettingsApiKey: !!settings?.OpenRouterApikey,
       hasEnvApiKey: !!process.env.OPENROUTER_API_KEY,
-      settingsApiKeyLength: settings?.openRouterApiKey?.length || 0,
+      settingsApiKeyLength: settings?.OpenRouterApikey?.length || 0,
       finalApiKeyLength: openRouterApiKey?.length || 0,
       finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
       envApiKeyStart: process.env.OPENROUTER_API_KEY?.substring(0, 15) || 'none',

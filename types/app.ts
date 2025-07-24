@@ -7,11 +7,11 @@ export interface AppSettings {
   historySize: number;
   bubbleOpacity: number;
   
-  // APIキー
-  openRouterApiKey?: string;
+  // APIキー（フロントエンドからの実際の送信名に合わせる）
+  OpenRouterApikey?: string;
   geminiApiKey?: string;
-  runwareApiKey?: string;
-  runwareModelId?: string;
+  Runwareapikey?: string;
+  runwaremodelid?: string;
   elevenLabsApiKey?: string;
   stableDiffusionApiKey?: string;
   
