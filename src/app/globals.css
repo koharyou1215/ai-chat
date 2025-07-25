@@ -7,6 +7,26 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* モバイルでのビューポート高さ安定化 */
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: -webkit-fill-available;
+  }
+}
+
+/* モバイルでのレイアウト安定化 */
+@media (max-width: 768px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #__next {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 /* デプロイ後のCSS適用問題を解決するための緊急措置 */
 @layer base {
   html {

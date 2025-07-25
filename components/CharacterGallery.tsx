@@ -12,7 +12,7 @@ interface CharacterGalleryProps {
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (character: Character) => void;
   onImportExport?: () => void;
-  // onClose: () => void; // src/app/characters/page.tsx から削除済み、ここでは不要
+  onClose: () => void;
 }
 
 export default function CharacterGallery({
@@ -23,6 +23,7 @@ export default function CharacterGallery({
   onEditCharacter,
   onDeleteCharacter,
   onImportExport,
+  onClose,
 }: CharacterGalleryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -61,12 +62,12 @@ export default function CharacterGallery({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => {}} // onCloseを削除
+              onClick={onClose}
               className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft size={24} />
@@ -180,7 +181,7 @@ export default function CharacterGallery({
         </div>
 
         {/* キャラクター一覧 */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
               {filteredCharacters.map((character, idx) => (

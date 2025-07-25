@@ -40,6 +40,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
   const [newHobby, setNewHobby] = useState('');
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (character) {
@@ -95,19 +96,42 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     }
   }, [character, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       alert('キャラクター名は必須です');
       return;
     }
-    
+
+    // ファイルが選択されている場合はBase64に変換
+    let finalAvatarUrl = formData.avatar_url;
+    if (avatarFile) {
+      try {
+        const base64 = await fileToBase64(avatarFile);
+        finalAvatarUrl = base64;
+      } catch (error) {
+        console.error('ファイル変換エラー:', error);
+        alert('画像ファイルの変換に失敗しました');
+        return;
+      }
+    }
+
     const characterData: Character = {
       ...formData,
+      avatar_url: finalAvatarUrl,
       first_message: (formData.first_message || ['']).filter(msg => msg.trim() !== '')
     };
     
     onSave(characterData);
     onClose();
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const addArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes', value: string, setValue: (val: string) => void) => {
@@ -223,15 +247,72 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      アバターURL
+                      アバター画像
                     </label>
-                    <input
-                      type="url"
-                      value={formData.avatar_url}
-                      onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                      placeholder="https://..."
-                    />
+                    <div className="space-y-3">
+                      {/* 現在のアバター表示 */}
+                      {(formData.avatar_url || avatarFile) && (
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                          {avatarFile ? (
+                            <img
+                              src={URL.createObjectURL(avatarFile)}
+                              alt="プレビュー"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : formData.avatar_url ? (
+                            <img
+                              src={formData.avatar_url}
+                              alt="アバター"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : null}
+                        </div>
+                      )}
+                      
+                      {/* ファイルアップロード */}
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setAvatarFile(file);
+                              setFormData(prev => ({ ...prev, avatar_url: '' }));
+                            }
+                          }}
+                          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                        />
+                        {avatarFile && (
+                          <button
+                            onClick={() => {
+                              setAvatarFile(null);
+                              setFormData(prev => ({ ...prev, avatar_url: '' }));
+                            }}
+                            className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            クリア
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* URL入力（フォールバック） */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-2">
+                          または、URLを入力
+                        </label>
+                        <input
+                          type="url"
+                          value={formData.avatar_url}
+                          onChange={(e) => {
+                            setFormData(prev => ({ ...prev, avatar_url: e.target.value }));
+                            setAvatarFile(null);
+                          }}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>

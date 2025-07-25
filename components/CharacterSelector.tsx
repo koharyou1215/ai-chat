@@ -103,7 +103,7 @@ export default function CharacterSelector({
         </button>
 
         {isExpanded && (
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto min-h-0">
             {/* グリッド表示 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
               {characters.slice(0, 6).map((character, idx) => {

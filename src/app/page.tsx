@@ -1227,7 +1227,7 @@ export default function ChatPage() {
   return (
       <div 
         ref={mainContainerRef} 
-        className="flex h-screen relative"
+        className="flex h-screen relative overflow-hidden"
         style={{ background: '#ffffff' }}
       >
       {/* 動的背景（画像・動画対応） */}
@@ -1676,9 +1676,9 @@ export default function ChatPage() {
       </div>
 
       {/* メインチャットエリア */}
-      <div className="flex-1 flex flex-col w-full md:w-auto">
+      <div className="flex-1 flex flex-col w-full md:w-auto min-h-0">
         {/* ヘッダー */}
-        <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top">
+        <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top flex-shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1688,9 +1688,17 @@ export default function ChatPage() {
               <Menu size={20} />
             </button>
             <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
-              <div className="text-white text-lg font-bold">
-                {currentCharacter?.name ? currentCharacter.name.charAt(0) : 'A'}
-              </div>
+              {currentCharacter?.avatar_url ? (
+                <img
+                  src={currentCharacter.avatar_url}
+                  alt={currentCharacter.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-white text-lg font-bold">
+                  {currentCharacter?.name ? currentCharacter.name.charAt(0) : 'A'}
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <button
@@ -1723,7 +1731,7 @@ export default function ChatPage() {
         </div>
 
         {/* チャットメッセージエリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch min-h-0">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' ? (
@@ -1878,7 +1886,7 @@ export default function ChatPage() {
         </div>
 
         {/* 入力エリア */}
-        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom">
+        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom flex-shrink-0">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
               {/* アスタリスクボタン（入力枠の前方） */}
@@ -1910,10 +1918,10 @@ export default function ChatPage() {
                 onKeyDown={handleKeyPress}
                 placeholder="メッセージを入力..."
                 className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] text-base"
-                rows={isInputExpanded ? (window.innerWidth < 768 ? 8 : 4) : 1}
+                rows={isInputExpanded ? (window.innerWidth < 768 ? 6 : 4) : 1}
                 style={{ 
                   fontSize: '16px',
-                  maxHeight: isInputExpanded ? (window.innerWidth < 768 ? '320px' : '256px') : '44px',
+                  maxHeight: isInputExpanded ? (window.innerWidth < 768 ? '240px' : '256px') : '44px',
                   transition: 'max-height 0.3s ease-in-out'
                 }}
               />
@@ -1936,7 +1944,7 @@ export default function ChatPage() {
               </div>
             </div>
             
-            <div className="flex justify-center mt-2 gap-1">
+            <div className="flex justify-center mt-2 gap-1 flex-wrap">
               {/* 音声オン/オフ */}
               <button
                 onClick={() => {

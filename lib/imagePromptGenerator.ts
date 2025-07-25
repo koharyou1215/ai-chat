@@ -31,8 +31,11 @@ export class ImagePromptGenerator {
     // 表情と仕草の詳細分析
     const expression = this.analyzeDetailedExpression(aiResponse);
     
-    // 最終プロンプトを構築
-    const prompt = this.buildEnhancedPrompt(baseCharacter, emotion, scenario, action, expression);
+    // 衣装の状態分析（新機能）
+    const clothingState = this.analyzeClothingState(aiResponse, conversationContext);
+    
+    // 最終プロンプトを構築（衣装状態を含む）
+    const prompt = this.buildEnhancedPrompt(baseCharacter, emotion, scenario, action, expression, clothingState);
     
     // ネガティブプロンプト
     const negativePrompt = this.buildNegativePrompt();
@@ -137,112 +140,114 @@ export class ImagePromptGenerator {
   }
 
   /**
-   * 会話内容からシチュエーションを分析
+   * 会話内容からシチュエーションを分析（より詳細な情報を含む）
    */
   private static analyzeScenario(text: string, context?: string[]): { name: string; prompt: string } {
+    // 会話履歴全体を分析対象とする
+    const fullText = context ? [...context, text].join(' ') : text;
+    
     const scenarios = [
       {
         keywords: ['お風呂', 'シャワー', '入浴', '温泉', 'バスタオル'],
         name: 'バスルーム',
-        prompt: 'bathroom setting, steam, water droplets, towel'
+        prompt: 'bathroom setting, steam, water droplets, towel, wet hair, bathrobe'
       },
       {
         keywords: ['ベッド', '寝室', '布団', '枕', '寝る', '眠い'],
         name: 'ベッドルーム',
-        prompt: 'bedroom setting, bed, pillows, soft lighting'
+        prompt: 'bedroom setting, bed, pillows, soft lighting, intimate atmosphere'
       },
       {
         keywords: ['キッチン', '料理', '食事', 'ご飯', 'コーヒー'],
         name: 'キッチン',
-        prompt: 'kitchen setting, cooking, food preparation'
+        prompt: 'kitchen setting, cooking, food preparation, apron, domestic scene'
       },
       {
         keywords: ['リビング', '居間', 'ソファ', 'テレビ', 'くつろぐ'],
         name: 'リビングルーム',
-        prompt: 'living room, sofa, cozy, relaxed atmosphere, home interior'
+        prompt: 'living room, sofa, cozy, relaxed atmosphere, home interior, comfortable'
       },
       {
         keywords: ['カフェ', '喫茶店', 'コーヒーショップ', 'お茶', '軽食'],
         name: 'カフェ',
-        prompt: 'cafe, coffee shop, casual setting, comfortable seating, window view'
+        prompt: 'cafe, coffee shop, casual setting, comfortable seating, window view, social atmosphere'
       },
       {
         keywords: ['オフィス', '職場', 'デスク', 'パソコン', '仕事'],
         name: 'オフィス',
-        prompt: 'office, desk, computer, professional setting, workplace'
+        prompt: 'office, desk, computer, professional setting, workplace, business attire'
       },
       {
         keywords: ['図書館', '本屋', '本', '静か', '勉強'],
         name: '図書館',
-        prompt: 'library, bookstore, quiet atmosphere, shelves of books'
+        prompt: 'library, bookstore, quiet atmosphere, shelves of books, intellectual setting'
       },
       {
         keywords: ['店', '買い物', 'デパート', 'モール', 'ショッピング'],
         name: '店',
-        prompt: 'store, shop, shopping, retail environment'
+        prompt: 'store, shop, shopping, retail environment, shopping bags, fashion items'
       },
       {
         keywords: ['学校', '教室', '勉強', '宿題', '制服'],
         name: '学校',
-        prompt: 'school setting, classroom, desk, school uniform'
+        prompt: 'school setting, classroom, desk, school uniform, academic atmosphere'
       },
       {
         keywords: ['電車', 'バス', '駅', '空港', '乗り物'],
         name: '交通機関',
-        prompt: 'train, bus, station, transportation, indoor vehicle'
+        prompt: 'train, bus, station, transportation, indoor vehicle, public space'
       },
       {
         keywords: ['病院', '医者', '診察', '病室', 'クリニック'],
         name: '病院',
-        prompt: 'hospital, clinic, medical setting, sterile environment'
+        prompt: 'hospital, clinic, medical setting, sterile environment, medical equipment'
       },
       {
         keywords: ['屋外', '外', '散歩', '公園', '街', '外出', '買い物', '道', '広場', '広大な自然'],
         name: '屋外',
-        prompt: 'outdoor setting, natural lighting, scenery background, street, public square'
+        prompt: 'outdoor setting, natural lighting, scenery background, street, public square, urban environment'
       },
       {
         keywords: ['森', '林', '木', '自然', '森林浴'],
         name: '森',
-        prompt: 'forest, woods, trees, nature, sunlight filtering through leaves'
+        prompt: 'forest, woods, trees, nature, sunlight filtering through leaves, natural environment'
       },
       {
         keywords: ['山', '登山', '頂上', '山脈', '高所'],
         name: '山',
-        prompt: 'mountain, mountain peak, hiking, scenic view'
+        prompt: 'mountain, mountain peak, hiking, scenic view, outdoor adventure'
       },
       {
         keywords: ['川', '湖', '水辺', '小川', '池'],
         name: '水辺',
-        prompt: 'river, lake, waterside, calm water, serene landscape'
+        prompt: 'river, lake, waterside, calm water, serene landscape, water reflection'
       },
       {
         keywords: ['海', 'ビーチ', '水着', '泳', '夏', '砂浜', '波', '海岸'],
         name: 'ビーチ',
-        prompt: 'beach setting, ocean background, summer, swimwear, sandy beach, waves'
+        prompt: 'beach setting, ocean background, summer, swimwear, sandy beach, waves, seaside'
       },
       {
         keywords: ['夜', '暗い', '月', '星', 'ライト', '夜空', '星空', '月明かり'],
         name: '夜',
-        prompt: 'night setting, dark atmosphere, moonlight, starlight, soft artificial lighting'
+        prompt: 'night setting, dark atmosphere, moonlight, starlight, soft artificial lighting, evening mood'
       },
       {
         keywords: ['雨', '傘', '水たまり', '雨具', '雨の日'],
         name: '雨の日',
-        prompt: 'rainy day, umbrella, wet ground, reflections, gloomy atmosphere'
+        prompt: 'rainy day, umbrella, wet ground, reflections, gloomy atmosphere, rain drops'
       },
       {
         keywords: ['雪', '冬', '雪景色', '雪だるま', '寒い'],
         name: '雪景色',
-        prompt: 'snowy landscape, winter, snow falling, cold atmosphere, cozy indoor view'
+        prompt: 'snowy landscape, winter, snow falling, cold atmosphere, cozy indoor view, winter clothing'
       }
     ];
 
-    // 現在のメッセージと過去の文脈を結合して分析
-    const fullContext = context ? [...context, text].join(' ') : text;
+    // 現在のメッセージと過去の文脈を結合して分析（fullTextを使用）
 
     for (const scenario of scenarios) {
-      if (scenario.keywords.some(keyword => fullContext.includes(keyword))) {
+      if (scenario.keywords.some(keyword => fullText.includes(keyword))) {
         return scenario;
       }
     }
@@ -311,6 +316,54 @@ export class ImagePromptGenerator {
   }
 
   /**
+   * 衣装の状態分析（破れる、濡れるなど）
+   */
+  private static analyzeClothingState(text: string, context?: string[]): { name: string; prompt: string } {
+    const fullText = context ? [...context, text].join(' ') : text;
+    
+    const clothingStates = [
+      {
+        keywords: ['破れる', '破れ', '裂ける', '裂け', '破損'],
+        name: '破れた衣装',
+        prompt: 'torn clothing, ripped fabric, damaged clothes, revealing'
+      },
+      {
+        keywords: ['濡れる', '濡れ', '湿る', '湿り', '水'],
+        name: '濡れた衣装',
+        prompt: 'wet clothing, soaked fabric, water droplets, clinging fabric'
+      },
+      {
+        keywords: ['脱ぐ', '脱げ', '脱がす', '脱がせる', '裸'],
+        name: '脱衣状態',
+        prompt: 'partially undressed, removing clothes, revealing skin'
+      },
+      {
+        keywords: ['着替え', '着替える', '新しい服', '衣装替え'],
+        name: '着替え',
+        prompt: 'changing clothes, new outfit, fresh clothing'
+      },
+      {
+        keywords: ['汚れる', '汚れ', '泥', '汚染'],
+        name: '汚れた衣装',
+        prompt: 'dirty clothing, stained fabric, messy appearance'
+      },
+      {
+        keywords: ['皺', 'しわ', 'くしゃくしゃ'],
+        name: '皺だらけ',
+        prompt: 'wrinkled clothing, creased fabric, disheveled'
+      }
+    ];
+
+    for (const state of clothingStates) {
+      if (state.keywords.some(keyword => fullText.includes(keyword))) {
+        return state;
+      }
+    }
+
+    return { name: '通常', prompt: 'clean clothing, well-maintained outfit' };
+  }
+
+  /**
    * 表情と仕草の詳細分析
    */
   private static analyzeDetailedExpression(text: string): { name: string; prompt: string } {
@@ -364,7 +417,8 @@ export class ImagePromptGenerator {
     emotion: { name: string; prompt: string },
     scenario: { name: string; prompt: string },
     action: { name: string; prompt: string },
-    expression: { name: string; prompt: string }
+    expression: { name: string; prompt: string },
+    clothingState: { name: string; prompt: string }
   ): string {
     const qualityTags = [
       'masterpiece',
@@ -389,6 +443,7 @@ export class ImagePromptGenerator {
       emotion.prompt,
       expression.prompt,
       action.prompt,
+      clothingState.prompt, // 衣装状態を追加
       scenario.prompt,
       lighting,
       season,
