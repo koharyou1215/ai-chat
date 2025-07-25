@@ -208,6 +208,17 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         const settingsApiKey = settings?.openRouterApiKey;
         const openRouterApiKey = envApiKey || settingsApiKey;
         
+        // デバッグ用：環境変数の詳細確認
+        console.log('Environment variables debug:', {
+          NODE_ENV: process.env.NODE_ENV,
+          VERCEL_ENV: process.env.VERCEL_ENV,
+          VERCEL_URL: process.env.VERCEL_URL,
+          OPENROUTER_API_KEY_EXISTS: !!process.env.OPENROUTER_API_KEY,
+          OPENROUTER_API_KEY_LENGTH: process.env.OPENROUTER_API_KEY?.length || 0,
+          OPENROUTER_API_KEY_START: process.env.OPENROUTER_API_KEY?.substring(0, 10) || 'none',
+          OPENROUTER_API_KEY_FULL: process.env.OPENROUTER_API_KEY || 'none' // 完全なAPIキーを表示（デバッグ用）
+        });
+        
         console.log('OpenRouter API Key check:', {
           hasSettingsApiKey: !!settingsApiKey,
           hasEnvApiKey: !!envApiKey,

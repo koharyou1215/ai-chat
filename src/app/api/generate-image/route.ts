@@ -34,6 +34,16 @@ export async function POST(request: NextRequest) {
     const settingsRunwareApiKey = settings?.runwareApikey; // settingsから取得
     const runwareApiKey = envRunwareApiKey || settingsRunwareApiKey;
     
+    // デバッグ用：環境変数の詳細確認
+    console.log('Runware Environment variables debug:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      RUNWARE_API_KEY_EXISTS: !!process.env.RUNWARE_API_KEY,
+      RUNWARE_API_KEY_LENGTH: process.env.RUNWARE_API_KEY?.length || 0,
+      RUNWARE_MODEL_ID_EXISTS: !!process.env.RUNWARE_MODEL_ID,
+      RUNWARE_MODEL_ID_VALUE: process.env.RUNWARE_MODEL_ID || 'none'
+    });
+    
     const envRunwareModelId = process.env.RUNWARE_MODEL_ID;
     const settingsRunwareModelId = settings?.runwaremodelid; // settingsから取得
     const runwareModelId = envRunwareModelId || settingsRunwareModelId;

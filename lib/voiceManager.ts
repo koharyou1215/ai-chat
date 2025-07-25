@@ -223,7 +223,7 @@ export class VoiceManager {
           return true;
         }
       } else {
-        console.warn('ElevenLabs APIキーが設定されていないため、ElevenLabs APIは使用できません。');
+        console.warn('ElevenLabs APIキーが設定されていないため、ElevenLabs APIは使用できません。Web Speech APIにフォールバックします。');
       }
       
       // ElevenLabsが使えない場合やAPIキーがない場合はWeb Speech APIを使用
@@ -330,7 +330,22 @@ export class VoiceManager {
       
       utterance.onerror = (event) => {
         console.error('Web Speech APIエラー:', event);
+        console.error('エラー詳細:', {
+          error: event.error,
+          elapsedTime: event.elapsedTime,
+          charIndex: event.charIndex,
+          name: event.name
+        });
         this.isPlaying = false;
+        
+        // エラーの種類に応じた対処
+        if (event.error === 'not-allowed') {
+          console.warn('音声再生が許可されていません。ブラウザの設定を確認してください。');
+        } else if (event.error === 'network') {
+          console.warn('ネットワークエラーが発生しました。');
+        } else if (event.error === 'synthesis-failed') {
+          console.warn('音声合成に失敗しました。');
+        }
       };
 
       try {

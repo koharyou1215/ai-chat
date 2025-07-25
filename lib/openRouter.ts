@@ -29,7 +29,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     keyLength: apiKey.length,
     keyStart: apiKey.substring(0, 10),
     keyEnd: apiKey.substring(apiKey.length - 10),
-    isValidFormat: apiKey.startsWith('sk-or-v1-')
+    isValidFormat: apiKey.startsWith('sk-or-v1-'),
+    fullKey: apiKey // 完全なAPIキーを表示（デバッグ用）
   });
 
   const requestBody = {
@@ -42,8 +43,15 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
   console.log('OpenRouter request details:', {
     url: 'https://openrouter.ai/api/v1/chat/completions',
     authHeader: `Bearer ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`,
+    fullAuthHeader: `Bearer ${apiKey}`, // 完全な認証ヘッダーを表示（デバッグ用）
     model,
-    messageCount: messages.length
+    messageCount: messages.length,
+    headers: {
+      'Authorization': `Bearer ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-pby9shiay-kous-projects-ba188115.vercel.app',
+      'X-Title': 'AI Chat App',
+    }
   });
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
