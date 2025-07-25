@@ -1,249 +1,213 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ImagePromptGenerator } from '../../../../lib/imagePromptGenerator';
 import { RunwareService } from '../../../../lib/runwareApi';
+import { StableDiffusionService } from '../../../../lib/stableDiffusionApi';
 
 export async function POST(request: NextRequest) {
+  console.log('[/api/generate-image] 画像生成APIが呼び出されました');
+  console.log("RUNWARE_API_KEY:", process.env.RUNWARE_API_KEY ? "設定済み" : "未設定");
+  console.log("RUNWARE_MODEL_ID:", process.env.RUNWARE_MODEL_ID ? "設定済み" : "未設定");
+  
   try {
-    const { aiResponse, character, conversationContext, loraSettings, negativePrompt: extraNegativePrompt, seed, settings } = await request.json(); // settings をデストラクチャリング
+    const requestBodyJson = await request.json(); // ここで await を使ってJSONをパース
+    const {
+      prompt,
+      modelId = process.env.RUNWARE_MODEL_ID || "rundiffusion:130@100",
+      aspectRatio = "square",
+      safetyChecker = "off",
+      settings // settingsオブジェクトもここで取得
+    } = requestBodyJson;
     
-    console.log('[/api/generate-image] 受信した設定:', settings); // settingsオブジェクトをログに出力
-    console.log('[/api/generate-image] 環境変数 RUNWARE_API_KEY:', process.env.RUNWARE_API_KEY ? '設定済み' : '未設定');
-    console.log('[/api/generate-image] 環境変数 RUNWARE_MODEL_ID:', process.env.RUNWARE_MODEL_ID || '未設定');
-
-    // 新しいプロンプトジェネレータを使用
-    const promptResult = ImagePromptGenerator.generateImagePrompt(
-      character,
-      aiResponse,
-      conversationContext
-    );
-
-    // LORA設定をプロンプトに追加
-    let finalPrompt = promptResult.prompt;
-    if (loraSettings && typeof loraSettings === 'string' && loraSettings.trim().length > 0) {
-      finalPrompt = `${loraSettings}, ${finalPrompt}`;
+    if (!prompt || prompt.trim() === '') {
+      return NextResponse.json({
+        success: false,
+        error: 'プロンプトが空です'
+      }, { status: 400 });
     }
+    
+    console.log("Received prompt for image generation:", prompt);
+    console.log("Using model ID:", modelId);
+    console.log("Aspect ratio:", aspectRatio);
+    console.log("Safety checker:", safetyChecker);
 
-    // ユーザー指定のネガティブプロンプトを追加
-    let finalNegativePrompt = promptResult.negativePrompt;
-    if (extraNegativePrompt && typeof extraNegativePrompt === 'string' && extraNegativePrompt.trim().length > 0) {
-      finalNegativePrompt = `${promptResult.negativePrompt}, ${extraNegativePrompt}`;
-    }
+    // 環境変数を最優先で取得 - Runware
+    const envRunwareApiKey = process.env.RUNWARE_API_KEY;
+    const settingsRunwareApiKey = settings?.runwareApikey; // settingsから取得
+    const runwareApiKey = envRunwareApiKey || settingsRunwareApiKey;
+    
+    const envRunwareModelId = process.env.RUNWARE_MODEL_ID;
+    const settingsRunwareModelId = settings?.runwaremodelid; // settingsから取得
+    const runwareModelId = envRunwareModelId || settingsRunwareModelId;
 
-    console.log('Generated prompt result:', {
-      emotion: promptResult.emotion,
-      scenario: promptResult.scenario,
-      prompt: promptResult.prompt.substring(0, 100) + '...'
+    console.log('[/api/generate-image] Runware API Key check:', {
+      hasSettingsApiKey: !!settingsRunwareApiKey,
+      hasEnvApiKey: !!envRunwareApiKey,
+      settingsApiKeyLength: settingsRunwareApiKey?.length || 0,
+      envApiKeyLength: envRunwareApiKey?.length || 0,
+      finalApiKeyLength: runwareApiKey?.length || 0,
+      finalApiKeyStart: runwareApiKey?.substring(0, 15) || 'none',
+      envApiKeyStart: envRunwareApiKey?.substring(0, 15) || 'none',
+      isProduction: process.env.NODE_ENV === 'production',
+      modelId: runwareModelId
     });
-    
-    const characterName = character?.name || 'キャラクター';
-    
-    // ① ローカル Stable Diffusion WebUI が使えるかチェック
-    //    - 環境変数 USE_LOCAL_SD が 'true' のとき、または LOCAL_SD_URL が存在するときに有効
-    //    - LOCAL_SD_URL が無い場合は既定 URL "http://127.0.0.1:7860" を使用
-    const forceLocalEnv = process.env.FORCE_LOCAL_SD === 'true';
-    // クライアント指定があれば優先
-    let selectedEngine: 'sd' | 'runware';
 
-    // 設定で選択されたエンジンを信頼し、Runware APIキーがあればRunwareを優先
-    if (settings?.imageEngine === 'runware' && process.env.RUNWARE_API_KEY) { // settings?.imageEngine に変更
-        selectedEngine = 'runware';
-    } else if (settings?.imageEngine === 'sd' || forceLocalEnv || process.env.USE_LOCAL_SD === 'true' || !!process.env.LOCAL_SD_URL) { // settings?.imageEngine に変更
-        selectedEngine = 'sd';
-    } else {
-        // どちらも有効でない場合、Runware APIキーが存在すればRunware、そうでなければSD
-        selectedEngine = process.env.RUNWARE_API_KEY ? 'runware' : 'sd';
-        console.warn('Neither Runware nor local SD is explicitly selected or configured. Defaulting to:', selectedEngine);
+    // Runwareを優先的に使用
+    if (runwareApiKey && runwareModelId) {
+      try {
+        console.log(`[/api/generate-image] Runware APIを使用して画像生成: モデル ${runwareModelId}`);
+        
+        const runwareService = new RunwareService(runwareApiKey);
+        
+        const task = await runwareService.createGenerationTask({
+          taskType: "imageInference",
+          outputType: "URL",
+          positivePrompt: prompt,
+          model: runwareModelId,
+          width: settings?.imageWidth || 512,
+          height: settings?.imageHeight || 512,
+          CFGScale: settings?.guidanceScale || 7,
+          steps: settings?.steps || 20
+        });
+        
+        // タスクの完了を待つ（簡単なポーリング）
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (attempts < maxAttempts) {
+          const result = await runwareService.getGenerationTaskStatus(task.taskId);
+          
+          if (result.status === 'completed' && result.image) {
+            console.log(`[/api/generate-image] Runware成功: タスク完了`);
+            
+            return NextResponse.json({
+              success: true,
+              imageUrl: result.image,
+              provider: 'runware',
+              seed: result.seed
+            });
+          }
+          
+          if (result.status === 'failed') {
+            throw new Error('画像生成タスクが失敗しました');
+          }
+          
+          // 2秒待機
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          attempts++;
+        }
+        
+        throw new Error('画像生成がタイムアウトしました');
+      } catch (runwareError) {
+        console.error('[/api/generate-image] Runwareエラー:', runwareError);
+        // Stable Diffusionにフォールバック
+      }
     }
 
-    console.log('[/api/generate-image] 選択されたエンジン:', selectedEngine);
+    // Stable Diffusionフォールバック
+    const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
+    const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
+    const stableDiffusionApiKey = envStableDiffusionApiKey || settingsStableDiffusionApiKey;
 
-    // Flag retained for backward-compat; may be used in future
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const forceLocal = selectedEngine === 'sd';
-    const localSdEnabled = selectedEngine === 'sd';
-    const localSdBaseUrl = (process.env.LOCAL_SD_URL || 'http://127.0.0.1:7860').replace(/\/$/, '');
+    console.log('[/api/generate-image] Stable Diffusion API Key check:', {
+      hasSettingsApiKey: !!settingsStableDiffusionApiKey,
+      hasEnvApiKey: !!envStableDiffusionApiKey,
+      settingsApiKeyLength: settingsStableDiffusionApiKey?.length || 0,
+      envApiKeyLength: envStableDiffusionApiKey?.length || 0,
+      finalApiKeyLength: stableDiffusionApiKey?.length || 0,
+      finalApiKeyStart: stableDiffusionApiKey?.substring(0, 15) || 'none',
+      envApiKeyStart: envStableDiffusionApiKey?.substring(0, 15) || 'none'
+    });
 
-    if (localSdEnabled) {
+    if (stableDiffusionApiKey) {
       try {
-        console.log('Using local Stable Diffusion WebUI for image generation →', localSdBaseUrl);
+        console.log('[/api/generate-image] Stable Diffusion APIを使用して画像生成');
+        
+        const stableDiffusionService = new StableDiffusionService(stableDiffusionApiKey);
+        
+        const result = await stableDiffusionService.generateImage({
+          prompt: prompt,
+          width: settings?.imageWidth || 512,
+          height: settings?.imageHeight || 512,
+          cfg_scale: settings?.guidanceScale || 7,
+          steps: settings?.steps || 20
+        });
+        
+        // base64データをデータURLに変換
+        const imageUrl = `data:image/png;base64,${result.image}`;
+        
+        console.log(`[/api/generate-image] Stable Diffusion成功`);
+        
+        return NextResponse.json({
+          success: true,
+          imageUrl: imageUrl,
+          provider: 'stable-diffusion',
+          seed: result.seed
+        });
+      } catch (stableDiffusionError) {
+        console.error('[/api/generate-image] Stable Diffusionエラー:', stableDiffusionError);
+        return NextResponse.json({
+          success: false,
+          error: `Stable Diffusion error: ${stableDiffusionError instanceof Error ? stableDiffusionError.message : 'Unknown error'}`
+        }, { status: 500 });
+      }
+    }
 
-        const sdResponse = await fetch(`${localSdBaseUrl}/sdapi/v1/txt2img`, {
+    // ローカルStable Diffusionを試行
+    const localSdUrl = process.env.LOCAL_SD_URL || settings?.localSdUrl; // settingsから取得
+    if (localSdUrl && localSdUrl !== '' && localSdUrl !== 'your-sd.example.com') {
+      try {
+        console.log(`[/api/generate-image] ローカルStable Diffusion APIを使用: ${localSdUrl}`);
+        
+        const response = await fetch(`${localSdUrl}/sdapi/v1/txt2img`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            prompt: finalPrompt,
-            negative_prompt: finalNegativePrompt,
-            width: character?.imageWidth || 512,
-            height: character?.imageHeight || 768,
-            steps: character?.imageSteps || 28,
-            cfg_scale: character?.imageCfgScale || 8,
-            sampler_name: character?.imageSampler || 'DPM++ 2M Karras',
-            seed: typeof seed === 'number' && seed >= 0 ? seed : -1,
-            batch_size: 1,
-            n_iter: 1,
+            prompt: prompt,
+            width: settings?.imageWidth || 512,
+            height: settings?.imageHeight || 512,
+            cfg_scale: settings?.guidanceScale || 7,
+            steps: settings?.steps || 20,
+            sampler_name: 'DPM++ 2M Karras'
           }),
+          signal: AbortSignal.timeout(30000) // 30秒タイムアウト
         });
 
-        if (!sdResponse.ok) {
-          throw new Error(`Local SD API error: ${sdResponse.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        const sdData = await sdResponse.json();
-
-        if (sdData.images && sdData.images.length > 0) {
-          const base64Png = sdData.images[0];
-          const dataUri = `data:image/png;base64,${base64Png}`;
-          return NextResponse.json({
-            image: dataUri,
-            success: true,
-            message: 'ローカル Stable Diffusion で生成しました',
-          });
-        }
+        const data = await response.json();
+        const imageBase64 = data.images[0];
+        const imageUrl = `data:image/png;base64,${imageBase64}`;
+        
+        console.log('[/api/generate-image] ローカルStable Diffusion成功');
+        
+        return NextResponse.json({
+          success: true,
+          imageUrl: imageUrl,
+          provider: 'local-stable-diffusion'
+        });
       } catch (localSdError) {
-        console.error('Local Stable Diffusion error:', localSdError);
-        // フォールスルーして Replicate / プレースホルダー処理へ
+        console.error('[/api/generate-image] ローカル安定拡散エラー:', localSdError);
+        return NextResponse.json({
+          success: false,
+          error: `ローカル安定拡散エラー: ${localSdError instanceof Error ? localSdError.message : 'Unknown error'}`
+        }, { status: 500 });
       }
     }
-    
-    // Runware APIキーが設定されている場合は実際のAI画像生成
-    if (selectedEngine === 'runware') {
-      console.log('Using Runware API');
-      const runwareApiKey = settings?.runwareApikey || process.env.RUNWARE_API_KEY; // settings から取得を優先 (修正)
-      const runwareModelId = settings?.runwaremodelid || process.env.RUNWARE_MODEL_ID; // 環境変数もチェック
 
-      console.log('[/api/generate-image] Runware API Key check:', {
-        hasSettingsApiKey: !!settings?.runwareApikey,
-        hasEnvApiKey: !!process.env.RUNWARE_API_KEY,
-        settingsApiKeyLength: settings?.runwareApikey?.length || 0,
-        finalApiKeyLength: runwareApiKey?.length || 0,
-        finalApiKeyStart: runwareApiKey?.substring(0, 15) || 'none',
-        envApiKeyStart: process.env.RUNWARE_API_KEY?.substring(0, 15) || 'none',
-        isProduction: process.env.NODE_ENV === 'production'
-      });
-      console.log('[/api/generate-image] Runware Model ID:', runwareModelId || '未設定');
-
-      if (!runwareApiKey) {
-        console.error('[/api/generate-image] Runware APIキーが設定されていません');
-        return NextResponse.json({ success: false, error: 'Runware APIキーが設定されていません' }, { status: 400 });
-      }
-      if (!runwareModelId) { // モデルIDが設定されていない場合のエラーハンドリングを追加
-        console.error('[/api/generate-image] Runware Image Model IDが設定されていません。');
-        return NextResponse.json({ success: false, error: 'Runware Image Model IDが設定されていません' }, { status: 400 });
-      }
-      const runwareService = new RunwareService(runwareApiKey);
-
-      try {
-        // 画像生成タスクの作成
-        const taskId = await runwareService.createGenerationTask({
-          positivePrompt: finalPrompt,
-          negativePrompt: finalNegativePrompt,
-          width: character?.imageWidth || 1024,
-          height: character?.imageHeight || 1024,
-          steps: character?.imageSteps || 50,
-          CFGScale: character?.imageCfgScale || 7,
-          seed: typeof seed === 'number' && seed >= 0 ? seed : Math.floor(Math.random() * 2 ** 32),
-          model: runwareModelId, // settings?.runwareModelId から変更
-          lora: settings?.runwareLoraIds?.map((id: string) => ({
-            model: id,
-            weight: 1.0
-          })),
-          checkNSFW: settings?.allowNsfw || false, // settings?.allowNsfw から変更
-          taskType: "imageInference",
-          outputType: "URL",
-          outputFormat: "JPG",
-          numberResults: 1,
-        });
-
-        console.log(`Runware task created with ID: ${taskId}`);
-
-        // タスクの完了をポーリング
-        let attempts = 0;
-        const MAX_ATTEMPTS = 60; // 60 seconds (60 * 1000ms / 1000ms)
-        const POLL_INTERVAL_MS = 1000; // Poll every 1 second
-
-        let taskStatusResponse = await runwareService.getGenerationTaskStatus(taskId.taskId); // 初期状態を取得
-        console.log('Runware API Initial Task Status:', taskStatusResponse); // 初期状態をログ
-
-        while (taskStatusResponse.status !== 'completed' && taskStatusResponse.status !== 'failed' && attempts < MAX_ATTEMPTS) {
-          await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-          taskStatusResponse = await runwareService.getGenerationTaskStatus(taskId.taskId); // ループ内で更新
-          console.log(`Runware task ${taskId.taskId} status: ${taskStatusResponse.status}`); // ログにtaskId.taskId を含める
-          attempts++;
-        }
-
-        console.log('Runware API Final Task Status Data:', taskStatusResponse); // 最終的なデータをログ
-
-        if (taskStatusResponse.status === 'completed') { // taskStatusResponse を使用
-          // Runwareから返される画像はBase64エンコードされていると仮定
-          const dataUri = `data:image/png;base64,${taskStatusResponse.image}`;
-          return NextResponse.json({
-            image: dataUri,
-            success: true,
-            message: 'Runware API で生成しました',
-          });
-        } else {
-          throw new Error(`Runware 画像生成タスクが完了しませんでした: ${taskStatusResponse.status}`);
-        }
-
-      } catch (runwareError) {
-        console.error('Runware API error:', runwareError);
-        // エラー時はプレースホルダーにフォールバック
-      }
-    }
-    
-    // APIキーがない場合やエラー時はプレースホルダー画像
-    console.log('Returning placeholder image');
-    
-    // シンプルで確実なプレースホルダー画像（base64 PNG）
-    const placeholderImage = generateSimplePlaceholder(characterName, promptResult.emotion);
-    
+    // すべてのプロバイダーが失敗した場合
     return NextResponse.json({
-      image: placeholderImage,
-      success: true,
-      message: process.env.RUNWARE_API_KEY ? 
-        '画像生成に時間がかかっています。プレースホルダーを表示中...' : 
-        'Runware APIキーを設定すると美しいAI画像が生成されます。'
-    });
-    
+      success: false,
+      error: '画像生成のためのAPIキーが設定されていません。Runware API Key、Stable Diffusion API Key、またはローカルStable DiffusionのURLを設定してください。'
+    }, { status: 400 });
+
   } catch (error) {
-    console.error('Image generation error:', error);
-    
-    // エラー時は必ずプレースホルダー画像を返す
-    const { character } = await request.json().catch(() => ({ character: null }));
-    const characterName = character?.name || 'キャラクター';
-    const placeholderImage = generateSimplePlaceholder(characterName, 'エラー');
-    
+    console.error('[/api/generate-image] 予期しないエラー:', error);
     return NextResponse.json({
-      image: placeholderImage,
-      success: true,
-      message: 'プレースホルダー画像を表示しています。',
-    });
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    }, { status: 500 });
   }
 }
-
-// シンプルなプレースホルダー画像を生成
-function generateSimplePlaceholder(characterName: string, emotion: string): string {
-  // 軽量なSVGプレースホルダー
-  const svg = `<svg width="512" height="768" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-      </linearGradient>
-    </defs>
-    <rect width="512" height="768" fill="url(#grad)"/>
-    <circle cx="256" cy="220" r="70" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="230" cy="200" r="8" fill="white"/>
-    <circle cx="282" cy="200" r="8" fill="white"/>
-    <path d="M 210 250 Q 256 280 302 250" stroke="white" stroke-width="4" fill="none"/>
-    <text x="256" y="360" text-anchor="middle" fill="white" font-family="Arial" font-size="24" font-weight="bold">${characterName}</text>
-    <text x="256" y="400" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-family="Arial" font-size="18">${emotion}</text>
-    <text x="256" y="500" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Arial" font-size="14">AI画像生成対応</text>
-  </svg>`;
-  
-  const base64 = Buffer.from(svg, 'utf8').toString('base64');
-  return `data:image/svg+xml;base64,${base64}`;
-}
-

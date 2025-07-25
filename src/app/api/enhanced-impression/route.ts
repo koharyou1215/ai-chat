@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // APIキーとモデル設定を取得
-    const openRouterApiKey = settings?.openRouterApikey || process.env.OPENROUTER_API_KEY;
+    // APIキーとモデル設定を取得（settingsを優先）
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
 
     if (!openRouterApiKey) {
         return NextResponse.json({
@@ -67,16 +67,13 @@ export async function POST(request: NextRequest) {
     }
 
     const openRouterModel = settings?.model || 'anthropic/claude-sonnet-4';
-    
-    // インスピレーション用の専用トークン数設定（デフォルト1000）
-    const impressionMaxTokens = settings?.impressionMaxTokens || 1000;
 
     // プロンプトをOpenRouterに渡すメッセージ形式に変換
     const conversationText = messages
       .map((msg: ChatMessage) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`)
       .join('\n\n');
 
-    let basePrompt = `以下の会話を3つの異なる視点から分析して、それぞれ200字程度のインプレッションを生成してください。
+    const prompt = `以下の会話を3つの異なる視点から分析して、それぞれ200字程度のインプレッションを生成してください。
 
 【会話タイトル】: ${sessionTitle || '新しいチャット'}
 【キャラクター】: ${character?.name || 'AI'}
@@ -132,37 +129,26 @@ ${conversationText}
 
 JSON形式以外は出力しないでください。`;
 
-    if (settings?.enableJailbreak && settings?.jailbreakPrompt) {
-      basePrompt = `${settings.jailbreakPrompt}\n\n${basePrompt}`;
-    }
-
-    // ここで繰り返し禁止・心情変化指示を追加
-    basePrompt += '\n【超重要】過去のやり取りや感情・関係性を繰り返さず、キャラクターの心情や関係性は状況に応じて自然に変化・進展させてください。同じ言葉や感情表現を何度も使うことは禁止です。会話や物語が進むごとに、キャラクターの気持ちや態度も変化させてください。';
-    
-    // JSON形式の出力が途切れる問題への対策
-    basePrompt += '\n【最終重要指示】あなたはJSON形式で出力することに特化しています。**いかなる場合も、完全で正しいJSONのみを出力し、途中で途切れたり、余計な文字（説明、コメント、会話など）を含めたりしないでください。**';
-
     const messagesForOpenRouter = [
-        { role: 'user' as const, content: basePrompt }
+        { role: 'user' as const, content: prompt }
     ];
 
     // OpenRouterで生成
     console.log('Sending enhanced impression request to OpenRouter');
-    console.log('Impression max tokens:', impressionMaxTokens);
     
     const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${openRouterApiKey}`,
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'http://localhost:3003',
+            'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-3si0pg8nv-kous-projects-ba188115.vercel.app',
             'X-Title': 'AI Chat App'
         },
         body: JSON.stringify({
             model: openRouterModel,
             messages: messagesForOpenRouter,
             temperature: 0.7,
-            max_tokens: impressionMaxTokens,
+            max_tokens: 2000,
         })
     });
 
@@ -176,21 +162,8 @@ JSON形式以外は出力しないでください。`;
     console.log('OpenRouter response:', text);
 
     try {
-      // JSONパースの改善
-      let cleanedResponse = text
-        .replace(/```json\s*/g, '')
-        .replace(/```\s*$/g, '')
-        .trim();
-
-      // 不完全なJSONを検出して修正
-      if (!cleanedResponse.endsWith(']}')) {
-        const lastCompleteObject = cleanedResponse.lastIndexOf('"}');
-        if (lastCompleteObject > 0) {
-          cleanedResponse = cleanedResponse.substring(0, lastCompleteObject + 2) + ']}';
-        }
-      }
-
-      const data = JSON.parse(cleanedResponse);
+      // JSONパースを試行
+      const data = JSON.parse(text);
       
       // 文字数を正確に計算
       const impressionsWithWordCount = data.impressions.map((impression: Impression) => ({
@@ -242,4 +215,4 @@ JSON形式以外は出力しないでください。`;
       error: error instanceof Error ? error.message : 'インプレッション生成に失敗しました'
     }, { status: 500 });
   }
-} 
+}

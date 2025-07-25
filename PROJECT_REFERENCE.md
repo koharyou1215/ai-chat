@@ -79,11 +79,16 @@ ai-chat/
 - **API**: `src/app/api/generate-image/route.ts`
 - **機能**: Runware/Stable Diffusion API
 - **設定**: モデルID、APIキー
+- **Runwareドキュメント**:
+  - [接続方法](https://runware.ai/docs/en/getting-started/how-to-connect)
+  - [API リファレンス](https://runware.ai/docs/en/image-inference/api-reference)
+  - [Vercel AI ライブラリ](https://runware.ai/docs/en/libraries/vercel-ai)
 
 ## ⚙️ 重要な設定
 
 ### 環境変数（Vercel）
 ```bash
+OPENROUTER_API_KEY=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
 RUNWARE_MODEL_ID=rundiffusion:130@100
 RUNWARE_API_KEY=zj7h0aPEZpgG4GczcCGzvuuVlcYG5Ik5
 ```
@@ -181,4 +186,4 @@ export interface AppSettings {
 ---
 
 **最終更新**: 2025年7月24日
-**バージョン**: 1.0.0 
+**バージョン**: 1.0.0

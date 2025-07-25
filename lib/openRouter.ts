@@ -51,9 +51,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'User-Agent': 'AI-Chat-App/1.0',
-      'Referer': process.env.OPENROUTER_REFERER || 'https://ai-chat-app.vercel.app',
-      'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
+      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-pby9shiay-kous-projects-ba188115.vercel.app',
+      'X-Title': 'AI Chat App',
     },
     body: JSON.stringify(requestBody),
   });
@@ -70,4 +69,4 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     throw new Error('OpenRouter 応答に content が含まれていません');
   }
   return content;
-} 
+}

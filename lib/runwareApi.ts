@@ -24,24 +24,24 @@ export interface RunwareResponse {
   seed?: number;
 }
 
+// Runware APIのタスク作成時の戻り値の型
+export interface RunwareGenerationTask {
+  taskId: string;
+}
+
 export class RunwareService {
-  private apiKey: string = '';
-  private baseUrl: string = 'https://api.runware.ai/v1/'; // Runware APIの正しいURLに修正
+  private apiKey: string;
+  private baseUrl: string;
 
-  constructor(apiKey?: string) {
-    if (apiKey) {
-      this.apiKey = apiKey;
-    }
-  }
-
-  setApiKey(apiKey: string) {
+  constructor(apiKey: string) {
     this.apiKey = apiKey;
+    this.baseUrl = "https://api.runware.ai/v1";
   }
 
-  async createGenerationTask(request: RunwareRequest): Promise<{ taskId: string }> {
-    if (!this.apiKey) {
-      throw new Error('Runware APIキーが設定されていません');
-    }
+  async createGenerationTask(params: RunwareRequest): Promise<RunwareGenerationTask> {
+    console.log('[RunwareService] createGenerationTask called.');
+    console.log('[RunwareService] API Key (first 5 chars): ', this.apiKey.substring(0, 5) + '...'); // APIキーの一部をログ出力
+    console.log('[RunwareService] Request payload:', JSON.stringify(params, null, 2)); // ペイロード全体をログ出力
 
     const headers = {
       'Authorization': `Bearer ${this.apiKey}`,
@@ -50,61 +50,43 @@ export class RunwareService {
     };
 
     const body = {
-      prompt: request.positivePrompt,
-      negative_prompt: request.negativePrompt || '',
-      width: request.width || 1024,
-      height: request.height || 1024,
-      steps: request.steps || 30,
-      cfg_scale: request.CFGScale || 7,
-      seed: request.seed || -1,
-      model: request.model,
-      lora: request.lora || [],
-      allow_nsfw: request.checkNSFW || false,
-      output_format: request.outputFormat || 'JPG',
-      output_type: request.outputType || 'URL'
+      taskType: params.taskType,
+      outputType: params.outputType,
+      outputFormat: params.outputFormat || "JPG",
+      positivePrompt: params.positivePrompt,
+      negativePrompt: params.negativePrompt || '',
+      height: params.height || 1024,
+      width: params.width || 1024,
+      model: params.model,
+      steps: params.steps || 30,
+      CFGScale: params.CFGScale || 7,
+      seed: params.seed || -1,
+      numberResults: params.numberResults || 1,
+      checkNSFW: params.checkNSFW || false,
+      lora: params.lora || []
     };
 
-    if (request.lora && request.lora.length > 0) { // 'request.lora_ids' から変更
-      // lora がある場合、lora オブジェクトの配列として追加
-      body.lora = request.lora; // lora は既に正しい形式で渡される
+    const response = await fetch(`${this.baseUrl}/tasks`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body), // リクエストを配列でラップしない
+    });
+
+    console.log('📡 Runware API レスポンス:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Runware API エラーレスポンス:', errorText);
+      throw new Error(`API request failed: ${response.status} - ${response.statusText} - ${errorText}`);
     }
 
-    try {
-      console.log('🚀 Runware API リクエスト送信中:', {
-        url: `${this.baseUrl}generation/tasks`,
-        model: request.model,
-        prompt: request.positivePrompt.substring(0, 100) + '...',
-        width: request.width,
-        height: request.height,
-        payloadFormat: 'array'
-      });
+    const data = await response.json();
+    console.log('✅ Runware API レスポンスデータ:', data);
 
-      // Runware APIのテキスト-画像生成タスク開始エンドポイント
-      const response = await fetch(`${this.baseUrl}generation/tasks`, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify([body]), // リクエストを配列でラップ
-      });
-
-      console.log('📡 Runware API レスポンス:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Runware API エラーレスポンス:', errorText);
-        throw new Error(`API request failed: ${response.status} - ${response.statusText} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ Runware API レスポンスデータ:', data);
-
-      if (data.id) {
-        return { taskId: data.id };
-      } else {
-        throw new Error('画像生成タスクの作成に失敗しました: タスクIDがありません');
-      }
-    } catch (error) {
-      console.error('Runware API タスク作成エラー:', error);
-      throw new Error('画像生成サービスでタスク作成エラーが発生しました');
+    if (data.id) {
+      return { taskId: data.id };
+    } else {
+      throw new Error('画像生成タスクの作成に失敗しました: タスクIDがありません');
     }
   }
 
@@ -119,8 +101,8 @@ export class RunwareService {
     };
 
     try {
-      // Runware APIのタスクステータス取得エンドポイント（仮）
-      const response = await fetch(`${this.baseUrl}generation/tasks/${taskId}`, { // 修正
+      // Runware APIのタスクステータス取得エンドポイント
+      const response = await fetch(`${this.baseUrl}/tasks/${taskId}`, {
         method: 'GET',
         headers: headers,
       });
