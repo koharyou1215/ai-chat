@@ -85,7 +85,6 @@ npm run start
 GEMINI_API_KEY=your_gemini_api_key
 REPLICATE_API_KEY=your_replicate_api_key
 ELEVENLABS_API_KEY=your_elevenlabs_api_key
-OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 ## 📚 プロジェクトドキュメント
