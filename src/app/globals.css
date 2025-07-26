@@ -25,6 +25,15 @@
     height: 100%;
     overflow: hidden;
   }
+  
+  /* iPhoneの安全領域対応 */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* デプロイ後のCSS適用問題を解決するための緊急措置 */

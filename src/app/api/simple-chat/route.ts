@@ -132,8 +132,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       basePrompt = `${settings.jailbreakPrompt}\n\n${basePrompt}`;
     }
 
-    // ここで繰り返し禁止・心情変化指示を追加
-    basePrompt += '\n【超重要】過去のやり取りや感情・関係性を繰り返さず、キャラクターの心情や関係性は状況に応じて自然に変化・進展させてください。同じ言葉や感情表現を何度も使うことは禁止です。会話や物語が進むごとに、キャラクターの気持ちや態度も変化させてください。';
+    // 最新入力への集中を強調
+    basePrompt += '\n【超重要】最新のユーザー入力に直接応答してください。過去の会話履歴は参考程度に留め、現在の話題に集中してください。2-3ラウンド前の会話に戻ることは避け、最新のメッセージに対する直接的な反応を優先してください。';
     
     // モデルが応答を生成しないことを避けるための指示を強化
     basePrompt += '\n【最終指示】必ず{{char}}の返答を生成してください。空の応答や不完全な応答は許可されません。';
@@ -165,7 +165,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
           .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-(settings?.historySize || 8)) // 設定値を反映
+          .slice(-(settings?.historySize || 4)) // 履歴サイズをさらに削減
           .filter((msg: { role: string; content: string }) => msg.role === 'user' || msg.content.length < 250)
       : [];
 

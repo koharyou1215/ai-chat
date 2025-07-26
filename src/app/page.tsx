@@ -195,6 +195,64 @@ export default function ChatPage() {
   // タッチジェスチャー管理
   const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
 
+  // キーボード開閉検出用の状態
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // キーボード開閉検出のためのuseEffect
+  useEffect(() => {
+    // visualViewport APIが利用可能かチェック
+    if (!window.visualViewport) {
+      console.log('📱 visualViewport APIが利用できません');
+      return;
+    }
+
+    let keyboardOpenTimeout: NodeJS.Timeout;
+
+    const handleViewportChange = () => {
+      if (!window.visualViewport) return;
+      
+      const currentHeight = window.visualViewport.height;
+      const heightDifference = window.innerHeight - currentHeight;
+      
+      // キーボードが開いているかどうかを判定（100px以上の差がある場合）
+      const keyboardIsOpen = heightDifference > 100;
+      
+      if (keyboardIsOpen !== isKeyboardOpen) {
+        setIsKeyboardOpen(keyboardIsOpen);
+        
+        console.log(`⌨️ キーボード状態変更: ${keyboardIsOpen ? '開く' : '閉じる'} (高さ差: ${heightDifference}px)`);
+        
+        // キーボードが閉じた時にスクロールを復元
+        if (!keyboardIsOpen) {
+          // 少し遅延を入れてからスクロール復元
+          clearTimeout(keyboardOpenTimeout);
+          keyboardOpenTimeout = setTimeout(() => {
+            console.log('🔄 キーボード閉じた - スクロール復元実行');
+            scrollToBottom();
+            
+            // さらに少し遅延してから再度スクロール（確実にするため）
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
+          }, 150);
+        }
+      }
+    };
+
+    // イベントリスナーを追加
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    
+    // 初期状態を設定
+    handleViewportChange();
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
+      }
+      clearTimeout(keyboardOpenTimeout);
+    };
+  }, [isKeyboardOpen]);
+
   // 会話要約生成
   const handleGenerateSummary = async () => {
     if (!currentCharacter || messages.length < 3) {
@@ -567,7 +625,7 @@ export default function ChatPage() {
           characterId: currentCharacter?.name,
           character: currentCharacter,
           memos,
-          conversation: [...messages, newMessage].slice(-(settings.historySize || 15))
+          conversation: [...messages, newMessage].slice(-(settings.historySize || 4))
         }),
       });
 
@@ -714,6 +772,65 @@ export default function ChatPage() {
       }
     } catch (imageError) {
       console.error('Image generation failed:', imageError);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // 画像生成テスト用関数（調査用）
+  const handleImageTest = async () => {
+    if (!currentCharacter) {
+      alert('キャラクターを選択してください');
+      return;
+    }
+    
+    try {
+      setIsGeneratingImage(true);
+      console.log('🖼️ 画像生成テスト開始');
+      
+      // テスト用の固定プロンプト
+      const testPrompt = 'beautiful anime girl, detailed face, long hair, school uniform, classroom background, high quality, best quality, masterpiece';
+      
+      const imageResponse = await fetch('/api/generate-image/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          aiResponse: testPrompt,
+          character: currentCharacter,
+          conversationContext: ['テスト用の会話'],
+          loraSettings: settings.loraSettings,
+          negativePrompt: settings.negativePrompt,
+          width: currentCharacter?.imageWidth || 512,
+          height: currentCharacter?.imageHeight || 768,
+          steps: currentCharacter?.imageSteps || 20,
+          cfg_scale: currentCharacter?.imageCfgScale || 7,
+          sampler: currentCharacter?.imageSampler || 'DPM++ 2M Karras',
+          settings: settings,
+        }),
+      });
+
+      const imageData = await imageResponse.json();
+      console.log('🖼️ 画像生成テスト結果:', imageData);
+      
+      if (imageData.success) {
+        alert('画像生成テスト成功！画像が生成されました。');
+        // テスト用のメッセージとして表示
+        const testMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: '画像生成テストが完了しました。',
+          image: imageData.image,
+          timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, testMessage]);
+      } else {
+        alert(`画像生成テスト失敗: ${imageData.error || '不明なエラー'}`);
+      }
+    } catch (error) {
+      console.error('🖼️ 画像生成テストエラー:', error);
+      alert(`画像生成テストエラー: ${error}`);
     } finally {
       setIsGeneratingImage(false);
     }
@@ -933,7 +1050,7 @@ export default function ChatPage() {
       // 会話履歴から最後のユーザーメッセージを除外してコンテキストを作成
       const conversationContext = messagesWithoutLast
         .filter((m) => m.id !== lastUserMessage.id)
-        .slice(-(settings.historySize || 15)); // 設定値に基づく制限
+        .slice(-(settings.historySize || 4)); // 履歴サイズを削減
 
       // APIを呼び出して新しい応答を生成（重複送信を防止）
       const chatResponse = await fetch('/api/simple-chat', {
@@ -1228,7 +1345,10 @@ export default function ChatPage() {
       <div 
         ref={mainContainerRef} 
         className="flex h-screen relative overflow-hidden"
-        style={{ background: '#ffffff' }}
+        style={{ 
+          background: '#ffffff',
+          height: '-webkit-fill-available'
+        }}
       >
       {/* 動的背景（画像・動画対応） */}
       <div 
@@ -1517,6 +1637,14 @@ export default function ChatPage() {
                 >
                   <Settings size={16} />
                   設定
+                </button>
+                <button 
+                  onClick={handleImageTest}
+                  disabled={isGeneratingImage}
+                  className="w-full bg-yellow-500/20 backdrop-blur-sm text-yellow-200 py-3 px-4 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                >
+                  🖼️
+                  画像生成テスト
                 </button>
               </div>
             )}
@@ -1886,7 +2014,7 @@ export default function ChatPage() {
         </div>
 
         {/* 入力エリア */}
-        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom flex-shrink-0">
+        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom flex-shrink-0 pb-safe">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
               {/* アスタリスクボタン（入力枠の前方） */}
