@@ -657,7 +657,8 @@ export default function ChatPage() {
             aiContent = chatData.content;
           } else {
             // コンテンツがない場合のフォールバック
-            aiContent = 'ごめんなさい、応答を生成できませんでした。もう一度お試しください。';
+            aiContent = 'ごめんなさい、応答を生成できませんでした。モデルが一時的に利用できない可能性があります。しばらくしてからもう一度お試しください。';
+            setIsLoading(false); // ローディングを解除
           }
         } else {
           // APIエラーの場合
@@ -766,7 +767,7 @@ export default function ChatPage() {
       if (imageData.success) {
         setMessages(prev => prev.map(msg => 
           msg.id === aiResponse.id 
-            ? { ...msg, image: imageData.image }
+            ? { ...msg, image: imageData.imageUrl }
             : msg
         ));
       }
@@ -1427,7 +1428,7 @@ export default function ChatPage() {
       <div className={`
         ${isSidebarOpen ? 'w-80' : 'w-0'} 
         bg-black/80 backdrop-blur-md border-r border-white/20 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
-        ${isSidebarOpen ? 'fixed md:relative z-50' : 'relative'}
+        relative z-50
         ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
       `}
       style={{
@@ -1884,7 +1885,12 @@ export default function ChatPage() {
             </div>
             <div className="flex-1 min-w-0">
               <button
-                onClick={() => setIsCharacterGalleryOpen(true)}
+                onClick={() => {
+                  if (currentCharacter) {
+                    setEditingCharacter(currentCharacter);
+                    setIsCharacterModalOpen(true);
+                  }
+                }}
                 className="text-left w-full"
               >
                 <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors">
