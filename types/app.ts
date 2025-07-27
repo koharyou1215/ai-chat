@@ -28,6 +28,7 @@ export interface AppSettings {
   responseFormat?: string;
   enableJailbreak?: boolean;
   enableSystemPrompt?: boolean;
+  systemPromptEnabled?: boolean;
   inspirationPrompt?: string;
   enhancementPrompt?: string;
   inspirationMaxTokens?: number;
@@ -50,6 +51,7 @@ export interface AppSettings {
   // モデル設定
   model?: string;
   provider?: string;
+  usedModel?: string;
   
   // 機能設定
   enableImageGeneration?: boolean;

@@ -42,6 +42,18 @@ interface ChatStore {
   getMemoByMessage: (messageId: string) => ChatMemo | null;
 }
 
+// デフォルトペルソナの定義
+const defaultPersona: UserPersona = {
+  id: 'default-persona',
+  name: '幸一郎',
+  description: '一般的なユーザー',
+  role: '{{user}}',
+  traits: ['冷徹', '合理的', '非情'],
+  likes: ['効率的な計画', '有能な駒', '情報'],
+  dislikes: ['無理強い', '不自然な会話', '一方的な関係'],
+  other_settings: '感情を排し、常に冷静で合理的。人間を目的達成のための「駒」と見なし、無駄な会話や感情的な行動を軽蔑する。何を考えているか悟らせない。そのミステリアスな雰囲気と彫刻のように整った顔立ちと、全てを見透かすような鋭い瞳を持つ。その完璧なルックスは、初対面の相手を容易に惹きつけ、警戒心を麻痺させるための最大の武器となる。彼の魅力に抗うことは難しい。'
+};
+
 const defaultSettings: AppSettings = {
   temperature: 1.1, // より創造的な応答に変更
   topP: 0.9,
@@ -97,8 +109,8 @@ export const useChatStore = create<ChatStore>()(
       currentCharacter: null,
       currentSession: null,
       sessions: [],
-      userPersonas: [],
-      currentPersona: null,
+      userPersonas: [defaultPersona], // デフォルトペルソナを含める
+      currentPersona: defaultPersona, // デフォルトペルソナを初期値に設定
       settings: defaultSettings,
       memos: [],
       isLoading: false,

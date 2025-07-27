@@ -59,7 +59,12 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
   // }, [formSettings.elevenLabsApiKey, customVoices, setVoiceList]);
 
   const handleSave = () => {
-    console.log('設定保存開始 - 保存する設定:', formSettings);
+    console.log('設定保存開始 - 保存する設定:', {
+      inspirationPrompt: formSettings.inspirationPrompt?.substring(0, 100) + '...',
+      enhancementPrompt: formSettings.enhancementPrompt?.substring(0, 100) + '...',
+      hasInspirationPrompt: !!formSettings.inspirationPrompt,
+      hasEnhancementPrompt: !!formSettings.enhancementPrompt
+    });
     onSave(formSettings);
     console.log('設定保存完了');
     onClose();

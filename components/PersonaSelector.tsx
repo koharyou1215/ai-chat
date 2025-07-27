@@ -60,11 +60,11 @@ export default function PersonaSelector({
           <div className="space-y-2">
             <div className="text-white/70 text-sm font-medium">現在のPersona:</div>
             
-            {/* なしオプション */}
+            {/* デフォルトペルソナオプション */}
             <div
               onClick={() => onSelectPersona(null)}
               className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                !currentPersona
+                !currentPersona || currentPersona.id === 'default-persona'
                   ? 'bg-blue-500/30 border border-blue-400/50'
                   : 'bg-white/5 hover:bg-white/10'
               }`}
@@ -73,13 +73,13 @@ export default function PersonaSelector({
                 <User size={16} className="text-white" />
               </div>
               <div className="flex-1">
-                <div className="text-white font-medium">設定なし</div>
-                <div className="text-white/60 text-xs">デフォルトのAI動作</div>
+                <div className="text-white font-medium">デフォルトユーザー</div>
+                <div className="text-white/60 text-xs">一般的なユーザー設定</div>
               </div>
             </div>
 
-            {/* Persona一覧 */}
-            {personas.map((persona) => {
+            {/* Persona一覧（デフォルトペルソナを除外） */}
+            {personas.filter(persona => persona.id !== 'default-persona').map((persona) => {
               const isSelected = currentPersona?.id === persona.id;
               
               return (
@@ -107,29 +107,31 @@ export default function PersonaSelector({
                     </div>
                   </div>
 
-                  {/* アクションボタン */}
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditPersona(persona);
-                      }}
-                      className="text-white/50 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
-                      title="編集"
-                    >
-                      <Edit size={12} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeletePersona(persona);
-                      }}
-                      className="text-white/50 hover:text-red-300 p-1 rounded hover:bg-white/10 transition-colors"
-                      title="削除"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
+                  {/* アクションボタン（デフォルトペルソナは除外） */}
+                  {persona.id !== 'default-persona' && (
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditPersona(persona);
+                        }}
+                        className="text-white/50 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
+                        title="編集"
+                      >
+                        <Edit size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeletePersona(persona);
+                        }}
+                        className="text-white/50 hover:text-red-300 p-1 rounded hover:bg-white/10 transition-colors"
+                        title="削除"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}

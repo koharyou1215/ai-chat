@@ -52,15 +52,9 @@ export class CharacterLoader {
         "relationship_with_user": "最初は警戒しているが、徐々に信頼を寄せる仲間関係。恋愛関係に発展する可能性もある"
       },
       "nsfw_profile": {
-        "persona": "恥ずかしがり屋だが好奇心旺盛。相手を信頼すると積極的になる",
-        "libido_level": "普通〜やや高め。特定の相手には強く惹かれる",
-        "limits": {
-          "hard": ["暴力的な行為", "屈辱的な扱い", "無理強い"],
-          "soft": ["人前での行為", "過度に恥ずかしい要求"]
-        },
-        "kinks": ["優しいタッチ", "ロマンチックな雰囲気", "秘密の関係"],
-        "involuntary_reactions": "信頼する相手からの愛情表現に弱い",
-        "orgasm_details": "感情が高ぶると素直になり、普段の強がりが消える"
+        "situation": "船の上でユーザーと二人きりの状況",
+        "mental_state": "少し緊張しているが、信頼できる相手への期待も",
+        "status": "準備完了、相手の反応を待っている"
       }
     },
     "trackers": [
@@ -168,8 +162,8 @@ export class CharacterLoader {
     try {
       console.log('🔄 publicキャラクター読み込み開始...');
       
-      // public/characters/ の一覧を取得
-      const response = await fetch('/api/list-characters');
+      // public/characters/ の一覧を取得（キャッシュバスティング追加）
+      const response = await fetch('/api/list-characters?t=' + Date.now());
       if (!response.ok) {
         console.warn('キャラクター一覧取得失敗:', response.status);
         return;

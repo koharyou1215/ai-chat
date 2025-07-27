@@ -42,6 +42,11 @@ export async function POST(request: NextRequest) {
 
     // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
     const customPrompt = settings?.enhancementPrompt;
+    console.log('[/api/enhance-text] カスタムプロンプト確認:', {
+      hasCustomPrompt: !!customPrompt,
+      customPromptLength: customPrompt?.length || 0,
+      customPromptPreview: customPrompt?.substring(0, 100) + '...'
+    });
     const basePrompt = customPrompt || `以下のテキストをより魅力的で自然な表現に改善してください。
 
 【改善のポイント】

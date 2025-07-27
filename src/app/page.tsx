@@ -1718,22 +1718,42 @@ export default function ChatPage() {
                   <PersonaSelector
                     personas={allPersonas}
                     currentPersona={currentPersona}
-                    onSelectPersona={setCurrentPersona}
+                    onSelectPersona={(persona) => {
+                      // デフォルトペルソナの場合はnullを設定
+                      if (persona?.id === 'default-persona') {
+                        setCurrentPersona(null);
+                      } else {
+                        setCurrentPersona(persona);
+                      }
+                    }}
                     onAddPersona={() => {
                       setEditingPersona(null);
                       setIsPersonaModalOpen(true);
                     }}
                     onEditPersona={(persona) => {
+                      // デフォルトペルソナは編集できない
+                      if (persona.id === 'default-persona') {
+                        alert('デフォルトペルソナは編集できません');
+                        return;
+                      }
+                      
                       setEditingPersona(persona);
                       setIsPersonaModalOpen(true);
                     }}
                     onDeletePersona={(persona) => {
+                      // デフォルトペルソナは削除できない
+                      if (persona.id === 'default-persona') {
+                        alert('デフォルトペルソナは削除できません');
+                        return;
+                      }
+                      
                       if (confirm(`「${persona.name}」を削除しますか？`)) {
                         const updatedPersonas = allPersonas.filter(p => p.id !== persona.id);
                         setAllPersonas(updatedPersonas);
                         localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
                         
                         if (currentPersona?.id === persona.id) {
+                          // 削除されたペルソナが現在選択中の場合は、デフォルトペルソナに戻す
                           setCurrentPersona(null);
                         }
                       }

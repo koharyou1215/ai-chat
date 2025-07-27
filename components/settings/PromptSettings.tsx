@@ -18,8 +18,54 @@ export default function PromptSettings({ formSettings, setFormSettings }: Prompt
             💡 電球（インスピレーション）プロンプト
           </label>
           <textarea
-            value={formSettings.inspirationPrompt || `あなたは創作的で自然なユーザー返信を提案する専門AIです.\n\n【キャラクター情報】\n名前: {{char}}\n性格・特徴: {character.character_definition || character.description || '不明'}\n\n【ユーザー情報】\n{persona ? '名前: {persona.name}\n性格: {persona.description}\n好み: {persona.likes?.join(', ') || 'なし'}\n苦手: {persona.dislikes?.join(', ') || 'なし'}\n口調・特徴: {persona.other_settings || 'なし'}' : '一般的なユーザー（名前なし）'}\n\n【最新のキャラクター発言】\n「{lastCharacterMessage}」\n\n【会話の文脈】\n{recentConversation}\n\n【重要指示】\n上記の会話文脈を踏まえて、ユーザーが自然に返しそうな返信を1つ作成してください。\n\n【要件】\n- 50-70文字程度\n- ユーザーの性格・口調を反映\n- 会話を自然に発展させる内容\n- {{char}}との関係性に適した親しみ度\n- 創造的で自然な表現\n\n【禁止語】\n「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」\n\n自然な返信:`}
-            onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }))}
+            value={formSettings.inspirationPrompt || `# ユーザー返信生成AI
+
+あなたは自然で魅力的なユーザー返信を生成する専門AIです。与えられた情報を基に、ユーザーが実際に返しそうなリアルな返信を1つ作成してください。
+
+## 入力情報
+
+### キャラクター情報
+- **名前**: {{char}}
+- **性格・特徴**: {character.character_definition || character.description || '不明'}
+
+### ユーザー情報
+- **名前**: {persona.name}
+- **性格**: {persona.description}
+- **好み**: {persona.likes?.join(', ') || 'なし'}
+- **苦手**: {persona.dislikes?.join(', ') || 'なし'}
+- **口調・特徴**: {persona.other_settings || 'なし'}
+
+### 会話データ
+- **キャラクターの最新発言**: 「{lastCharacterMessage}」
+- **直近の会話流れ**: {recentConversation}
+
+## 生成要件
+
+### 必須条件
+1. **文字数**: 100～150文字（句読点含む）
+2. **口調**: ユーザーの設定された口調・性格を忠実に反映
+3. **会話継続**: 自然に会話が発展する内容
+4. **関係性**: {{char}}との親しみ度に適した表現
+5. **自然性**: 実際の人間が返しそうなリアルな反応
+
+### 避けるべき表現
+- 「そうなんですね」「なるほど」
+- 「詳しく聞かせて」「教えて」
+- 「{{char}}さんらしい」「さすが」
+- その他の定型的・機械的な相槌
+
+### 推奨する要素
+- ユーザーの個性が表れる独特な反応
+- 感情や驚き、興味を自然に表現
+- 会話に新しい要素や視点を加える
+- キャラクターとの関係性を深める内容
+
+## 出力形式
+返信文のみを出力してください。説明や前置きは不要です。`}
+            onChange={(e) => {
+              console.log('電球プロンプト更新:', e.target.value.substring(0, 100) + '...');
+              setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }));
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
             rows={8}
             placeholder="電球ボタン用のプロンプトを入力..."
@@ -35,8 +81,33 @@ export default function PromptSettings({ formSettings, setFormSettings }: Prompt
             ✨ キラキラ（文章強化）プロンプト
           </label>
           <textarea
-            value={formSettings.enhancementPrompt || `以下のユーザーのテキストを、より魅力的で表現豊かな文章に強化してください。\n\n{conversationContext}\n\n【元のテキスト】\n{text}\n\n【強化の方向性】\n- 感情や気持ちをより具体的で魅力的に表現\n- 状況や背景をより詳しく魅力的に説明\n- ユーザーらしい自然で魅力的な表現\n- 会話の流れを考慮した自然な表現\n- 300-400字程度に大幅強化\n- 絵文字や感情表現を適切に追加\n- より魅力的で面白い表現に変更\n\n【重要な指示】\n- 元のテキストの意図や内容は保持してください\n- ユーザーとして自然で魅力的な表現にしてください\n- 会話の流れを考慮して自然な表現にしてください\n- 大幅に強化して魅力的にしてください\n- JSON形式ではなく、強化されたテキストのみを返してください\n- 遠慮せずに魅力的で面白い表現にしてください\n\n強化されたテキスト:`}
-            onChange={(e) => setFormSettings(prev => ({ ...prev, enhancementPrompt: e.target.value }))}
+            value={formSettings.enhancementPrompt || `# 文章強化プロンプト
+
+あなたは文章表現強化の専門家です。与えられたテキストを、読者が鮮明に情景を想像できる詳細な描写に変換してください。
+
+## 入力情報
+- 会話の文脈：{conversationContext}
+- 強化対象テキスト：{text}
+
+## 強化指針
+1. **内容の保持**：元テキストの意図・場面進行を完全に維持
+2. **描写の焦点**：「どのように」という動作の詳細に重点を置く
+3. **表現の深化**：五感に訴える具体的で臨場感のある描写を追加
+4. **文字数**：100～150文字程度に調整
+
+## 創作設定
+- ジャンル：創作フィクション（ファンタジー要素含む）
+- 表現レベル：R-18対応
+
+## 出力形式
+- 強化されたテキストのみを出力
+- 説明文、解説、JSON形式は一切使用しない
+- {{char}}の台詞や行動は絶対に追加しない
+- {{user}}視点の動作描写のみに集中`}
+            onChange={(e) => {
+              console.log('キラキラプロンプト更新:', e.target.value.substring(0, 100) + '...');
+              setFormSettings(prev => ({ ...prev, enhancementPrompt: e.target.value }));
+            }}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
             rows={8}
             placeholder="キラキラボタン用のプロンプトを入力..."

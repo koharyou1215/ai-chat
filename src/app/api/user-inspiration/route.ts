@@ -70,6 +70,11 @@ ${character.scenario ? `シナリオ: ${character.scenario}` : ''}
 
     // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
     const customPrompt = settings?.inspirationPrompt;
+    console.log('[/api/user-inspiration] カスタムプロンプト確認:', {
+      hasCustomPrompt: !!customPrompt,
+      customPromptLength: customPrompt?.length || 0,
+      customPromptPreview: customPrompt?.substring(0, 100) + '...'
+    });
     const basePrompt = customPrompt || `あなたは創作的で自然なユーザー返信を提案する専門AIです。
 ユーザーとの会話の流れを理解し、ユーザーが送信できる適切で魅力的な返信候補を生成してください。
 会話の文脈を考慮し、ユーザーの興味を引くような返信を作成してください。

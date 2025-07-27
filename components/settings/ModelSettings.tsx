@@ -103,6 +103,10 @@ export default function ModelSettings({ formSettings, setFormSettings }: ModelSe
           >
             {[ // OpenRouter Models
               'qwen/qwen3-235b-a22b-07-25:free',
+              'qwen/qwen3-235b-a22b-thinking-2507',
+              'moonshotai/kimi-k2:free',
+              'moonshotai/kimi-k2',
+              'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
               'x-ai/grok-4',
               'google/gemini-2.5-flash',
               'google/gemini-2.5-pro',
@@ -115,6 +119,9 @@ export default function ModelSettings({ formSettings, setFormSettings }: ModelSe
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
+          <p className="text-xs text-gray-500 mt-1">
+            <strong>:free</strong> - 無料版（制限あり）、<strong>:thinking</strong> - 思考プロセス版、<strong>なし</strong> - 有料版（高品質）
+          </p>
         </div>
       </div>
     </section>
