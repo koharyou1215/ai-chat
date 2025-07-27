@@ -1,0 +1,149 @@
+export interface RunwareRequest {
+  taskType: "imageInference";
+  outputType: "URL" | "base64Data" | "dataURI";
+  outputFormat?: "JPG" | "PNG" | "WEBP";
+  positivePrompt: string; // 'prompt' から変更
+  negativePrompt?: string; // 'negative_prompt' から変更
+  height?: number;
+  width?: number;
+  model: string; // 'model_id' から変更、必須に
+  steps?: number;
+  CFGScale?: number; // 'cfg_scale' から変更
+  seed?: number;
+  numberResults?: number;
+  checkNSFW?: boolean; // 'allow_nsfw' から変更
+  lora?: {
+    model: string;
+    weight?: number;
+  }[]; // LoRAの配列を追加
+}
+
+export interface RunwareResponse {
+  image: string; // base64 encoded image
+  seed?: number;
+}
+
+// Runware APIのタスク作成時の戻り値の型
+export interface RunwareGenerationTask {
+  taskId: string;
+}
+
+export class RunwareService {
+  private apiKey: string;
+  private baseUrl: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+    this.baseUrl = "https://api.runware.ai/v1";
+  }
+
+  async createGenerationTask(params: RunwareRequest): Promise<RunwareGenerationTask> {
+    console.log('[RunwareService] createGenerationTask called.');
+    console.log('[RunwareService] API Key (first 5 chars): ', this.apiKey.substring(0, 5) + '...'); // APIキーの一部をログ出力
+    console.log('[RunwareService] Request payload:', JSON.stringify(params, null, 2)); // ペイロード全体をログ出力
+
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    const body = {
+      taskType: params.taskType,
+      outputType: params.outputType,
+      outputFormat: params.outputFormat || "JPG",
+      positivePrompt: params.positivePrompt,
+      negativePrompt: params.negativePrompt || '',
+      height: params.height || 1024,
+      width: params.width || 1024,
+      model: params.model,
+      steps: params.steps || 30,
+      CFGScale: params.CFGScale || 7,
+      seed: params.seed || -1,
+      numberResults: params.numberResults || 1,
+      checkNSFW: params.checkNSFW || false,
+      lora: params.lora || []
+    };
+
+    const response = await fetch(`${this.baseUrl}/tasks`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify([body]), // リクエストを配列でラップ
+    });
+
+    console.log('📡 Runware API レスポンス:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Runware API エラーレスポンス:', errorText);
+      throw new Error(`API request failed: ${response.status} - ${response.statusText} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Runware API レスポンスデータ:', data);
+
+    // 配列レスポンスの場合の処理
+    if (Array.isArray(data) && data.length > 0) {
+      const taskData = data[0];
+      if (taskData.id) {
+        return { taskId: taskData.id };
+      }
+    }
+    
+    // 単一オブジェクトレスポンスの場合の処理
+    if (data.id) {
+      return { taskId: data.id };
+    }
+    
+    console.error('❌ Runware API レスポンスにタスクIDがありません:', data);
+    throw new Error('画像生成タスクの作成に失敗しました: タスクIDがありません');
+  }
+
+  async getGenerationTaskStatus(taskId: string): Promise<{ status: string; image?: string; seed?: number }> {
+    if (!this.apiKey) {
+      throw new Error('Runware APIキーが設定されていません');
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Accept': 'application/json',
+    };
+
+    try {
+      // Runware APIのタスクステータス取得エンドポイント
+      const response = await fetch(`${this.baseUrl}/tasks/${taskId}`, {
+        method: 'GET',
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('📡 Runware タスクステータスレスポンス:', data);
+
+      // 配列レスポンスの場合の処理
+      let taskData = data;
+      if (Array.isArray(data) && data.length > 0) {
+        taskData = data[0];
+      }
+
+      // Runware APIのレスポンス形式に合わせて調整
+      if (taskData.status === 'completed') {
+        return {
+          status: 'completed',
+          image: taskData.result?.base64 || taskData.result?.image || taskData.image, // 複数の可能性を考慮
+          seed: taskData.result?.seed || taskData.seed,
+        };
+      } else if (taskData.status === 'failed') {
+        throw new Error(`画像生成タスクが失敗しました: ${taskData.error || '不明なエラー'}`);
+      } else {
+        return { status: taskData.status };
+      }
+    } catch (error) {
+      console.error('Runware API タスクステータス取得エラー:', error);
+      throw new Error('画像生成サービスでステータス取得エラーが発生しました');
+    }
+  }
+} 

@@ -3,7 +3,7 @@ import { Character, UserPersona } from '../types/character';
 /**
  * 簡易形式のキャラクターデータを完全形式に正規化
  */
-export function normalizeCharacterData(data: any, filename: string): Character {
+export function normalizeCharacterData(data: Character, filename: string): Character {
   // 既に完全形式の場合はそのまま返す
   if (data.character_definition) {
     return data;

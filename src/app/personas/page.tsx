@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { UserPersona } from '../../types/character';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -12,7 +13,8 @@ export default function PersonasPage() {
     router.back();
   };
 
-  const handlePersonaSelect = (persona: any) => {
+  const handlePersonaSelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  persona: UserPersona) => {
     // ペルソナ選択後、メインページに戻る
     router.push('/');
   };

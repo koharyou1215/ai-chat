@@ -28,7 +28,8 @@ export default function CharactersPage() {
     router.back();
   };
 
-  const handleCharacterSelect = (character: Character) => {
+  const handleCharacterSelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  character: Character) => {
     // キャラクター選択後、メインページに戻る (ここでは何もしないか、選択されたキャラクターを渡すなど)
     // 現状はrouter.push('/')のみで、キャラクター選択はuseChatStoreなどで別途行う想定のようです。
     // router.push('/'); // ここは不要かもしれません

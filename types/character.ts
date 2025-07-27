@@ -30,15 +30,9 @@ export interface CharacterScenario {
 }
 
 export interface NSFWProfile {
-  persona: string;
-  libido_level: string;
-  limits: {
-    hard: string[];
-    soft: string[];
-  };
-  kinks: string[];
-  involuntary_reactions: string;
-  orgasm_details: string;
+  situation: string;
+  mental_state: string;
+  status: string;
 }
 
 export interface CharacterDefinition {
@@ -155,55 +149,4 @@ export interface Theme {
     opacity: number;
   };
   preview: string;
-}
-
-export interface AppSettings {
-  geminiApiKey?: string;
-  elevenLabsApiKey?: string;
-  voiceEnabled?: boolean; // オプショナルに変更
-  voiceAutoPlay?: boolean; // オプショナルに変更
-  voiceId?: string;
-  voiceStability?: number;
-  voiceSimilarityBoost?: number;
-  voiceStyle?: number;
-  voiceUseSpeakerBoost?: boolean;
-  voiceSpeed?: number;
-  voiceVolume?: number;
-  enableImageGeneration?: boolean; // オプショナルに変更
-  loraSettings?: string;
-  negativePrompt?: string;
-  imageEngine?: 'sd' | 'runware';
-  chatCompletionSound?: boolean; // chatNotificationSoundから変更
-  currentTheme?: string;
-  // customBackground?: string; // 削除: キャラクター個別設定へ移動
-  bubbleOpacity?: number;
-  bubbleBlur?: boolean;
-  bubbleDesign?: 'default' | 'rounded' | 'sharp'; // 追加
-  autoScroll?: boolean;
-  stableDiffusionApiKey?: string;
-  temperature?: number;
-  topP?: number;
-  maxTokens?: number;
-  memorySize?: number;
-  historySize?: number;
-  systemPrompt?: string;
-  jailbreakPrompt?: string;
-  responseFormat?: string;
-  jailbreakPromptEnabled?: boolean; // enableJailbreakから変更
-  systemPromptEnabled?: boolean; // enableSystemPromptから変更
-  usedModel?: string; // modelから変更
-  // provider?: string; // 削除: OpenRouterに固定のため
-  openRouterApiKey?: string;
-  candidateCount?: number;
-  runwareModelId?: string;
-  runwareLoraIds?: string[];
-  runwareApiKey?: string; // Runware APIキーを追加
-  inspirationPrompt?: string; // 追加
-  enhancementPrompt?: string; // 追加
-  inspirationMaxTokens?: number;
-  imageWidth?: number; // キャラクター編集画面からの移設
-  imageHeight?: number; // キャラクター編集画面からの移設
-  imageSteps?: number; // キャラクター編集画面からの移設
-  imageCfgScale?: number; // キャラクター編集画面からの移設
-  imageSampler?: string; // キャラクター編集画面からの移設
 } 

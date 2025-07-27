@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
 
     // プレースホルダ置換 {{char}}, {{user}}
     const userName = 'あなた';
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const finalizedText = text.replace(/\{\{char}}/g, (character as {name:string}).name)
                               .replace(/\{\{user}}/g, userName);
 

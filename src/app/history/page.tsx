@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { ChatSession } from '../../types/character';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -12,7 +13,8 @@ export default function HistoryPage() {
     router.back();
   };
 
-  const handleHistorySelect = (historyItem: any) => {
+  const handleHistorySelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  historyItem: ChatSession) => {
     // 履歴選択後、メインページに戻る
     router.push('/');
   };

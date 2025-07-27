@@ -1,30 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { ChatMemoProvider } from '../components/ChatMemoProvider'
 
 // モーダルコンポーネントのインポート
-import SettingsModal from '../components/SettingsModal'
-import ThemeModal from '../components/ThemeModal'
-import AuthModal from '../components/AuthModal'
-import CharacterModal from '../components/CharacterModal'
-import PersonaModal from '../components/PersonaModal'
-import CharacterGallery from '../components/CharacterGallery'
-import PersonaGallery from '../components/PersonaGallery'
-import ChatHistoryGallery from '../components/ChatHistoryGallery'
+
 
 interface ClientLayoutProps {
   children: React.ReactNode
 }
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isThemeOpen, setIsThemeOpen] = useState(false)
-  const [isAuthOpen, setIsAuthOpen] = useState(false)
-  const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false)
-  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false)
-  
   const { sidebarOpen, toggleSidebar } = useChatStore()
   
   // ビデオ背景の参照

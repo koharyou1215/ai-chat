@@ -6,6 +6,10 @@ export interface AppSettings {
   memorySize: number;
   historySize: number;
   bubbleOpacity: number;
+  bubbleCornerRadius?: number;
+  bubbleShadow?: boolean;
+  bubbleBlur?: boolean;
+  autoScroll?: boolean;
   
   // APIキー（フロントエンドからの実際の送信名に合わせる）
   openRouterApiKey?: string;
@@ -23,6 +27,9 @@ export interface AppSettings {
   responseFormat?: string;
   enableJailbreak?: boolean;
   enableSystemPrompt?: boolean;
+  inspirationPrompt?: string;
+  enhancementPrompt?: string;
+  inspirationMaxTokens?: number;
   
   // テーマ設定
   currentTheme?: string;
@@ -47,18 +54,13 @@ export interface AppSettings {
   enableImageGeneration?: boolean;
   chatNotificationSound?: boolean;
   imageEngine?: string;
-  bubbleBlur?: boolean;
   candidateCount?: number;
-  
-  // Runware設定
-  runwareLoraIds?: string[];
-  allowNsfw?: boolean;
-  
-  // インスピレーション設定
-  inspirationPrompt?: string;
-  enhancementPrompt?: string;
-  inspirationMaxTokens?: number;
-  
-  // その他
-  [key: string]: unknown;
+  bubbleDesign?: 'default' | 'rounded' | 'sharp';
+
+  // キャラクター編集画面からの移設プロパティ
+  imageWidth?: number;
+  imageHeight?: number;
+  imageSteps?: number;
+  imageCfgScale?: number;
+  imageSampler?: string;
 }

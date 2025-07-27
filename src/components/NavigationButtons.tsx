@@ -40,7 +40,7 @@ export default function NavigationButtons({ className = '' }: NavigationButtonsP
   ];
 
   return (
-    <div className={grid grid-cols-1 gap-3 }>
+    <div className={`grid grid-cols-1 gap-3 ${className}`}>
       {navigationItems.map((item) => {
         const IconComponent = item.icon;
         return (
@@ -48,10 +48,7 @@ export default function NavigationButtons({ className = '' }: NavigationButtonsP
             key={item.href}
             onClick={() => router.push(item.href)}
             className={
-              flex items-center p-4 rounded-xl text-white transition-all duration-300
-              bg-gradient-to-r  hover:scale-105 hover:shadow-lg
-              focus:outline-none focus:ring-2 focus:ring-white/20
-              min-h-[48px] touch-manipulation
+              className="flex items-center p-4 rounded-xl text-white transition-all duration-300 bg-gradient-to-r  hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/20 min-h-[48px] touch-manipulation"
             }
           >
             <IconComponent size={20} className="mr-3 flex-shrink-0" />

@@ -612,16 +612,14 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Background
-・設定
+                    生い立ち・設定
                   </label>
                   <textarea
                     value={formData.background}
                     onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     rows={3}
-                    placeholder="キャラクターの詳細なBackground
-設定や世界観を記述してください"
+                    placeholder="キャラクターの詳細な生い立ちや世界観を記述してください"
                   />
                 </div>
               </div>
@@ -693,7 +691,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                 {/* URL入力 */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-600 mb-1">
-                    URLから設定
+                    チャット背景画像/動画URL
                   </label>
                   <input
                     type="text"
@@ -702,6 +700,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     placeholder="画像URLまたは動画URLを入力してください"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    このキャラクター専用のチャット背景画像/動画を設定します
+                  </p>
                 </div>
 
                 {/* ファイルアップロード */}

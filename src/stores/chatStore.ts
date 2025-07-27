@@ -1,9 +1,10 @@
-﻿import { create } from 'zustand';
+﻿import { ChatMessage } from '../../types/character';
+import { create } from 'zustand';
 
 interface ChatState {
-  messages: any[];
+  messages: ChatMessage[];
   currentChat: string | null;
-  setMessages: (messages: any[]) => void;
+  setMessages: (messages: ChatMessage[]) => void;
   setCurrentChat: (chatId: string | null) => void;
 }
 

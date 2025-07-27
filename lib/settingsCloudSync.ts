@@ -1,5 +1,5 @@
 import { supabase, getCurrentUser } from './supabase'
-import { AppSettings } from '../types/character'
+import { AppSettings } from '../types/app';
 
 // 設定データをクラウドに保存
 export const saveSettingsToCloud = async (settings: AppSettings) => {
@@ -15,6 +15,7 @@ export const saveSettingsToCloud = async (settings: AppSettings) => {
     }
 
     // APIキーは除外（セキュリティのため）
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { geminiApiKey, stableDiffusionApiKey, elevenLabsApiKey, ...safeSettings } = settings
 
     const { data, error } = await supabase

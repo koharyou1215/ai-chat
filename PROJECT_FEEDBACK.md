@@ -756,4 +756,247 @@
 ### 結果
 - 簡易形式のキャラクターファイルも正常に読み込み可能
 - 問題発生時の詳細な診断が可能
-- キャラクターデータの互換性が向上 
+- キャラクターデータの互換性が向上
+
+## 2025年1月27日 - 画像生成APIエラーの修正
+
+### 問題
+- 画像生成テストで「APIキーが設定されていません」エラーが発生
+- Runware API Keyは環境変数に設定済みだが認識されない
+
+### 詳細
+- Runware APIのリクエストペイロードが配列形式でないため400エラー
+- APIキーの検証ロジックで詳細なデバッグ情報が不足
+- エラーハンドリングが不十分
+
+### 修正内容
+
+#### 1. Runware APIリクエスト形式の修正（`lib/runwareApi.ts`）
+- リクエストペイロードを配列でラップ（`JSON.stringify([body])`）
+- 配列レスポンスと単一オブジェクトレスポンスの両方に対応
+- タスクID取得処理の改善
+
+#### 2. エラーハンドリングの強化（`src/app/api/generate-image/route.ts`）
+- Runwareエラー時の詳細ログ出力
+- 全プロバイダー失敗時のデバッグ情報追加
+- APIキー検証の詳細ログ
+
+#### 3. タスクステータス取得の改善（`lib/runwareApi.ts`）
+- 配列レスポンス対応
+- 複数の画像フィールド形式に対応
+- 詳細なログ出力
+
+### 結果
+- Runware APIの正しいリクエスト形式に対応
+- エラー発生時の詳細な診断が可能
+- 画像生成の成功率向上 
+
+## 2025年1月27日 - モバイルレイアウトと背景画像修正
+
+### 修正内容
+
+#### 1. モバイルレイアウトの修正
+- **問題**: モバイルでヘッダーが見切れ、バーガーメニューが操作できない
+- **解決策**: 
+  - メインコンテナに`overflow-y-auto`を追加してスクロール可能に
+  - ヘッダーの`sticky`固定を解除
+  - メインコンテナの`maxHeight`制限を解除
+  - チャットメッセージエリアの`overflow-y-auto`を削除
+
+#### 2. 背景画像の永続化問題
+- **問題**: モバイルで背景画像が反映されない、設定画面での説明が不明確
+- **解決策**:
+  - `loadCharacterBackground`関数を改善し、キャラクター固有とグローバル設定の優先順位を明確化
+  - 設定画面の説明を「チャット背景画像/動画URL」に変更
+  - キャラクター設定画面の説明を「生い立ち・設定」と「チャット背景画像/動画URL」に分離
+
+#### 3. 設定画面の説明改善
+- **問題**: 「Background・設定」と「URLから設定」の説明が不明確
+- **解決策**:
+  - キャラクター設定画面: 「生い立ち・設定」と「チャット背景画像/動画URL」に分離
+  - 設定画面: 「チャット背景画像/動画URL」に統一
+  - プレースホルダーテキストを改善
+
+### 技術的変更点
+
+#### src/app/page.tsx
+```diff
+- className="flex h-screen relative"
++ className="flex h-screen relative overflow-y-auto"
+
+- className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0 sticky top-0 z-50"
++ className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0"
+
+- className="flex-1 overflow-y-auto p-2 md:p-4 space-y-4 md:space-y-6 scroll-touch"
++ className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6"
+```
+
+#### components/settings/BackupAndOtherSettings.tsx
+```diff
+- カスタム背景画像URL
++ チャット背景画像/動画URL
+
+- 背景に表示する画像のURLを指定します。
++ チャット画面の背景に表示する画像または動画のURLを指定します。画像URLまたはbase64データURLが使用できます。
+```
+
+#### components/CharacterModal.tsx
+```diff
+- Background・設定
++ 生い立ち・設定
+
+- URLから設定
++ チャット背景画像/動画URL
+```
+
+### 結果
+- モバイルでスクロール可能になり、バーガーメニューが操作可能
+- 背景画像の永続化が改善
+- 設定画面の説明が明確化
+
+### 注意点
+- 背景画像はキャラクター固有設定が優先され、次にグローバル設定が適用される
+- モバイルでの表示は固定ではなく、スクロール可能なレイアウトに変更
+- 設定画面での説明を統一し、ユーザーの混乱を防止
+
+## 2025年1月27日 - モバイルスクロール問題の追加修正
+
+### 追加修正内容
+
+#### 問題
+- モバイルでメッセージ入力欄をタップしてキーボードを出した後、下にスクロールすると固定される
+- バーガーメニューが見えるまでスクロールすると、そこで固定されてメッセージ入力欄が見えなくなる
+
+#### 解決策
+- メインコンテナの`h-screen`を削除し、`minHeight`のみに変更
+- メインチャットエリアに`min-h-0`を追加
+- メッセージ入力フォームに背景色とボーダーを追加して視認性を向上
+
+#### 技術的変更点
+```diff
+- className="flex h-screen relative overflow-y-auto"
++ className="flex relative overflow-y-auto"
+
+- style={{ height: '100vh', minHeight: '-webkit-fill-available' }}
++ style={{ minHeight: '-webkit-fill-available' }}
+
+- className="flex-1 flex flex-col w-full md:w-auto"
++ className="flex-1 flex flex-col w-full md:w-auto min-h-0"
+
+- className="p-2 md:p-4 safe-area-bottom flex-shrink-0"
++ className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200"
+```
+
+### 結果
+- モバイルでキーボード表示後もスクロールが正常に動作
+- メッセージ入力欄が常に見える状態を維持
+- バーガーメニューの操作が可能
+
+---
+
+## 2025年1月27日 - モバイルスクロール問題の根本的修正
+
+### 問題
+- モバイルで画面が固定され、スクロールできない
+- キーボード表示後に固定化される
+- バーガーメニューが見えない
+
+### 根本原因
+1. **メインコンテナの高さ制約**: `minHeight: '-webkit-fill-available'` がモバイルでの固定化を引き起こしている
+2. **ヘッダーの固定位置**: `sticky top-0 z-50` が適切に設定されていない
+3. **チャットエリアのスクロール制約**: `overflow-y-auto` が適切に動作していない
+
+### 修正内容
+1. **メインコンテナの修正**:
+   - `className`から`overflow-y-auto`を削除
+   - `style`で`height: '100vh'`と`overflow: 'hidden'`を設定
+   - `minHeight: '-webkit-fill-available'`を削除
+
+2. **チャットエリアの修正**:
+   - メインチャットエリアに`overflow-hidden`を追加
+   - チャットメッセージエリアに`overflow-y-auto`を追加
+   - ヘッダーに`sticky top-0 z-50`を追加
+   - メッセージ入力フォームに`sticky bottom-0 z-40`を追加
+
+### 技術的変更点
+```diff
+- className="flex relative overflow-y-auto"
++ className="flex relative"
+
+- style={{ background: '#ffffff', minHeight: '-webkit-fill-available' }}
++ style={{ background: '#ffffff', height: '100vh', overflow: 'hidden' }}
+
+- className="flex-1 flex flex-col w-full md:w-auto overflow-hidden"
++ className="flex-1 flex flex-col w-full md:w-auto overflow-hidden"
+
+- className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0"
++ className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0 sticky top-0 z-50"
+
+- className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6"
++ className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto"
+
+- className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200"
++ className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 sticky bottom-0 z-40"
+```
+
+### 期待される効果
+- モバイルでスクロール可能になる
+- ヘッダーとメニューが常に表示される
+- キーボード表示後も固定化されない
+
+### 画像生成関連コード
+ユーザーからの要望により、画像生成に関連する主要ファイルを特定：
+
+1. **`src/app/api/generate-image/route.ts`** - メイン画像生成API
+   - Runware API（優先）
+   - Stable Diffusion API（フォールバック）
+   - ローカルStable Diffusion（フォールバック）
+
+2. **`lib/stableDiffusionApi.ts`** - Stable Diffusion API クライアント
+3. **`lib/runwareApi.ts`** - Runware API クライアント
+4. **`src/app/page.tsx`** - フロントエンド画像生成処理
+
+### 次のステップ
+- モバイルでの動作確認
+- 背景画像の永続化問題の解決
+- コンソールエラーの修正 
+
+---
+
+## 2025年1月27日 - Runware画像生成API修正
+
+### 概要
+- RunwareServiceクラスの実装が不完全で、画像生成ができない問題を修正
+- ポーリング方式から同期REST API方式に変更
+
+### 詳細
+- **問題**: 現在のRunwareServiceが公式APIと一致しない独自の実装
+- **原因**: ポーリング方式のAPIが存在しないのに、`createGenerationTask`と`getGenerationTaskStatus`を使用
+- **正しいAPI**: 同期的なREST APIで即座に画像URLを返す
+
+### 解決方法
+1. **`lib/runwareApi.ts`の完全書き換え**:
+   - ポーリング方式を削除
+   - `generateImage`メソッドを新規実装
+   - `taskUUID`を使用した直接的な画像生成
+   - 同期REST API呼び出しに変更
+
+2. **`src/app/api/generate-image/route.ts`の修正**:
+   - `createGenerationTask`と`getGenerationTaskStatus`の呼び出しを削除
+   - 新しい`generateImage`メソッドを使用
+   - ポーリングループを削除
+   - 即座に結果を返すように変更
+
+### 学んだ教訓
+- APIドキュメントを正確に理解することが重要
+- ポーリング方式と同期方式の違いを明確にする
+- 実装前に公式ドキュメントを必ず確認する
+
+### 関連ファイル
+- `lib/runwareApi.ts` (完全書き換え)
+- `src/app/api/generate-image/route.ts` (Runware部分修正)
+- `lib/runwareApi.ts.backup` (バックアップ)
+- `src/app/api/generate-image/route.ts.backup` (バックアップ)
+
+### ステータス
+- [x] 完了 

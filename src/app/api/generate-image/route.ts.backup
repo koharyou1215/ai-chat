@@ -85,7 +85,9 @@ export async function POST(request: NextRequest) {
         
         const runwareService = new RunwareService(runwareApiKey);
         
-        const result = await runwareService.generateImage({
+        const task = await runwareService.createGenerationTask({
+          taskType: "imageInference",
+          outputType: "URL",
           positivePrompt: processedPrompt,
           model: runwareModelId,
           width: settings?.imageWidth || 512,
@@ -94,16 +96,39 @@ export async function POST(request: NextRequest) {
           steps: settings?.steps || 20
         });
         
-        console.log(`[/api/generate-image] Runware成功: 画像生成完了`);
+        // タスクの完了を待つ（簡単なポーリング）
+        let attempts = 0;
+        const maxAttempts = 30;
         
-        return NextResponse.json({
-          success: true,
-          imageUrl: result.imageURL,
-          provider: 'runware',
-          imageUUID: result.imageUUID
-        });
+        while (attempts < maxAttempts) {
+          const result = await runwareService.getGenerationTaskStatus(task.taskId);
+          
+          if (result.status === 'completed' && result.image) {
+            console.log(`[/api/generate-image] Runware成功: タスク完了`);
+            
+            return NextResponse.json({
+              success: true,
+              imageUrl: result.image,
+              provider: 'runware',
+              seed: result.seed
+            });
+          }
+          
+          if (result.status === 'failed') {
+            throw new Error('画像生成タスクが失敗しました');
+          }
+          
+          // 2秒待機
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          attempts++;
+        }
+        
+        throw new Error('画像生成がタイムアウトしました');
       } catch (runwareError) {
         console.error('[/api/generate-image] Runwareエラー:', runwareError);
+        // エラーメッセージを詳細に記録
+        const errorMessage = runwareError instanceof Error ? runwareError.message : 'Unknown Runware error';
+        console.error('[/api/generate-image] Runware詳細エラー:', errorMessage);
         // Stable Diffusionにフォールバック
       }
     }
@@ -235,4 +260,4 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
-}
+} 
