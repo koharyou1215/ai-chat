@@ -170,5 +170,41 @@
 
 ---
 
+---
+
+### 2025年7月24日 - Failed to fetch エラーの修正
+
+#### 概要
+- `handleRegenerate`関数で「Failed to fetch」エラーが発生
+- エラーハンドリングが不十分で、具体的な問題が特定できない
+
+#### 詳細
+- エラー: `Error: Failed to fetch` (Call Stack: handleRegenerate)
+- APIリクエストの失敗時に適切なエラーメッセージが表示されない
+- ネットワークエラーやAPIエラーの詳細が不明
+
+#### 解決方法
+- `src/app/page.tsx`の`handleRegenerate`関数に詳細なログ出力を追加
+- APIレスポンスの状態チェックを強化
+- エラー時のフォールバックメッセージを追加
+- `src/app/api/simple-chat/route.ts`のリクエストボディ解析エラーハンドリングを改善
+- `lib/openRouter.ts`のエラーハンドリングを強化
+
+#### 学んだ教訓
+- エラーハンドリングは段階的に行う必要がある
+- ログ出力は問題特定に重要
+- ユーザーには分かりやすいエラーメッセージを表示する
+- APIエラーの詳細情報を取得する仕組みが必要
+
+#### 関連ファイル
+- `src/app/page.tsx`
+- `src/app/api/simple-chat/route.ts`
+- `lib/openRouter.ts`
+
+#### ステータス
+- [x] 完了
+
+---
+
 **最終更新**: 2025年7月24日
 **記録者**: AI Assistant 

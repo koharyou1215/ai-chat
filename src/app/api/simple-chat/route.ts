@@ -11,12 +11,25 @@ import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Simple chat API called');
+    console.log('🚀 Simple chat API called');
     
-    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue } = await request.json();
-    console.log('User message:', message);
-    console.log('Character ID:', characterId);
-    console.log('Settings:', settings);
+    // リクエストボディの解析
+    let requestBody;
+    try {
+      requestBody = await request.json();
+      console.log('📋 リクエストボディ解析成功');
+    } catch (parseError) {
+      console.error('❌ リクエストボディ解析エラー:', parseError);
+      return NextResponse.json({
+        success: false,
+        error: 'リクエストボディの解析に失敗しました'
+      }, { status: 400 });
+    }
+    
+    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue } = requestBody;
+    console.log('💬 User message:', message);
+    console.log('👤 Character ID:', characterId);
+    console.log('⚙️ Settings:', settings);
     
     if (!message && !doContinue) {
       return NextResponse.json({

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 // @ts-nocheck
 
@@ -743,7 +743,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          aiResponse: aiContent,
+          prompt: imagePromptResult,
           character: currentCharacter,
           conversationContext: messages.slice(-5).map(m => m.content),
           loraSettings: settings.loraSettings,
@@ -797,7 +797,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          aiResponse: testPrompt,
+          prompt: testPrompt,
           character: currentCharacter,
           conversationContext: ['テスト用の会話'],
           loraSettings: settings.loraSettings,
@@ -1033,9 +1033,14 @@ export default function ChatPage() {
   const handleRegenerate = async () => {
     if (!currentCharacter || isLoading || messages.length === 0) return;
     
+    console.log('🔄 再生成開始');
+    
     // 最後のAIメッセージを削除
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage.role !== 'assistant') return;
+    if (lastMessage.role !== 'assistant') {
+      console.log('❌ 最後のメッセージがAIメッセージではありません');
+      return;
+    }
     
     const messagesWithoutLast = messages.slice(0, -1);
     setMessages(messagesWithoutLast);
@@ -1045,14 +1050,22 @@ export default function ChatPage() {
     try {
       // 最後のユーザーメッセージを取得
       const lastUserMessage = messagesWithoutLast.filter(m => m.role === 'user').pop();
-      if (!lastUserMessage) return;
+      if (!lastUserMessage) {
+        console.log('❌ ユーザーメッセージが見つかりません');
+        return;
+      }
+
+      console.log('📝 再生成対象メッセージ:', lastUserMessage.content);
 
       // 会話履歴から最後のユーザーメッセージを除外してコンテキストを作成
       const conversationContext = messagesWithoutLast
         .filter((m) => m.id !== lastUserMessage.id)
         .slice(-(settings.historySize || 4)); // 履歴サイズを削減
 
-      // APIを呼び出して新しい応答を生成（重複送信を防止）
+      console.log('📚 会話コンテキスト件数:', conversationContext.length);
+
+      // APIを呼び出して新しい応答を生成
+      console.log('🌐 API呼び出し開始');
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1067,6 +1080,14 @@ export default function ChatPage() {
         }),
       });
 
+      console.log('📡 APIレスポンス状態:', chatResponse.status, chatResponse.statusText);
+
+      if (!chatResponse.ok) {
+        const errorText = await chatResponse.text();
+        console.error('❌ APIエラー:', chatResponse.status, errorText);
+        throw new Error(`APIエラー: ${chatResponse.status} ${errorText}`);
+      }
+
       let aiContent = '';
       const aiResponse: Message = {
         id: Date.now().toString(),
@@ -1077,10 +1098,21 @@ export default function ChatPage() {
       setMessages(prev => [...prev, aiResponse]);
 
       const contentType = chatResponse.headers.get('Content-Type') || '';
+      console.log('📄 レスポンスContent-Type:', contentType);
+
       if (contentType.includes('application/json')) {
         const json = await chatResponse.json();
-        if (json.success) aiContent = json.content;
+        console.log('📋 JSONレスポンス:', json);
+        
+        if (json.success) {
+          aiContent = json.content;
+          console.log('✅ 再生成成功:', aiContent.substring(0, 100) + '...');
+        } else {
+          console.error('❌ API成功フラグがfalse:', json.error);
+          throw new Error(json.error || 'API応答が失敗しました');
+        }
       } else {
+        console.log('📡 ストリームレスポンス処理開始');
         const reader = chatResponse.body?.getReader();
         const decoder = new TextDecoder();
         if (reader) {
@@ -1091,11 +1123,12 @@ export default function ChatPage() {
             setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
           }
         }
+        console.log('✅ ストリーム処理完了:', aiContent.substring(0, 100) + '...');
       }
 
       setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
 
-      if (aiContent) {
+      if (aiContent && aiContent.trim()) {
         if (settings.chatNotificationSound) {
           VoiceManager.playNotificationSound(true, 0.3);
         }
@@ -1104,11 +1137,32 @@ export default function ChatPage() {
         if (settings.enableImageGeneration) {
           handleImageGeneration(aiResponse, aiContent);
         }
+      } else {
+        console.error('❌ AI応答が空です');
+        // エラー時のフォールバック
+        const errorResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'ごめんなさい、今ちょっと調子が悪いみたい...もう一度話しかけてくれる？',
+          timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, errorResponse]);
       }
     } catch (error) {
-      console.error('Regenerate error:', error);
+      console.error('❌ 再生成エラー:', error);
+      
+      // エラー時のフォールバックメッセージ
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'エラーが発生しました。もう一度お試しください。',
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, errorResponse]);
     } finally {
       setIsLoading(false);
+      setIsGeneratingImage(false);
+      console.log('🔄 再生成処理完了');
     }
   };
 
@@ -1804,7 +1858,7 @@ export default function ChatPage() {
       </div>
 
       {/* メインチャットエリア */}
-      <div className="flex-1 flex flex-col w-full md:w-auto min-h-0">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         {/* ヘッダー */}
         <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -1859,7 +1913,7 @@ export default function ChatPage() {
         </div>
 
         {/* チャットメッセージエリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' ? (
@@ -1946,60 +2000,43 @@ export default function ChatPage() {
                        </button>
                        <button 
                          onClick={() => handleRollback(msg.id)}
-                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
-                         title="ここまで戻る"
+                         disabled={isLoading}
+                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
+                         title="このメッセージまで戻す"
                        >
                          <CornerUpLeft size={16} />
                        </button>
-                       {settings.enableImageGeneration && (
                        <button
-                         onClick={() => handleImageReroll(msg)}
-                         className="touch-target text-yellow-500 hover:text-yellow-700 p-1 rounded"
-                         title="画像をランダムシードで再生成"
+                        onClick={() => handleCopy(msg.content)}
+                        className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
+                        title="コピー"
                        >
-                         🎲
-                       </button>
-                       )}
-                       {/* コピー */}
-                       <button
-                         onClick={() => handleCopy(msg.content)}
-                         className="touch-target text-gray-500 hover:text-blue-600 p-1 rounded"
-                         title="コピー"
-                       >
-                         <Copy size={16} />
+                        <Copy size={16} />
                        </button>
                      </div>
-                   </div>
+                  </div>
                 </div>
               ) : (
-                <div className="max-w-lg w-full">
-                  <div
-                    className={`relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg ${settings.bubbleBlur ? 'backdrop-blur-sm' : ''}`}
-                    style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
+                <div className="max-w-2xl w-full flex justify-end">
+                  <div 
+                    className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
+                    style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
                   >
-                                          <div 
-                        className="absolute -top-2 right-6 w-4 h-4 rotate-45"
-                        style={{ backgroundColor: `rgba(59, 130, 246, ${settings.bubbleOpacity})` }}
-                      ></div>
                     <div 
-                      className="leading-relaxed whitespace-pre-wrap text-sm sm:text-base"
-                      onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
+                      className="absolute -top-2 right-6 w-4 h-4 rotate-45"
+                      style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
+                    ></div>
+                    <div 
+                      className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
+                      onMouseUp={() => handleTextSelection(msg.id)}
                       style={{ userSelect: 'text' }}
                     >
                       <FormattedText md={msg.content} />
                     </div>
-                    {/* コピーとメモボタン */}
-                    <div className="flex justify-end mt-2 gap-1 flex-wrap"> {/* gap-1 flex-wrap を追加してレイアウト調整 */}
-                      {/* メモボタンをここに追加 */}
-                      <MessageMemoButton 
-                        messageId={msg.id}
-                        messageContent={msg.content}
-                        sessionId={currentSessionId || 'temp'}
-                        characterId={currentCharacter?.name || 'unknown'}
-                      />
+                    <div className="flex justify-end mt-2 gap-1">
                       <button
                         onClick={() => handleCopy(msg.content)}
-                        className="touch-target text-white/80 hover:text-blue-200 p-1 rounded"
+                        className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
                         title="コピー"
                       >
                         <Copy size={16} />
@@ -2013,648 +2050,83 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 入力エリア */}
-        <div className="p-4 bg-black/30 backdrop-blur-sm border-t border-white/10 safe-area-bottom flex-shrink-0 pb-safe">
+        {/* メッセージ入力フォーム */}
+        <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-gray-200 safe-area-bottom flex-shrink-0">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-end gap-2 sm:gap-3 bg-white/10 backdrop-blur-sm rounded-2xl p-3">
-              {/* アスタリスクボタン（入力枠の前方） */}
+            {/* アクションボタン */}
+            <div className="flex gap-2 mb-2 flex-wrap">
               <button
-                onClick={() => {
-                  const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-                  if (textarea) {
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const newValue = message.substring(0, start) + '*' + message.substring(end);
-                    setMessage(newValue);
-                    
-                    // カーソル位置を更新
-                    setTimeout(() => {
-                      textarea.setSelectionRange(start + 1, start + 1);
-                      textarea.focus();
-                    }, 0);
-                  }
-                }}
-                className="touch-target text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="アスタリスクを追加"
+                onClick={handleContinue}
+                disabled={isLoading}
+                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
               >
-                *
+                ▶ 続きを話す
               </button>
-              
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="メッセージを入力..."
-                className="flex-1 bg-transparent theme-text-primary placeholder-theme-text-secondary resize-none outline-none min-h-[44px] text-base"
-                rows={isInputExpanded ? (window.innerWidth < 768 ? 6 : 4) : 1}
-                style={{ 
-                  fontSize: '16px',
-                  maxHeight: isInputExpanded ? (window.innerWidth < 768 ? '240px' : '256px') : '44px',
-                  transition: 'max-height 0.3s ease-in-out'
-                }}
-              />
-              <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
-                <button
-                  onClick={() => setIsInputExpanded(!isInputExpanded)}
-                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full transition-colors"
-                  title={isInputExpanded ? '入力欄を縮小' : '入力欄を拡大'}
-                >
-                  {isInputExpanded ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}
-                </button>
-
-                <button
-                  onClick={handleSend}
-                  disabled={!message.trim() || isLoading}
-                  className="touch-target bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white p-3 rounded-full transition-colors"
-                >
-                  {isLoading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex justify-center mt-2 gap-1 flex-wrap">
-              {/* 音声オン/オフ */}
               <button
-                onClick={() => {
-                  const newVoiceEnabled = !(settings.voiceEnabled ?? true); // 現在の値を反転
-                  const newSettings = { ...settings, voiceEnabled: newVoiceEnabled };
-                  updateSettings(newSettings);
-                  
-                  if (newVoiceEnabled && newSettings.elevenLabsApiKey) {
-                    // VoiceManager.setApiKey(newSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
-                  } else if (!newVoiceEnabled) {
-                    VoiceManager.stopAudio(); // 音声がオフになったら再生を停止
-                  }
-                }}
-                className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.voiceEnabled ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
-                title={settings.voiceEnabled ? '音声OFF' : '音声ON'}
+                onClick={handleReset}
+                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors text-sm"
               >
-                {settings.voiceEnabled ? '🔊' : '🔇'}
+                🔄 リセット
               </button>
-              
-              {/* 電球（インスピレーション）ボタン */}
               <button
-                onClick={handleUserInspiration}
-                disabled={isLoadingUserInspiration || !currentCharacter}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="返信候補を提案"
-              >
-                💡
-              </button>
-              
-              {/* キラキラ（文章強化）ボタン */}
-              <button
-                onClick={handleUserTextEnhancement}
-                disabled={isEnhancingUserText || !message.trim() || !currentCharacter}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="文章を強化"
-              >
-                ✨
-              </button>
-
-              {/* 画像生成 */}
-              <button
-                onClick={() => {
-                  const newEnableImageGeneration = !(settings.enableImageGeneration ?? true); // 現在の値を反転
-                  const newSettings = { ...settings, enableImageGeneration: newEnableImageGeneration };
-                  updateSettings(newSettings);
-                }}
-                className={`text-lg p-2 rounded-full backdrop-blur-sm transition-colors ${settings.enableImageGeneration ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-500 text-white/70 hover:bg-gray-600'}`}
-                title={settings.enableImageGeneration ? '画像生成OFF' : '画像生成ON'}
-              >
-                {settings.enableImageGeneration ? '🖼️' : '📷'}
-              </button>
-              
-              {/* メモ一覧 */}
-              <button
-                onClick={() => {
-                  // MemoListButtonの機能を直接実行
-                  const memoListButton = document.querySelector('[data-memo-list-button]') as HTMLButtonElement;
-                  if (memoListButton) memoListButton.click();
-                }}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="メモ一覧"
-              >
-                📝
-              </button>
-              
-              {/* 要約 */}
-              <button 
                 onClick={handleGenerateSummary}
-                disabled={isLoading || messages.length < 3}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="会話要約を生成"
+                disabled={isGeneratingSummary || messages.length < 3}
+                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
               >
-                📋
+                {isGeneratingSummary ? '生成中...' : '📝 要約'}
               </button>
-              
-              {/* 強化インプレッション */}
               <button
                 onClick={handleGenerateEnhancedImpression}
                 disabled={isGeneratingImpression || messages.length < 3}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-pink-400 hover:text-pink-300"
-                title="会話インプレッション（3視点）"
+                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
               >
-                💖
+                {isGeneratingImpression ? '生成中...' : '✨ 感想'}
               </button>
-              
-              {/* 再生成 */}
-              <button 
-                onClick={handleRegenerate}
-                disabled={isLoading || messages.length === 0}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="再生成"
-              >
-                🔄
-              </button>
-              
-              {/* 会話リセット */}
-              <button 
-                onClick={handleReset}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors text-white/70 hover:text-white"
-                title="会話リセット"
-              >
-                🗑️
-              </button>
-              
-              {/* 続き */}
-              <button 
-                onClick={handleContinue}
-                disabled={isLoading || messages.length === 0}
-                className="text-lg p-2 rounded-full bg-white/10 backdrop-blur-sm transition-colors disabled:opacity-50 text-white/70 hover:text-white"
-                title="続きを生成"
-              >
-                ▶️
-              </button>
-              
-
-              
-              {/* 非表示のMemoListButton（機能用） */}
-              <div className="hidden">
-                <MemoListButton currentCharacterId={currentCharacter?.name} />
+            </div>
+            
+            {/* 入力エリア */}
+            <div className="relative">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="メッセージを入力 (Ctrl+Enterで送信)"
+                className={`w-full p-4 pr-28 border border-gray-300 rounded-2xl resize-none transition-all duration-200 bg-white/90 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  isInputExpanded ? 'h-32' : 'h-16'
+                }`}
+                onFocus={() => setIsInputExpanded(true)}
+                onBlur={() => setIsInputExpanded(false)}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button
+                  onClick={handleUserInspiration}
+                  disabled={isLoadingUserInspiration}
+                  className="touch-target text-gray-500 hover:text-yellow-500 p-2 rounded-full hover:bg-yellow-100 transition-colors disabled:opacity-50"
+                  title="返信を提案"
+                >
+                  {isLoadingUserInspiration ? <Loader className="animate-spin" size={20} /> : '💡'}
+                </button>
+                <button
+                  onClick={handleUserTextEnhancement}
+                  disabled={isEnhancingUserText}
+                  className="touch-target text-gray-500 hover:text-purple-500 p-2 rounded-full hover:bg-purple-100 transition-colors disabled:opacity-50"
+                  title="文章を強化"
+                >
+                  {isEnhancingUserText ? <Loader className="animate-spin" size={20} /> : '✨'}
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={isLoading}
+                  className="touch-target bg-blue-500 text-white w-10 h-10 rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+                  title="送信 (Ctrl+Enter)"
+                >
+                  {isLoading ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* 浮動強化ボタン */}
-      {showEnhanceButton && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleTextEnhancement();
-          }}
-          className="fixed z-50 bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg shadow-lg text-sm flex items-center gap-2"
-          style={{
-            left: enhanceButtonPosition.x,
-            top: enhanceButtonPosition.y
-          }}
-          disabled={isEnhancing}
-        >
-          {isEnhancing ? <Loader size={14} className="animate-spin" /> : '✨'}
-          強化
-        </button>
-      )}
-
-      {/* 文章強化結果モーダル */}
-      {showEnhancementModal && enhancementResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                ✨ 文章強化結果
-              </h2>
-              <button
-                onClick={() => setShowEnhancementModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  元の文章
-                </h3>
-                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded border">
-                  {enhancementResult?.originalText || ''}
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  強化された文章
-                </h3>
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded border border-purple-200 dark:border-purple-700">
-                  {enhancementResult?.enhancedText || ''}
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowEnhancementModal(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={applyEnhancement}
-                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg"
-              >
-                適用
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* キャラクターギャラリー */}
-      {isCharacterGalleryOpen && (
-        <CharacterGallery
-          characters={allCharacters}
-          currentCharacter={currentCharacter}
-          onSelectCharacter={(character: Character) => {
-            setCurrentCharacter(character);
-            setIsCharacterGalleryOpen(false);
-            // 新しいキャラクターでセッションを開始
-            setCurrentSessionId(null);
-            setMessages([{
-              id: '1',
-              role: 'assistant',
-              content: Array.isArray(character.first_message) 
-                ? character.first_message.join('\n') 
-                : (character.first_message || 'こんにちは！'),
-              timestamp: Date.now()
-            }]);
-          }}
-          onAddCharacter={() => {
-            setIsCharacterGalleryOpen(false);
-            setIsCharacterModalOpen(true);
-            setEditingCharacter(null);
-          }}
-          onEditCharacter={(character: Character) => {
-            setIsCharacterGalleryOpen(false);
-            setIsCharacterModalOpen(true);
-            setEditingCharacter(character);
-          }}
-          onDeleteCharacter={(character: Character) => {
-            if (confirm(`「${character.name}」を削除しますか？`)) {
-              // 削除処理（実装予定）
-              console.log('キャラクター削除:', character.name);
-            }
-          }}
-          onImportExport={() => {
-            setIsCharacterGalleryOpen(false);
-            setIsImportExportOpen(true);
-          }}
-          onClose={() => setIsCharacterGalleryOpen(false)}
-        />
-      )}
-
-      {/* チャット履歴ギャラリー */}
-      {isChatHistoryOpen && (
-        <ChatHistoryGallery
-          sessions={sessions}
-          currentSessionId={currentSessionId}
-          onSelectSession={(sessionId: string) => {
-            if (sessionId === 'new') {
-              setCurrentSessionId(null);
-              if (currentCharacter) {
-                const firstMessage = Array.isArray(currentCharacter.first_message) 
-                  ? currentCharacter.first_message.join('\n') 
-                  : (currentCharacter.first_message || 'こんにちは！');
-                
-                setMessages([{
-                  id: crypto.randomUUID(),
-                  role: 'assistant',
-                  content: firstMessage,
-                  timestamp: Date.now()
-                }]);
-              }
-            } else {
-              historyManager.loadSession(sessionId).then(loadedSession => {
-                if (loadedSession) {
-                  setMessages(loadedSession.messages);
-                  setCurrentSessionId(sessionId);
-                }
-              });
-            }
-            setIsChatHistoryOpen(false);
-          }}
-          onDeleteSession={handleDeleteSession}
-          onClose={() => setIsChatHistoryOpen(false)}
-        />
-      )}
-
-      {/* 強化されたインプレッションモーダル */}
-      <EnhancedImpressionModal
-        isOpen={isEnhancedImpressionOpen}
-        onClose={() => setIsEnhancedImpressionOpen(false)}
-        impressions={currentImpressions}
-        isLoading={isGeneratingImpression}
-        onRegenerate={handleGenerateEnhancedImpression}
-        characterName={currentCharacter?.name}
-      />
-
-      {/* 設定モーダル */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onSave={(newSettings) => {
-          console.log('設定保存処理開始 - 新しい設定:', newSettings);
-          
-          const mergedSettings = { ...settings, ...newSettings } as AppSettings;
-          console.log('設定保存処理 - マージ後の設定:', mergedSettings);
-
-          // Zustandストアに保存
-          updateSettings(mergedSettings);
-          console.log('設定保存処理完了 - Zustandストアに保存済み');
-
-          // ElevenLabs APIキーを即座に設定
-          if (mergedSettings.elevenLabsApiKey) {
-            // VoiceManager.setApiKey(mergedSettings.elevenLabsApiKey); // 環境変数から取得するように変更したため削除
-          }
-        }}
-      />
-
-      {/* キャラクターモーダル */}
-      <CharacterModal
-        isOpen={isCharacterModalOpen}
-        onClose={() => {
-          setIsCharacterModalOpen(false);
-          setEditingCharacter(null);
-        }}
-        character={editingCharacter}
-        onSave={(character) => {
-          if (editingCharacter) {
-            CharacterLoader.updateCharacter(character);
-          } else {
-            CharacterLoader.addCharacter(character);
-          }
-          
-          // キャラクター一覧を更新
-          const updatedCharacters = CharacterLoader.getAllCharacters();
-          setAllCharacters(updatedCharacters);
-          
-          // 新規作成または編集中のキャラクターを選択
-          setCurrentCharacter(character);
-          setCurrentSessionId(null);
-          
-          const firstMessage = Array.isArray(character.first_message) 
-            ? character.first_message.join('\n') 
-            : (character.first_message || 'こんにちは！');
-            
-          console.log('保存後のキャラクター選択:', character.name, firstMessage);
-          
-          setMessages([{
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: firstMessage,
-            timestamp: Date.now()
-          }]);
-        }}
-      />
-
-      {/* Personaモーダル */}
-      <PersonaModal
-        isOpen={isPersonaModalOpen}
-        onClose={() => {
-          setIsPersonaModalOpen(false);
-          setEditingPersona(null);
-        }}
-        persona={editingPersona}
-        onSave={(persona) => {
-          let updatedPersonas;
-          if (editingPersona) {
-            updatedPersonas = allPersonas.map(p => p.id === persona.id ? persona : p);
-          } else {
-            updatedPersonas = [...allPersonas, persona];
-          }
-          
-          setAllPersonas(updatedPersonas);
-          localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
-          
-          // 新規作成または編集したPersonaを選択
-          setCurrentPersona(persona);
-        }}
-      />
-
-      {/* インポート/エクスポートモーダル */}
-      <CharacterImportExport
-        isOpen={isImportExportOpen}
-        onClose={() => setIsImportExportOpen(false)}
-        allCharacters={allCharacters}
-        onImport={(importedCharacters: Character[]) => {
-          // インポートされたキャラクターを追加
-          importedCharacters.forEach((character: Character) => {
-            CharacterLoader.addCharacter(character);
-          });          
-          // キャラクター一覧を更新
-          const updatedCharacters = CharacterLoader.getAllCharacters();
-          setAllCharacters(updatedCharacters);
-        }}
-      />
-
-      {/* 会話要約モーダル */}
-      <ChatSummaryModal
-        isOpen={isSummaryOpen}
-        onClose={() => setIsSummaryOpen(false)}
-        summary={currentSummary}
-        isLoading={isGeneratingSummary}
-        sessionTitle={currentSessionId ? sessions.find(s => s.id === currentSessionId)?.title || '新しいチャット' : '新しいチャット'}
-        characterName={currentCharacter?.name || 'AI'}
-        onSaveSummary={(summary) => {
-          // 要約保存機能（後で実装可能）
-          console.log('Summary saved:', summary);
-        }}
-      />
-
-      {/* シンプル背景アップロードモーダル */}
-      {isThemeModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4">背景設定</h2>
-            
-            <div className="space-y-4">
-              {/* 現在の背景 */}
-              {settings.customBackground && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">現在の背景:</p>
-                  <div 
-                    className="w-full h-32 rounded-lg bg-cover bg-center border"
-                    style={{ backgroundImage: `url(${settings.customBackground})` }}
-                  />
-                </div>
-              )}
-
-              {/* 高度なアップロードボタン（圧縮・動画対応） */}
-              <div>
-                <label className="block">
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        console.log('📁 ファイル選択:', file.name, 'サイズ:', Math.round(file.size / 1024), 'KB');
-                        
-                        try {
-                          let result: string;
-                          
-                          if (file.type.startsWith('video/')) {
-                            // 動画ファイルの処理
-                            console.log('🎥 動画ファイルを処理中...');
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const videoResult = reader.result as string;
-                              console.log('✅ 動画アップロード完了');
-                              handleThemeChange('custom', videoResult);
-                              setIsThemeModalOpen(false);
-                            };
-                            reader.readAsDataURL(file);
-                          } else {
-                            // 画像ファイルの自動圧縮処理
-                            console.log('🖼️ 画像を圧縮中...');
-                            result = await compressImage(file);
-                            console.log('✅ 画像圧縮完了');
-                            handleThemeChange('custom', result);
-                            setIsThemeModalOpen(false);
-                          }
-                        } catch (error) {
-                          console.error('❌ ファイル処理エラー:', error);
-                          alert('ファイルの処理に失敗しました');
-                        }
-                      }
-                    }}
-                    className="hidden"
-                  />
-                  <div className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-400 transition-colors">
-                    <p className="text-gray-600">画像・動画をアップロード</p>
-                    <p className="text-sm text-gray-400 mt-1">クリックして画像・動画を選択（自動圧縮）</p>
-                  </div>
-                </label>
-              </div>
-
-              {/* モバイル対応背景削除ボタン */}
-              {settings.customBackground && (
-                <button
-                  onClick={() => {
-                    handleThemeChange('white', undefined);
-                    setIsThemeModalOpen(false);
-                  }}
-                  className="w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-base min-h-[44px] flex items-center justify-center"
-                  style={{ WebkitTapHighlightColor: 'transparent' }}
-                >
-                  背景を削除（白背景に戻す）
-                </button>
-              )}
-            </div>
-
-            {/* モバイル対応ボタン行 */}
-            <div className="flex flex-col gap-3 mt-6 pt-4 border-t border-gray-200 sm:flex-row">
-              <button
-                onClick={() => setIsThemeModalOpen(false)}
-                className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium text-base min-h-[44px] flex items-center justify-center"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 認証・クラウド同期モーダル */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onDataSync={(syncedData) => {
-          // 同期されたデータを反映
-          setAllCharacters(syncedData.characters)
-          setAllPersonas(syncedData.personas)
-          // 設定をZustandストアに反映
-          updateSettings(syncedData.settings)
-          // メモデータも反映（chatStoreを使用）
-          localStorage.setItem('ai-chat-characters', JSON.stringify(syncedData.characters))
-          localStorage.setItem('ai-chat-personas', JSON.stringify(syncedData.personas))
-        }}
-      />
-
-      {/* インスピレーション候補選択モーダル */}
-      <InspirationModal
-        isOpen={showInspiration}
-        candidates={inspirationCandidates}
-        onSelect={(selectedText: string) => {
-          // 選択した候補をキャラクターの返信として確定
-          const aiResponse: Message = {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: selectedText,
-            timestamp: Date.now(),
-          };
-          setMessages(prev => [...prev, aiResponse]);
-          setShowInspiration(false);
-          setInspirationCandidates([]);
-          
-          // 通知音を再生
-          if (settings.chatNotificationSound) {
-            VoiceManager.playNotificationSound(true, 0.3);
-          }
-          
-          // 画像生成（必要な場合）
-          if (settings.enableImageGeneration) {
-            handleImageGeneration(aiResponse, selectedText);
-          }
-        }}
-        onClose={() => {
-          setShowInspiration(false);
-          setInspirationCandidates([]);
-        }}
-      />
-
-      {/* ユーザーインスピレーション候補選択モーダル */}
-      <UserInspirationModal
-        isOpen={showUserInspiration}
-        candidates={userInspirationCandidates}
-        onSelect={(selectedText: string) => {
-          setMessage(selectedText);
-          setShowUserInspiration(false);
-          setUserInspirationCandidates([]);
-        }}
-        onClose={() => {
-          setShowUserInspiration(false);
-          setUserInspirationCandidates([]);
-        }}
-      />
-
-      {/* Personaインポート/エクスポートモーダル */}
-      <PersonaImportExport
-        isOpen={isPersonaImportExportOpen}
-        onClose={() => setIsPersonaImportExportOpen(false)}
-        allPersonas={allPersonas}
-        onImport={(importedPersonas: UserPersona[]) => {
-          // インポートされたPersonaを追加
-          const updatedPersonas = [...allPersonas];
-          importedPersonas.forEach((importedPersona: UserPersona) => {
-            // 既存のPersonaと重複チェック（IDまたは名前）
-            const existingIndex = updatedPersonas.findIndex(p => p.id === importedPersona.id || p.name === importedPersona.name);
-            if (existingIndex >= 0) {
-              // 既存のPersonaを更新
-              updatedPersonas[existingIndex] = importedPersona;
-            } else {
-              // 新しいPersonaを追加
-              updatedPersonas.push(importedPersona);
-            }
-          });
-          
-          setAllPersonas(updatedPersonas);
-          localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
-        }}
-      />
     </div>
   );
 }

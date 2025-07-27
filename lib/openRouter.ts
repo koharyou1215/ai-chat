@@ -54,6 +54,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     }
   });
 
+  console.log('🌐 OpenRouter API呼び出し開始');
+  
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -65,9 +67,24 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     body: JSON.stringify(requestBody),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} ${text}`);
+  console.log('📡 OpenRouter APIレスポンス:', response.status, response.statusText);
+
+      if (!response.ok) {
+      let errorText;
+      try {
+        errorText = await response.text();
+      } catch {
+        errorText = 'レスポンステキストの読み取りに失敗';
+      }
+    
+    console.error('❌ OpenRouter API エラー:', {
+      status: response.status,
+      statusText: response.statusText,
+      errorText: errorText,
+      url: response.url
+    });
+    
+    throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const data = await response.json();
