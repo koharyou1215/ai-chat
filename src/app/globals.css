@@ -39,14 +39,29 @@
 /* モバイルでのスクロール固定のためのスタイル */
 @media (max-width: 768px) {
   body {
-    position: fixed;
-    width: 100%;
-    height: 100dvh;
-    overflow: hidden;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
   }
   
   .chat-container {
-    touch-action: pan-y;
+    touch-action: pan-y !important;
+  }
+}
+
+/* デプロイ時のCSS適用確保 */
+@layer base {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  
+  .chat-container {
+    touch-action: pan-y !important;
   }
 }
 

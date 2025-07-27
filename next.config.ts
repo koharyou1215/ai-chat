@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import path from 'path'
 
 const nextConfig: NextConfig = {
   trailingSlash: true,
@@ -14,9 +15,16 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Vercelデプロイ時の静的ファイル配信確保
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   // CSS最適化の問題を修正
   experimental: {
     optimizeCss: false,
+  },
+  // デプロイ時のCSS適用確保
+  compiler: {
+    removeConsole: false,
   },
   // 本番環境でのCSS適用確保
   webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
@@ -39,6 +47,19 @@ const nextConfig: NextConfig = {
           {
             key: 'Content-Security-Policy',
             value: "style-src 'self' 'unsafe-inline'; font-src 'self' data:;",
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/globals.css',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
           },
         ],
       },

@@ -162,14 +162,55 @@ export class CharacterLoader {
     try {
       console.log('🔄 publicキャラクター読み込み開始...');
       
-      // public/characters/ の一覧を取得（キャッシュバスティング追加）
-      const response = await fetch('/api/list-characters?t=' + Date.now());
-      if (!response.ok) {
-        console.warn('キャラクター一覧取得失敗:', response.status);
+      // 複数のエンドポイントを試行
+      const endpoints = [
+        '/api/list-characters?t=' + Date.now(),
+        '/api/list-characters',
+        '/characters/character/'
+      ];
+      
+      let fileList: string[] = [];
+      let success = false;
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔄 エンドポイント試行: ${endpoint}`);
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          
+          if (response.ok) {
+            if (endpoint.includes('/api/')) {
+              fileList = await response.json();
+            } else {
+              // ディレクトリ一覧を取得する場合の処理
+              const text = await response.text();
+              // 簡易的なHTMLパース（実際の実装ではより堅牢にする）
+              const matches = text.match(/href="([^"]*\.json)"/g);
+              if (matches) {
+                fileList = matches.map(match => match.replace(/href="([^"]*\.json)"/, '$1'));
+              }
+            }
+            console.log(`✅ エンドポイント成功: ${endpoint}`, fileList);
+            success = true;
+            break;
+          } else {
+            console.warn(`⚠️ エンドポイント失敗: ${endpoint} - ${response.status}`);
+          }
+        } catch (error) {
+          console.error(`❌ エンドポイントエラー: ${endpoint}`, error);
+        }
+      }
+      
+      if (!success) {
+        console.error('❌ すべてのエンドポイントが失敗しました');
         return;
       }
       
-      const fileList: string[] = await response.json();
       console.log('📋 取得したファイル一覧:', fileList);
       const newPublicCharacters: Character[] = [];
       
@@ -179,9 +220,30 @@ export class CharacterLoader {
         
         try {
           console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
-          const charResponse = await fetch(`/characters/character/${filename}`);
           
-          if (charResponse.ok) {
+          // 複数のパスを試行
+          const paths = [
+            `/characters/character/${filename}`,
+            `/characters/${filename}`,
+            `/public/characters/character/${filename}`
+          ];
+          
+          let charResponse: Response | null = null;
+          for (const path of paths) {
+            try {
+              charResponse = await fetch(path, {
+                headers: {
+                  'Cache-Control': 'no-cache',
+                  'Pragma': 'no-cache'
+                }
+              });
+              if (charResponse.ok) break;
+            } catch (error) {
+              console.warn(`⚠️ パス失敗: ${path}`, error);
+            }
+          }
+          
+          if (charResponse && charResponse.ok) {
             const characterData = await charResponse.json();
             console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
             
@@ -191,7 +253,7 @@ export class CharacterLoader {
             console.log(`🔄 正規化完了: ${normalizedCharacter.name}`);
             newPublicCharacters.push(normalizedCharacter);
           } else {
-            console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status}`);
+            console.error(`❌ キャラクター読み込み失敗: ${filename}`);
           }
         } catch (error) {
           console.error(`❌ キャラクター読み込みエラー: ${filename}`, error);

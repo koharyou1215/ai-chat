@@ -1550,7 +1550,8 @@ export default function ChatPage() {
           background: '#ffffff',
           overflow: 'hidden',
           height: '100dvh',
-          minHeight: '100dvh' // 追加：最小高さを保証
+          minHeight: '100dvh', // 追加：最小高さを保証
+          touchAction: 'pan-y' // デプロイ時のタッチアクション確保
         }}
       >
         {/* 動的背景（画像・動画対応） */}
