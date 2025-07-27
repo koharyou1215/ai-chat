@@ -88,9 +88,10 @@ ai-chat/
 
 ### 環境変数（Vercel）
 ```bash
-OPENROUTER_API_KEY=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
-RUNWARE_MODEL_ID=rundiffusion:130@100
-RUNWARE_API_KEY=zj7h0aPEZpgG4GczcCGzvuuVlcYG5Ik5
+# セキュリティのため、実際のAPIキーは環境変数で管理してください
+# OPENROUTER_API_KEY=your_openrouter_api_key_here
+# RUNWARE_MODEL_ID=your_runware_model_id_here
+# RUNWARE_API_KEY=your_runware_api_key_here
 ```
 
 ### 型定義（types/app.ts）

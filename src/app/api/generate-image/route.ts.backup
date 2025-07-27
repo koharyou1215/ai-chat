@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const requestBodyJson = await request.json(); // ここで await を使ってJSONをパース
     const {
       prompt,
-      modelId = process.env.RUNWARE_MODEL_ID || "rundiffusion:130@100",
+      modelId = process.env.RUNWARE_MODEL_ID || "your_runware_model_id_here",
       aspectRatio = "square",
       safetyChecker = "off",
       settings // settingsオブジェクトもここで取得

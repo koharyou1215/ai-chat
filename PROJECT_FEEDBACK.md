@@ -49,7 +49,7 @@
 
 #### 詳細
 - エラー: `OpenRouter API error: 401 {"error":{"message":"No auth credentials found","code":401}}`
-- APIキー形式: `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`
+- APIキー形式: `sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 - 環境変数は正しく設定済み
 
 #### 解決方法
