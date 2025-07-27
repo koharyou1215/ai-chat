@@ -476,6 +476,9 @@ export default function ChatPage() {
       // キャラクターを読み込み（CharacterLoaderで一元管理）
       console.log('🔄 キャラクター読み込み開始...');
       
+      // CharacterLoaderを初期化（組み込みキャラクター + カスタムキャラクター）
+      CharacterLoader.initialize();
+      
       // publicキャラクターをCharacterLoaderに読み込ませる
       await CharacterLoader.loadPublicCharacters();
       

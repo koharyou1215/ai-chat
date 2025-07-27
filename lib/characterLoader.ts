@@ -266,6 +266,16 @@ export class CharacterLoader {
     }
   }
 
+  // 非同期でpublicキャラクターを読み込む
+  static async initializeAsync() {
+    console.log('🔄 非同期キャラクター初期化開始...');
+    this.initialize(); // まず同期初期化
+    
+    // publicキャラクターを非同期で読み込み
+    await this.loadPublicCharacters();
+    console.log('✅ 非同期キャラクター初期化完了');
+  }
+
   static removeCharacter(id: string): boolean {
     this.initialize();
     
