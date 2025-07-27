@@ -61,15 +61,9 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
         relationship_with_user: ''
       },
       nsfw_profile: data.nsfw_profile ? {
-        persona: data.nsfw_profile.persona || '',
-        libido_level: '普通',
-        limits: {
-          hard: [],
-          soft: []
-        },
-        kinks: [],
-        involuntary_reactions: '',
-        orgasm_details: ''
+        situation: data.nsfw_profile.situation || '',
+        mental_state: data.nsfw_profile.mental_state || '',
+        status: data.nsfw_profile.status || ''
       } : undefined
     }
   };

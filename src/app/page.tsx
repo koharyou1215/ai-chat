@@ -482,6 +482,7 @@ export default function ChatPage() {
       // 全キャラクターを取得（組み込み + カスタム + public）
       const allCharacters = CharacterLoader.getAllCharacters();
       console.log('📊 総キャラクター数:', allCharacters.length);
+      console.log('📋 読み込まれたキャラクター一覧:', allCharacters.map(c => c.name));
       setAllCharacters(allCharacters);
       
       // Personaを読み込み（保存済み + 自動読み込み）

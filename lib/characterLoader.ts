@@ -176,6 +176,7 @@ export class CharacterLoader {
       }
       
       const fileList: string[] = await response.json();
+      console.log('📋 取得したファイル一覧:', fileList);
       const newPublicCharacters: Character[] = [];
       
       // 各JSONファイルを読み込み
@@ -193,6 +194,7 @@ export class CharacterLoader {
             // 簡易形式のキャラクターファイルを完全形式に変換
             const { normalizeCharacterData } = await import('./autoLoader');
             const normalizedCharacter = normalizeCharacterData(characterData, filename);
+            console.log(`🔄 正規化完了: ${normalizedCharacter.name}`);
             newPublicCharacters.push(normalizedCharacter);
           } else {
             console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status}`);
@@ -207,6 +209,7 @@ export class CharacterLoader {
       this.savePublicCharactersToLocalStorage();
       
       console.log(`✅ publicキャラクター読み込み完了: ${newPublicCharacters.length} 件`);
+      console.log('📊 読み込まれたキャラクター:', newPublicCharacters.map(c => c.name));
     } catch (error) {
       console.error('❌ publicキャラクター読み込みエラー:', error);
     }
