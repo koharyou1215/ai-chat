@@ -1543,13 +1543,14 @@ export default function ChatPage() {
 
   return (
     <>
-      <div 
-        ref={mainContainerRef} 
-        className="flex relative"
-        style={{ 
+      <div
+        ref={mainContainerRef}
+        className="flex relative w-full chat-container"
+        style={{
           background: '#ffffff',
-          height: '100vh',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          height: '100dvh',
+          minHeight: '100dvh' // 追加：最小高さを保証
         }}
       >
         {/* 動的背景（画像・動画対応） */}
@@ -1950,7 +1951,7 @@ export default function ChatPage() {
           </div>
 
           {/* チャットメッセージエリア */}
-          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto">
+          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pb-safe">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' ? (
@@ -2088,7 +2089,7 @@ export default function ChatPage() {
           </div>
 
           {/* メッセージ入力フォーム */}
-          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 sticky bottom-0 z-40">
+          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm sticky bottom-0 z-40">
             <div className="max-w-4xl mx-auto">
               {/* アクションボタン */}
               <div className="flex gap-1 md:gap-2 mb-2 flex-wrap">
@@ -2160,7 +2161,7 @@ export default function ChatPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="メッセージを入力 (Ctrl+Enterで送信)"
-                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 shadow-md rounded-full resize-none transition-all duration-200 bg-white/70 text-gray-800 placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base ${
+                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 shadow-md rounded-full resize-none transition-all duration-200 bg-white/70 text-gray-800 placeholder-gray-600 focus:outline-none focus:ring-0 border-0 text-sm md:text-base ${
                     isInputExpanded ? 'h-24 md:h-32' : 'h-12 md:h-16'
                   }`}
                   onFocus={() => setIsInputExpanded(true)}

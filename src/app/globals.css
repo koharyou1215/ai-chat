@@ -36,6 +36,20 @@
   }
 }
 
+/* モバイルでのスクロール固定のためのスタイル */
+@media (max-width: 768px) {
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  
+  .chat-container {
+    touch-action: pan-y;
+  }
+}
+
 /* デプロイ後のCSS適用問題を解決するための緊急措置 */
 @layer base {
   html {
