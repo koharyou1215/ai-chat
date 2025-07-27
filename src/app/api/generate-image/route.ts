@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // 環境変数を最優先で取得 - Runware
     const envRunwareApiKey = process.env.RUNWARE_API_KEY;
-    const settingsRunwareApiKey = settings?.runwareApikey; // settingsから取得
+    const settingsRunwareApiKey = settings?.runwareApiKey; // settingsから取得
     const runwareApiKey = envRunwareApiKey || settingsRunwareApiKey;
     
     // デバッグ用：環境変数の詳細確認

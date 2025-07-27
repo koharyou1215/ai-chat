@@ -331,7 +331,8 @@ export default function ChatPage() {
       console.error('Enhanced impression generation error:', error);
       alert('インプレッションの生成中にエラーが発生しました');
       setIsEnhancedImpressionOpen(false);
-    } finally {
+    }
+ finally {
       setIsGeneratingImpression(false);
     }
   };
@@ -657,8 +658,7 @@ export default function ChatPage() {
             aiContent = chatData.content;
           } else {
             // コンテンツがない場合のフォールバック
-            aiContent = 'ごめんなさい、応答を生成できませんでした。モデルが一時的に利用できない可能性があります。しばらくしてからもう一度お試しください。';
-            setIsLoading(false); // ローディングを解除
+            aiContent = 'ごめんなさい、応答を生成できませんでした。もう一度お試しください。';
           }
         } else {
           // APIエラーの場合
@@ -1367,7 +1367,7 @@ export default function ChatPage() {
 
       const imageData = await imageResponse.json();
       if (imageData.success) {
-        setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, image: imageData.image } : m));
+        setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, image: imageData.imageUrl } : m));
       }
     } catch (e) {
       console.error('Image reroll error:', e);
@@ -1397,374 +1397,153 @@ export default function ChatPage() {
 
 
   return (
+    <>
       <div 
         ref={mainContainerRef} 
-        className="flex h-screen relative overflow-hidden"
+        className="flex h-screen relative"
         style={{ 
           background: '#ffffff',
           height: '-webkit-fill-available'
         }}
       >
-      {/* 動的背景（画像・動画対応） */}
-      <div 
-        id="dynamic-background"
-        className="fixed inset-0 w-full h-full z-0"
-        style={{
-          background: '#ffffff',
-          backgroundSize: 'auto',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      {/* モバイル用オーバーレイ */}
-      {isSidebarOpen && (
+        {/* 動的背景（画像・動画対応） */}
         <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
+          id="dynamic-background"
+          className="fixed inset-0 w-full h-full z-0"
+          style={{
+            background: '#ffffff',
+            backgroundSize: 'auto',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
         />
-      )}
-      
-      {/* サイドバー */}
-      <div className={`
-        ${isSidebarOpen ? 'w-80' : 'w-0'} 
-        bg-black/80 backdrop-blur-md border-r border-white/20 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
-        relative z-50
-        ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
-      `}
-      style={{
-        backdropFilter: 'blur(20px)',
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
-        boxShadow: '0 0 30px rgba(0, 0, 0, 0.5)'
-      }}>
-        <div className="min-w-80 flex flex-col h-full">
-          {/* タブナビゲーション */}
-          <div className="flex-shrink-0 border-b border-white/30">
-            <div className="flex">
-              <button
-                onClick={() => setActiveTab('characters')}
-                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                  activeTab === 'characters' 
-                    ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                👤 キャラクター
-              </button>
-              <button
-                onClick={() => setActiveTab('personas')}
-                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                  activeTab === 'personas' 
-                    ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                🎭 ペルソナ
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                  activeTab === 'history' 
-                    ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                📚 履歴
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-                  activeTab === 'settings' 
-                    ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                ⚙️ 設定
-              </button>
-            </div>
-        </div>
-
-          {/* タブコンテンツ */}
-          <div className="flex-1 overflow-hidden">
-            {/* キャラクタータブ */}
-            {activeTab === 'characters' && (
-              <div className="h-full flex flex-col">
-          <CharacterSelector
-          characters={allCharacters}
-          currentCharacter={currentCharacter}
-          onSelectCharacter={(character: Character) => {
-            console.log('キャラクター変更:', character.name);
-            
-            // キャラクターを設定
-            setCurrentCharacter(character);
-            
-            // 現在のセッションをクリア
-            setCurrentSessionId(null);
-            
-            // 音声再生を停止
-            VoiceManager.stopAudio();
-            
-            // 新しいキャラクターの初回メッセージを設定
-            const firstMessage = Array.isArray(character.first_message) 
-              ? character.first_message.join('\n') 
-              : (character.first_message || 'こんにちは！');
-              
-            console.log('初回メッセージ設定:', firstMessage);
-            
-            setMessages([{
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              content: firstMessage,
-              timestamp: Date.now()
-            }]);
-          }}
-          onAddCharacter={() => {
-            setEditingCharacter(null);
-            setIsCharacterModalOpen(true);
-          }}
-          onEditCharacter={(character: Character) => {
-            setEditingCharacter(character);
-            setIsCharacterModalOpen(true);
-          }}
-          onDeleteCharacter={(character: Character) => {
-            if (confirm(`「${character.name}」を削除しますか？`)) {
-              CharacterLoader.deleteCharacter(character.name);
-              const updatedCharacters = CharacterLoader.getAllCharacters();
-              setAllCharacters(updatedCharacters);
-              
-              // 削除したキャラクターが現在選択中の場合
-              if (currentCharacter?.name === character.name) {
-                const firstCharacter = updatedCharacters[0];
-                if (firstCharacter) {
-                  console.log('削除後の代替キャラクター:', firstCharacter.name);
-                  setCurrentCharacter(firstCharacter);
-                  setCurrentSessionId(null);
-                  
-                  const firstMessage = Array.isArray(firstCharacter.first_message) 
-                    ? firstCharacter.first_message.join('\n') 
-                    : (firstCharacter.first_message || 'こんにちは！');
-                    
-                  setMessages([{
-                    id: crypto.randomUUID(),
-                    role: 'assistant',
-                    content: firstMessage,
-                    timestamp: Date.now()
-                  }]);
-                } else {
-                  setCurrentCharacter(null);
-                  setMessages([]);
-                }
-              }
-            }
-          }}
-          onImportExport={() => setIsImportExportOpen(true)}
-        />
-              </div>
-            )}
-
-            {/* ペルソナタブ */}
-            {activeTab === 'personas' && (
-              <div className="h-full flex flex-col">
-                <PersonaSelector
-                  personas={allPersonas}
-                  currentPersona={currentPersona}
-                  onSelectPersona={setCurrentPersona}
-                  onAddPersona={() => {
-                    setEditingPersona(null);
-                    setIsPersonaModalOpen(true);
-                  }}
-                  onEditPersona={(persona) => {
-                    setEditingPersona(persona);
-                    setIsPersonaModalOpen(true);
-                  }}
-                  onDeletePersona={(persona) => {
-                    if (confirm(`「${persona.name}」を削除しますか？`)) {
-                      const updatedPersonas = allPersonas.filter(p => p.id !== persona.id);
-                      setAllPersonas(updatedPersonas);
-                      localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
-                      
-                      if (currentPersona?.id === persona.id) {
-                        setCurrentPersona(null);
-                      }
-                    }
-                  }}
-                  onImportExport={() => setIsPersonaImportExportOpen(true)}
-                />
-              </div>
-            )}
-
-            {/* 履歴タブ */}
-            {activeTab === 'history' && (
-              <div className="h-full flex flex-col">
-                {/* スクロール可能な履歴エリア */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 chat-history-scroll">
-                  {sessions.slice(0, 50).map((session) => (
-                    <div
-                      key={session.id}
-                      onClick={async () => {
-                        try {
-                          const loadedSession = await historyManager.loadSession(session.id);
-                          if (loadedSession) {
-                            setMessages(loadedSession.messages);
-                            setCurrentSessionId(session.id);
-                          }
-                        } catch (error) {
-                          console.error('セッション読み込みエラー:', error);
-                        }
-                      }}
-                      className={`group bg-white/20 backdrop-blur-md rounded-lg p-3 cursor-pointer hover:bg-white/30 transition-all duration-200 relative ${
-                        currentSessionId === session.id ? 'ring-2 ring-blue-400 bg-blue-400/30' : ''
-                      } hover:shadow-lg hover:scale-[1.02]`}
-                    >
-                      {/* 削除ボタン */}
-                      <button
-                        onClick={(e) => handleDeleteSession(session.id, e)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/70 hover:text-red-400 hover:bg-red-500/30 rounded-full p-1"
-                        title="履歴を削除"
-                      >
-                        <X size={12} />
-                      </button>
-
-                      <div className="text-white text-sm font-medium truncate mb-1 pr-6">
-                        {session.title}
-                      </div>
-                      <div className="text-white/90 text-xs truncate mb-2 leading-relaxed">
-                        {session.lastMessage}
-                      </div>
-                      <div className="text-white/70 text-xs flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Clock size={10} />
-                          {new Date(session.updatedAt).toLocaleDateString('ja-JP', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                        {currentSessionId === session.id && (
-                          <div className="text-blue-400 text-xs font-medium">
-                            ● 現在
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* 履歴が多い場合の表示制限通知 */}
-                  {sessions.length > 50 && (
-                    <div className="text-white/40 text-xs text-center py-2 px-3 bg-white/5 rounded-lg">
-                      最新50件を表示中 (全{sessions.length}件)
-                    </div>
-                  )}
-                  
-                  {sessions.length === 0 && (
-                    <div className="text-white/80 text-sm text-center py-8">
-                      <MessageSquare size={24} className="mx-auto mb-2 opacity-70" />
-                      まだ履歴がありません
-                      <p className="text-xs mt-1 text-white/60">
-                        最初のメッセージを送信すると履歴が作成されます
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 設定タブ */}
-            {activeTab === 'settings' && (
-              <div className="h-full flex flex-col p-4 space-y-2">
-                <button 
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+        {/* モバイル用オーバーレイ */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
+        {/* サイドバー */}
+        <div className={`
+          ${isSidebarOpen ? 'w-80' : 'w-0'} 
+          bg-black/80 backdrop-blur-md border-r border-white/20 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
+          relative z-50
+          ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
+        `}
+        style={{
+          backdropFilter: 'blur(20px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          boxShadow: '0 0 30px rgba(0, 0, 0, 0.5)'
+        }}>
+          <div className="min-w-80 flex flex-col h-full">
+            {/* タブナビゲーション */}
+            <div className="flex-shrink-0 border-b border-white/30">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('characters')}
+                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                    activeTab === 'characters' 
+                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
-                  <Cloud size={16} />
-                  クラウド同期
+                  👤 キャラクター
                 </button>
-                <button 
-                  onClick={() => setIsThemeModalOpen(true)}
-                  className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                <button
+                  onClick={() => setActiveTab('personas')}
+                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                    activeTab === 'personas' 
+                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
-                  <Palette size={16} />
-                  テーマ変更
+                  🎭 ペルソナ
                 </button>
-                <button 
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                    activeTab === 'history' 
+                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
-                  <Settings size={16} />
-                  設定
+                  📚 履歴
                 </button>
-                <button 
-                  onClick={handleImageTest}
-                  disabled={isGeneratingImage}
-                  className="w-full bg-yellow-500/20 backdrop-blur-sm text-yellow-200 py-3 px-4 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                    activeTab === 'settings' 
+                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
-                  🖼️
-                  画像生成テスト
+                  ⚙️ 設定
                 </button>
               </div>
-            )}
           </div>
-        </div>
 
-        {/* モバイル用クイック操作（設定・テーマ・同期） */}
-        <div className="p-4 border-t border-white/30 flex-shrink-0 space-y-2 md:hidden">
-          <button 
-            onClick={() => setIsAuthModalOpen(true)}
-            className="touch-target w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <Cloud size={16} />
-            クラウド同期
-          </button>
-          <button 
-            onClick={() => setIsThemeModalOpen(true)}
-            className="touch-target w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <Palette size={16} />
-            テーマ
-          </button>
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="touch-target w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <Settings size={16} />
-            設定
-          </button>
-        </div>
-
-        {/* チャット履歴 */}
-        <div className="flex-1 flex flex-col min-h-0 safe-area-bottom">
-          <div className="p-4 border-b border-white/30 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <h2 className="text-white font-semibold flex items-center gap-2">
-                <MessageSquare size={20} />
-                チャット履歴
-                <span className="bg-white/30 text-white px-2 py-1 rounded-full text-xs">
-                  {sessions.length}
-                </span>
-              </h2>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setIsChatHistoryOpen(true)}
-                  className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/20 transition-colors"
-                  title="履歴ギャラリー"
-                >
-                  <Grid size={16} />
-                </button>
-                <button
-                  onClick={() => {
-                    console.log('新しいチャット開始');
+            {/* タブコンテンツ */}
+            <div className="flex-1 overflow-hidden">
+              {/* キャラクタータブ */}
+              {activeTab === 'characters' && (
+                <div className="h-full flex flex-col">
+            <CharacterSelector
+            characters={allCharacters}
+            currentCharacter={currentCharacter}
+            onSelectCharacter={(character: Character) => {
+              console.log('キャラクター変更:', character.name);
+              
+              // キャラクターを設定
+              setCurrentCharacter(character);
+              
+              // 現在のセッションをクリア
+              setCurrentSessionId(null);
+              
+              // 音声再生を停止
+              VoiceManager.stopAudio();
+              
+              // 新しいキャラクターの初回メッセージを設定
+              const firstMessage = Array.isArray(character.first_message) 
+                ? character.first_message.join('\n') 
+                : (character.first_message || 'こんにちは！');
+                
+              console.log('初回メッセージ設定:', firstMessage);
+              
+              setMessages([{
+                id: crypto.randomUUID(),
+                role: 'assistant',
+                content: firstMessage,
+                timestamp: Date.now()
+              }]);
+            }}
+            onAddCharacter={() => {
+              setEditingCharacter(null);
+              setIsCharacterModalOpen(true);
+            }}
+            onEditCharacter={(character: Character) => {
+              setEditingCharacter(character);
+              setIsCharacterModalOpen(true);
+            }}
+            onDeleteCharacter={(character: Character) => {
+              if (confirm(`「${character.name}」を削除しますか？`)) {
+                CharacterLoader.deleteCharacter(character.name);
+                const updatedCharacters = CharacterLoader.getAllCharacters();
+                setAllCharacters(updatedCharacters);
+                
+                // 削除したキャラクターが現在選択中の場合
+                if (currentCharacter?.name === character.name) {
+                  const firstCharacter = updatedCharacters[0];
+                  if (firstCharacter) {
+                    console.log('削除後の代替キャラクター:', firstCharacter.name);
+                    setCurrentCharacter(firstCharacter);
                     setCurrentSessionId(null);
-                  
-                  // 音声再生を停止
-                  VoiceManager.stopAudio();
-                  
-                  if (currentCharacter) {
-                    const firstMessage = Array.isArray(currentCharacter.first_message) 
-                      ? currentCharacter.first_message.join('\n') 
-                      : (currentCharacter.first_message || 'こんにちは！');
                     
-                    console.log('新しいチャットの初回メッセージ:', firstMessage);
-                    
+                    const firstMessage = Array.isArray(firstCharacter.first_message) 
+                      ? firstCharacter.first_message.join('\n') 
+                      : (firstCharacter.first_message || 'こんにちは！');
+                      
                     setMessages([{
                       id: crypto.randomUUID(),
                       role: 'assistant',
@@ -1772,367 +1551,502 @@ export default function ChatPage() {
                       timestamp: Date.now()
                     }]);
                   } else {
+                    setCurrentCharacter(null);
                     setMessages([]);
                   }
-                }}
-                className="touch-target text-white/80 hover:text-white p-2 rounded hover:bg-white/20 transition-colors"
-                title="新しいチャット"
-              >
-                <Plus size={16} />
-              </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* スクロール可能な履歴エリア */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 chat-history-scroll">
-            {sessions.slice(0, 50).map((session) => (
-              <div
-                key={session.id}
-                onClick={async () => {
-                  try {
-                    const loadedSession = await historyManager.loadSession(session.id);
-                    if (loadedSession) {
-                      setMessages(loadedSession.messages);
-                      setCurrentSessionId(session.id);
-                    }
-                  } catch (error) {
-                    console.error('セッション読み込みエラー:', error);
-                  }
-                }}
-                className={`group bg-white/20 backdrop-blur-md rounded-lg p-3 cursor-pointer hover:bg-white/30 transition-all duration-200 relative ${
-                  currentSessionId === session.id ? 'ring-2 ring-blue-400 bg-blue-400/30' : ''
-                } hover:shadow-lg hover:scale-[1.02]`}
-              >
-                {/* 削除ボタン */}
-                <button
-                  onClick={(e) => handleDeleteSession(session.id, e)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/70 hover:text-red-400 hover:bg-red-500/30 rounded-full p-1"
-                  title="履歴を削除"
-                >
-                  <X size={12} />
-                </button>
+                }
+              }
+            }}
+            onImportExport={() => setIsImportExportOpen(true)}
+          />
+                </div>
+              )}
 
-                <div className="text-white text-sm font-medium truncate mb-1 pr-6">
-                  {session.title}
+              {/* ペルソナタブ */}
+              {activeTab === 'personas' && (
+                <div className="h-full flex flex-col">
+                  <PersonaSelector
+                    personas={allPersonas}
+                    currentPersona={currentPersona}
+                    onSelectPersona={setCurrentPersona}
+                    onAddPersona={() => {
+                      setEditingPersona(null);
+                      setIsPersonaModalOpen(true);
+                    }}
+                    onEditPersona={(persona) => {
+                      setEditingPersona(persona);
+                      setIsPersonaModalOpen(true);
+                    }}
+                    onDeletePersona={(persona) => {
+                      if (confirm(`「${persona.name}」を削除しますか？`)) {
+                        const updatedPersonas = allPersonas.filter(p => p.id !== persona.id);
+                        setAllPersonas(updatedPersonas);
+                        localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
+                        
+                        if (currentPersona?.id === persona.id) {
+                          setCurrentPersona(null);
+                        }
+                      }
+                    }}
+                    onImportExport={() => setIsPersonaImportExportOpen(true)}
+                  />
                 </div>
-                <div className="text-white/90 text-xs truncate mb-2 leading-relaxed">
-                  {session.lastMessage}
-                </div>
-                <div className="text-white/70 text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <Clock size={10} />
-                    {new Date(session.updatedAt).toLocaleDateString('ja-JP', {
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+              )}
+
+              {/* 履歴タブ */}
+              {activeTab === 'history' && (
+                <div className="h-full flex flex-col">
+                  {/* スクロール可能な履歴エリア */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0 chat-history-scroll">
+                    {sessions.slice(0, 50).map((session) => (
+                      <div
+                        key={session.id}
+                        onClick={async () => {
+                          try {
+                            const loadedSession = await historyManager.loadSession(session.id);
+                            if (loadedSession) {
+                              setMessages(loadedSession.messages);
+                              setCurrentSessionId(session.id);
+                            }
+                          } catch (error) {
+                            console.error('セッション読み込みエラー:', error);
+                          }
+                        }}
+                        className={`group bg-white/20 backdrop-blur-md rounded-lg p-3 cursor-pointer hover:bg-white/30 transition-all duration-200 relative ${
+                          currentSessionId === session.id ? 'ring-2 ring-blue-400 bg-blue-400/30' : ''
+                        } hover:shadow-lg hover:scale-[1.02]`}
+                      >
+                        {/* 削除ボタン */}
+                        <button
+                          onClick={(e) => handleDeleteSession(session.id, e)}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/70 hover:text-red-400 hover:bg-red-500/30 rounded-full p-1"
+                          title="履歴を削除"
+                        >
+                          <X size={12} />
+                        </button>
+
+                        <div className="text-white text-sm font-medium truncate mb-1 pr-6">
+                          {session.title}
+                        </div>
+                        <div className="text-white/90 text-xs truncate mb-2 leading-relaxed">
+                          {session.lastMessage}
+                        </div>
+                        <div className="text-white/70 text-xs flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            <Clock size={10} />
+                            {new Date(session.updatedAt).toLocaleDateString('ja-JP', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                          {currentSessionId === session.id && (
+                            <div className="text-blue-400 text-xs font-medium">
+                              ● 現在
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* 履歴が多い場合の表示制限通知 */}
+                    {sessions.length > 50 && (
+                      <div className="text-white/40 text-xs text-center py-2 px-3 bg-white/5 rounded-lg">
+                        最新50件を表示中 (全{sessions.length}件)
+                      </div>
+                    )}
+                    
+                    {sessions.length === 0 && (
+                      <div className="text-white/80 text-sm text-center py-8">
+                        <MessageSquare size={24} className="mx-auto mb-2 opacity-70" />
+                        まだ履歴がありません
+                        <p className="text-xs mt-1 text-white/60">
+                          最初のメッセージを送信すると履歴が作成されます
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {currentSessionId === session.id && (
-                    <div className="text-blue-400 text-xs font-medium">
-                      ● 現在
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-            
-            {/* 履歴が多い場合の表示制限通知 */}
-            {sessions.length > 50 && (
-              <div className="text-white/40 text-xs text-center py-2 px-3 bg-white/5 rounded-lg">
-                最新50件を表示中 (全{sessions.length}件)
-              </div>
-            )}
-            
-            {sessions.length === 0 && (
-              <div className="text-white/80 text-sm text-center py-8">
-                <MessageSquare size={24} className="mx-auto mb-2 opacity-70" />
-                まだ履歴がありません
-                <p className="text-xs mt-1 text-white/60">
-                  最初のメッセージを送信すると履歴が作成されます
-                </p>
-              </div>
-            )}
-        </div>
-        </div>
-      </div>
+              )}
 
-      {/* メインチャットエリア */}
-      <div className="flex-1 flex flex-col w-full md:w-auto">
-        {/* ヘッダー */}
-        <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors"
-              title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
-            >
-              <Menu size={20} />
-            </button>
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
-              {currentCharacter?.avatar_url ? (
-                <img
-                  src={currentCharacter.avatar_url}
-                  alt={currentCharacter.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-white text-lg font-bold">
-                  {currentCharacter?.name ? currentCharacter.name.charAt(0) : 'A'}
+              {/* 設定タブ */}
+              {activeTab === 'settings' && (
+                <div className="h-full flex flex-col p-4 space-y-2">
+                  <button 
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Cloud size={16} />
+                    クラウド同期
+                  </button>
+                  <button 
+                    onClick={() => setIsThemeModalOpen(true)}
+                    className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Palette size={16} />
+                    テーマ変更
+                  </button>
+                  <button 
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <Settings size={16} />
+                    設定
+                  </button>
+                  <button 
+                    onClick={handleImageTest}
+                    disabled={isGeneratingImage}
+                    className="w-full bg-yellow-500/20 backdrop-blur-sm text-yellow-200 py-3 px-4 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                  >
+                    🖼️
+                    画像生成テスト
+                  </button>
                 </div>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <button
-                onClick={() => {
-                  if (currentCharacter) {
-                    setEditingCharacter(currentCharacter);
-                    setIsCharacterModalOpen(true);
-                  }
-                }}
-                className="text-left w-full"
-              >
-                <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors">
-                  {currentCharacter?.name || 'キャラクター'}
-                </h3>
-                <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
-                title="設定"
-              >
-                <Settings size={18} />
-              </button>
-              <button
-                onClick={() => setIsThemeModalOpen(true)}
-                className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
-                title="テーマ"
-              >
-                <Palette size={18} />
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* チャットメッセージエリア */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' ? (
-                <div className="max-w-2xl w-full">
-                  {/* キャラクター画像 */}
-                  {settings.enableImageGeneration && (msg.image || isGeneratingImage) && (
-                    <div className="mb-3">
-                      <div className="relative">
-                        {msg.image && (
-                          <Image
-                            src={msg.image}
-                            alt="Character"
-                            width={512}
-                            height={768}
-                            className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl object-cover"
-                          />
-                        )}
-                        {isGeneratingImage && !msg.image && (
-                          <div className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 bg-black/30 rounded-lg flex items-center justify-center">
-                            <Loader className="animate-spin text-white" size={24} />
-                          </div>
-                        )}
+        {/* メインチャットエリア */}
+        <div className="flex-1 flex flex-col w-full md:w-auto">
+          {/* ヘッダー */}
+          <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-4 safe-area-top flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors"
+                title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+              >
+                <Menu size={20} />
+              </button>
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
+                {currentCharacter?.avatar_url ? (
+                  <img
+                    src={currentCharacter.avatar_url}
+                    alt={currentCharacter.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-white text-lg font-bold">
+                    {currentCharacter?.name ? currentCharacter.name.charAt(0) : 'A'}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <button
+                  onClick={() => {
+                    if (currentCharacter) {
+                      setEditingCharacter(currentCharacter);
+                      setIsCharacterModalOpen(true);
+                    }
+                  }}
+                  className="text-left w-full"
+                >
+                  <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors">
+                    {currentCharacter?.name || 'キャラクター'}
+                  </h3>
+                  <p className="text-white/70 text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
+                  title="設定"
+                >
+                  <Settings size={18} />
+                </button>
+                <button
+                  onClick={() => setIsThemeModalOpen(true)}
+                  className="touch-target theme-text-primary hover:bg-white/10 p-2 rounded-lg transition-colors md:hidden"
+                  title="テーマ"
+                >
+                  <Palette size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* チャットメッセージエリア */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 scroll-touch">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' ? (
+                  <div className="max-w-2xl w-full">
+                    {/* キャラクター画像 */}
+                    {settings.enableImageGeneration && (msg.image || isGeneratingImage) && (
+                      <div className="mb-3">
+                        <div className="relative">
+                          {msg.image && (
+                            <Image
+                              src={msg.image}
+                              alt="Character"
+                              width={512}
+                              height={768}
+                              className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 rounded-lg shadow-2xl object-cover"
+                            />
+                          )}
+                          {isGeneratingImage && !msg.image && (
+                            <div className="w-full max-w-[85vw] sm:w-80 h-auto sm:h-96 bg-black/30 rounded-lg flex items-center justify-center">
+                              <Loader className="animate-spin text-white" size={24} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* メッセージバブル */}
+                    <div 
+                      className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
+                      style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
+                    >
+                      <div 
+                        className="absolute -top-2 left-6 w-4 h-4 rotate-45"
+                        style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
+                      ></div>
+                       <div 
+                         className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
+                         onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
+                         style={{ userSelect: 'text' }}
+                       >
+                         <FormattedText md={msg.content} />
+                       </div>
+                       <div className="flex justify-end mt-2 gap-1 flex-wrap">
+                         <VoiceControls
+                           text={msg.content}
+                           settings={{
+                             enabled: settings.voiceEnabled ?? true,
+                             autoPlay: settings.voiceAutoPlay ?? false,
+                             voiceId: settings.voiceId ?? 'pNInz6obpgDQGcFmaJgB',
+                             stability: settings.voiceStability ?? 0.5,
+                             similarityBoost: settings.voiceSimilarityBoost ?? 0.75,
+                             style: settings.voiceStyle ?? 0,
+                             useSpeakerBoost: settings.voiceUseSpeakerBoost ?? true,
+                             speed: settings.voiceSpeed ?? 1.0,
+                             volume: settings.voiceVolume ?? 0.8,
+                           }}
+                           apiKey={settings.elevenLabsApiKey}
+                         />
+                         {/* デスクトップ用メモボタン */}
+                         <div className="hidden md:block">
+                           <MessageMemoButton 
+                             messageId={msg.id}
+                             messageContent={msg.content}
+                             sessionId={currentSessionId || 'temp'}
+                             characterId={currentCharacter?.name || 'unknown'}
+                           />
+                         </div>
+                         {/* モバイル用メモボタン */}
+                         <div className="md:hidden">
+                           <MessageMemoButton 
+                             messageId={msg.id}
+                             messageContent={msg.content}
+                             sessionId={currentSessionId || 'temp'}
+                             characterId={currentCharacter?.name || 'unknown'}
+                           />
+                         </div>
+                         <button 
+                           onClick={() => handleRegenerate()}
+                           disabled={isLoading}
+                           className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
+                           title="再生成"
+                         >
+                           <RefreshCw size={16} />
+                         </button>
+                         <button 
+                           onClick={() => handleRollback(msg.id)}
+                           disabled={isLoading}
+                           className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
+                           title="このメッセージまで戻す"
+                         >
+                           <CornerUpLeft size={16} />
+                         </button>
+                         <button
+                          onClick={() => handleCopy(msg.content)}
+                          className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
+                          title="コピー"
+                         >
+                          <Copy size={16} />
+                         </button>
+                       </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-2xl w-full flex justify-end">
+                    <div 
+                      className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
+                      style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
+                    >
+                      <div 
+                        className="absolute -top-2 right-6 w-4 h-4 rotate-45"
+                        style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
+                      ></div>
+                      <div 
+                        className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
+                        onMouseUp={() => handleTextSelection(msg.id)}
+                        style={{ userSelect: 'text' }}
+                      >
+                        <FormattedText md={msg.content} />
+                      </div>
+                      <div className="flex justify-end mt-2 gap-1">
+                        <button
+                          onClick={() => handleCopy(msg.content)}
+                          className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
+                          title="コピー"
+                        >
+                          <Copy size={16} />
+                        </button>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* メッセージバブル */}
-                  <div 
-                    className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
-                    style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
-                  >
-                    <div 
-                      className="absolute -top-2 left-6 w-4 h-4 rotate-45"
-                      style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
-                    ></div>
-                     <div 
-                       className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
-                       onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
-                       style={{ userSelect: 'text' }}
-                     >
-                       <FormattedText md={msg.content} />
-                     </div>
-                     <div className="flex justify-end mt-2 gap-1 flex-wrap">
-                       <VoiceControls
-                         text={msg.content}
-                         settings={{
-                           enabled: settings.voiceEnabled ?? true,
-                           autoPlay: settings.voiceAutoPlay ?? false,
-                           voiceId: settings.voiceId ?? 'pNInz6obpgDQGcFmaJgB',
-                           stability: settings.voiceStability ?? 0.5,
-                           similarityBoost: settings.voiceSimilarityBoost ?? 0.75,
-                           style: settings.voiceStyle ?? 0,
-                           useSpeakerBoost: settings.voiceUseSpeakerBoost ?? true,
-                           speed: settings.voiceSpeed ?? 1.0,
-                           volume: settings.voiceVolume ?? 0.8,
-                         }}
-                         apiKey={settings.elevenLabsApiKey}
-                       />
-                       {/* デスクトップ用メモボタン */}
-                       <div className="hidden md:block">
-                         <MessageMemoButton 
-                           messageId={msg.id}
-                           messageContent={msg.content}
-                           sessionId={currentSessionId || 'temp'}
-                           characterId={currentCharacter?.name || 'unknown'}
-                         />
-                       </div>
-                       {/* モバイル用メモボタン */}
-                       <div className="md:hidden">
-                         <MessageMemoButton 
-                           messageId={msg.id}
-                           messageContent={msg.content}
-                           sessionId={currentSessionId || 'temp'}
-                           characterId={currentCharacter?.name || 'unknown'}
-                         />
-                       </div>
-                       <button 
-                         onClick={() => handleRegenerate()}
-                         disabled={isLoading}
-                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
-                         title="再生成"
-                       >
-                         <RefreshCw size={16} />
-                       </button>
-                       <button 
-                         onClick={() => handleRollback(msg.id)}
-                         disabled={isLoading}
-                         className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded disabled:opacity-50"
-                         title="このメッセージまで戻す"
-                       >
-                         <CornerUpLeft size={16} />
-                       </button>
-                       <button
-                        onClick={() => handleCopy(msg.content)}
-                        className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
-                        title="コピー"
-                       >
-                        <Copy size={16} />
-                       </button>
-                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="max-w-2xl w-full flex justify-end">
-                  <div 
-                    className="relative z-10 rounded-2xl p-3 sm:p-4 shadow-lg"
-                    style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
-                  >
-                    <div 
-                      className="absolute -top-2 right-6 w-4 h-4 rotate-45"
-                      style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
-                    ></div>
-                    <div 
-                      className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-sm sm:text-base"
-                      onMouseUp={() => handleTextSelection(msg.id)}
-                      style={{ userSelect: 'text' }}
-                    >
-                      <FormattedText md={msg.content} />
-                    </div>
-                    <div className="flex justify-end mt-2 gap-1">
-                      <button
-                        onClick={() => handleCopy(msg.content)}
-                        className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
-                        title="コピー"
-                      >
-                        <Copy size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
 
-        {/* メッセージ入力フォーム */}
-        <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-gray-200 safe-area-bottom flex-shrink-0">
-          <div className="max-w-4xl mx-auto">
-            {/* アクションボタン */}
-            <div className="flex gap-2 mb-2 flex-wrap">
-              <button
-                onClick={handleContinue}
-                disabled={isLoading}
-                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
-              >
-                ▶ 続きを話す
-              </button>
-              <button
-                onClick={handleReset}
-                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors text-sm"
-              >
-                🔄 リセット
-              </button>
-              <button
-                onClick={handleGenerateSummary}
-                disabled={isGeneratingSummary || messages.length < 3}
-                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
-              >
-                {isGeneratingSummary ? '生成中...' : '📝 要約'}
-              </button>
-              <button
-                onClick={handleGenerateEnhancedImpression}
-                disabled={isGeneratingImpression || messages.length < 3}
-                className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
-              >
-                {isGeneratingImpression ? '生成中...' : '✨ 感想'}
-              </button>
-            </div>
-            
-            {/* 入力エリア */}
-            <div className="relative">
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="メッセージを入力 (Ctrl+Enterで送信)"
-                className={`w-full p-4 pr-28 border border-gray-300 rounded-2xl resize-none transition-all duration-200 bg-white/90 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  isInputExpanded ? 'h-32' : 'h-16'
-                }`}
-                onFocus={() => setIsInputExpanded(true)}
-                onBlur={() => setIsInputExpanded(false)}
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {/* メッセージ入力フォーム */}
+          <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-gray-200 safe-area-bottom flex-shrink-0">
+            <div className="max-w-4xl mx-auto">
+              {/* アクションボタン */}
+              <div className="flex gap-2 mb-2 flex-wrap">
                 <button
-                  onClick={handleUserInspiration}
-                  disabled={isLoadingUserInspiration}
-                  className="touch-target text-gray-500 hover:text-yellow-500 p-2 rounded-full hover:bg-yellow-100 transition-colors disabled:opacity-50"
-                  title="返信を提案"
-                >
-                  {isLoadingUserInspiration ? <Loader className="animate-spin" size={20} /> : '💡'}
-                </button>
-                <button
-                  onClick={handleUserTextEnhancement}
-                  disabled={isEnhancingUserText}
-                  className="touch-target text-gray-500 hover:text-purple-500 p-2 rounded-full hover:bg-purple-100 transition-colors disabled:opacity-50"
-                  title="文章を強化"
-                >
-                  {isEnhancingUserText ? <Loader className="animate-spin" size={20} /> : '✨'}
-                </button>
-                <button
-                  onClick={handleSend}
+                  onClick={handleContinue}
                   disabled={isLoading}
-                  className="touch-target bg-blue-500 text-white w-10 h-10 rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center"
-                  title="送信 (Ctrl+Enter)"
+                  className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
                 >
-                  {isLoading ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
+                  ▶ 続きを話す
                 </button>
+                <button
+                  onClick={handleReset}
+                  className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors text-sm"
+                >
+                  🔄 リセット
+                </button>
+                <button
+                  onClick={handleGenerateSummary}
+                  disabled={isGeneratingSummary || messages.length < 3}
+                  className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
+                >
+                  {isGeneratingSummary ? '生成中...' : '📝 要約'}
+                </button>
+                <button
+                  onClick={handleGenerateEnhancedImpression}
+                  disabled={isGeneratingImpression || messages.length < 3}
+                  className="touch-target flex-1 bg-white/50 text-gray-700 px-4 py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-sm"
+                >
+                  {isGeneratingImpression ? '生成中...' : '✨ 感想'}
+                </button>
+              </div>
+              
+              {/* 入力エリア */}
+              <div className="relative">
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="メッセージを入力 (Ctrl+Enterで送信)"
+                  className={`w-full p-4 pr-28 border border-gray-300 rounded-2xl resize-none transition-all duration-200 bg-white/90 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    isInputExpanded ? 'h-32' : 'h-16'
+                  }`}
+                  onFocus={() => setIsInputExpanded(true)}
+                  onBlur={() => setIsInputExpanded(false)}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button
+                    onClick={handleUserInspiration}
+                    disabled={isLoadingUserInspiration}
+                    className="touch-target text-gray-500 hover:text-yellow-500 p-2 rounded-full hover:bg-yellow-100 transition-colors disabled:opacity-50"
+                    title="返信を提案"
+                  >
+                    {isLoadingUserInspiration ? <Loader className="animate-spin" size={20} /> : '💡'}
+                  </button>
+                  <button
+                    onClick={handleUserTextEnhancement}
+                    disabled={isEnhancingUserText}
+                    className="touch-target text-gray-500 hover:text-purple-500 p-2 rounded-full hover:bg-purple-100 transition-colors disabled:opacity-50"
+                    title="文章を強化"
+                  >
+                    {isEnhancingUserText ? <Loader className="animate-spin" size={20} /> : '✨'}
+                  </button>
+                  <button
+                    onClick={handleSend}
+                    disabled={isLoading}
+                    className="touch-target bg-blue-500 text-white w-10 h-10 rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+                    title="送信 (Ctrl+Enter)"
+                  >
+                    {isLoading ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* モーダル群 */}
+      {isCharacterModalOpen && (
+        <CharacterModal
+          isOpen={isCharacterModalOpen}
+          onClose={() => setIsCharacterModalOpen(false)}
+          character={editingCharacter}
+          onSave={(updatedCharacter) => {
+            CharacterLoader.saveCharacter(updatedCharacter);
+            const updatedCharacters = CharacterLoader.getAllCharacters();
+            setAllCharacters(updatedCharacters);
+            if (currentCharacter?.name === updatedCharacter.name) {
+              setCurrentCharacter(updatedCharacter);
+            }
+            setIsCharacterModalOpen(false);
+          }}
+        />
+      )}
+      {isSettingsOpen && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={settings}
+          onSave={updateSettings}
+        />
+      )}
+      {isPersonaModalOpen && (
+        <PersonaModal
+          isOpen={isPersonaModalOpen}
+          onClose={() => setIsPersonaModalOpen(false)}
+          persona={editingPersona}
+          onSave={(savedPersona) => {
+            const newPersonas = editingPersona
+              ? allPersonas.map(p => p.id === savedPersona.id ? savedPersona : p)
+              : [...allPersonas, savedPersona];
+            setAllPersonas(newPersonas);
+            localStorage.setItem('ai-chat-personas', JSON.stringify(newPersonas));
+            setIsPersonaModalOpen(false);
+          }}
+        />
+      )}
+      {isAuthModalOpen && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+        />
+      )}
+      {isSummaryOpen && (
+        <ChatSummaryModal
+          isOpen={isSummaryOpen}
+          onClose={() => setIsSummaryOpen(false)}
+          summary={currentSummary}
+          isLoading={isGeneratingSummary}
+        />
+      )}
+      {isEnhancedImpressionOpen && (
+        <EnhancedImpressionModal
+          isOpen={isEnhancedImpressionOpen}
+          onClose={() => setIsEnhancedImpressionOpen(false)}
+          impressions={currentImpressions}
+          isLoading={isGeneratingImpression}
+        />
+      )}
+    </>
   );
 }
