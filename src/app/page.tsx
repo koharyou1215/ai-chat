@@ -6,7 +6,7 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, Plus, X, Palette, Menu, Cloud, ChevronDown, ChevronUp, Copy, Grid } from 'lucide-react';
+import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -770,6 +770,7 @@ export default function ChatPage() {
             ? { ...msg, image: imageData.imageUrl }
             : msg
         ));
+        console.log('✅ 画像生成成功:', imageData.imageUrl);
       }
     } catch (imageError) {
       console.error('Image generation failed:', imageError);
@@ -1992,7 +1993,7 @@ export default function ChatPage() {
           onClose={() => setIsCharacterModalOpen(false)}
           character={editingCharacter}
           onSave={(updatedCharacter) => {
-            CharacterLoader.saveCharacter(updatedCharacter);
+            CharacterLoader.addCharacter(updatedCharacter);
             const updatedCharacters = CharacterLoader.getAllCharacters();
             setAllCharacters(updatedCharacters);
             if (currentCharacter?.name === updatedCharacter.name) {

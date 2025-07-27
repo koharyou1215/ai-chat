@@ -17,14 +17,32 @@ export async function POST(request: NextRequest) {
       settings // settingsオブジェクトもここで取得
     } = requestBodyJson;
     
-    if (!prompt || prompt.trim() === '') {
+    console.log('[/api/generate-image] リクエストボディ:', {
+      prompt: typeof prompt,
+      promptValue: prompt,
+      modelId: modelId,
+      settings: settings ? '設定あり' : '設定なし'
+    });
+    
+    // promptの型チェックと変換
+    let processedPrompt = '';
+    if (typeof prompt === 'string') {
+      processedPrompt = prompt.trim();
+    } else if (prompt && typeof prompt === 'object') {
+      // オブジェクトの場合は文字列に変換を試行
+      processedPrompt = JSON.stringify(prompt).trim();
+    } else {
+      processedPrompt = String(prompt || '').trim();
+    }
+    
+    if (!processedPrompt) {
       return NextResponse.json({
         success: false,
         error: 'プロンプトが空です'
       }, { status: 400 });
     }
     
-    console.log("Received prompt for image generation:", prompt);
+    console.log("Received prompt for image generation:", processedPrompt);
     console.log("Using model ID:", modelId);
     console.log("Aspect ratio:", aspectRatio);
     console.log("Safety checker:", safetyChecker);
@@ -70,7 +88,7 @@ export async function POST(request: NextRequest) {
         const task = await runwareService.createGenerationTask({
           taskType: "imageInference",
           outputType: "URL",
-          positivePrompt: prompt,
+          positivePrompt: processedPrompt,
           model: runwareModelId,
           width: settings?.imageWidth || 512,
           height: settings?.imageHeight || 512,
@@ -134,7 +152,7 @@ export async function POST(request: NextRequest) {
         const stableDiffusionService = new StableDiffusionService(stableDiffusionApiKey);
         
         const result = await stableDiffusionService.generateImage({
-          prompt: prompt,
+          prompt: processedPrompt,
           width: settings?.imageWidth || 512,
           height: settings?.imageHeight || 512,
           cfg_scale: settings?.guidanceScale || 7,
@@ -173,7 +191,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            prompt: prompt,
+            prompt: processedPrompt,
             width: settings?.imageWidth || 512,
             height: settings?.imageHeight || 512,
             cfg_scale: settings?.guidanceScale || 7,

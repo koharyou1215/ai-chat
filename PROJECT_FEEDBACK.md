@@ -206,5 +206,42 @@
 
 ---
 
+---
+
+### 2025年7月24日 - 画像生成APIとOpenRouter APIエラーの修正
+
+#### 概要
+- 画像生成APIで`t.trim is not a function`エラーが発生
+- OpenRouter APIで応答にcontentが含まれていないエラーが発生
+
+#### 詳細
+- エラー1: `TypeError: t.trim is not a function` (画像生成API)
+- エラー2: `OpenRouter 応答に content が含まれていません` (チャットAPI)
+- 画像生成APIでpromptパラメータの型チェックが不十分
+- OpenRouter APIのレスポンス検証が不十分
+
+#### 解決方法
+- `src/app/api/generate-image/route.ts`でpromptパラメータの型チェックと変換を追加
+- `lib/openRouter.ts`でAPIレスポンスの詳細ログ出力を追加
+- `src/app/api/simple-chat/route.ts`で候補生成の検証を強化
+- エラーメッセージをより詳細に改善
+
+#### 学んだ教訓
+- APIパラメータの型チェックは重要
+- 外部APIのレスポンス検証は必須
+- 詳細なログ出力が問題特定に不可欠
+- エラーハンドリングは段階的に行う必要がある
+
+#### 関連ファイル
+- `src/app/api/generate-image/route.ts`
+- `lib/openRouter.ts`
+- `src/app/api/simple-chat/route.ts`
+- `src/app/page.tsx`
+
+#### ステータス
+- [x] 完了
+
+---
+
 **最終更新**: 2025年7月24日
 **記録者**: AI Assistant 

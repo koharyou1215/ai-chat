@@ -314,14 +314,28 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             text.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
           );
 
-          if (!candidates || candidates.length === 0 || !candidates[0].trim()) {
+          console.log('📋 生成された候補:', {
+            candidateCount: candidates.length,
+            candidates: candidates.map((c, i) => ({ index: i, length: c.length, preview: c.substring(0, 100) }))
+          });
+
+          if (!candidates || candidates.length === 0) {
+            console.error('❌ 候補が生成されませんでした');
             return NextResponse.json({
               success: false,
               error: 'OpenRouter 応答に content が含まれていません。モデルがビジー状態か、APIキーに問題がある可能性があります。'
             }, { status: 500 });
           }
 
-          console.log(`OpenRouter: ${candidateCount}個の候補を生成しました`);
+          if (!candidates[0] || !candidates[0].trim()) {
+            console.error('❌ 最初の候補が空です:', candidates[0]);
+            return NextResponse.json({
+              success: false,
+              error: 'OpenRouter 応答が空です。モデルがビジー状態か、APIキーに問題がある可能性があります。'
+            }, { status: 500 });
+          }
+
+          console.log(`✅ OpenRouter: ${candidateCount}個の候補を生成しました`);
 
           return NextResponse.json({
             success: true,

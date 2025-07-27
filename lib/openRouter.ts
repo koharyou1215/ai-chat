@@ -88,10 +88,22 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
   }
 
   const data = await response.json();
+  console.log('📋 OpenRouter API レスポンス:', {
+    hasData: !!data,
+    hasChoices: !!data?.choices,
+    choicesLength: data?.choices?.length || 0,
+    firstChoice: data?.choices?.[0],
+    hasMessage: !!data?.choices?.[0]?.message,
+    hasContent: !!data?.choices?.[0]?.message?.content,
+    contentLength: data?.choices?.[0]?.message?.content?.length || 0,
+    fullResponse: data
+  });
+  
   // data.choices[0].message.content にテキストが入る形式 (OpenAI 互換)
   const content: string | undefined = data?.choices?.[0]?.message?.content;
   if (!content) {
-    throw new Error('OpenRouter 応答に content が含まれていません');
+    console.error('❌ OpenRouter 応答に content が含まれていません:', data);
+    throw new Error('OpenRouter 応答に content が含まれていません。APIレスポンスを確認してください。');
   }
   return content;
 }
