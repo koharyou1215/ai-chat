@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List } from 'lucide-react';
+import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List, RefreshCw } from 'lucide-react';
 import { Character } from '../types/character';
 
 interface CharacterGalleryProps {
@@ -12,6 +12,7 @@ interface CharacterGalleryProps {
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (character: Character) => void;
   onImportExport?: () => void;
+  onManualLoad?: () => void;
   onClose: () => void;
 }
 
@@ -23,6 +24,7 @@ export default function CharacterGallery({
   onEditCharacter,
   onDeleteCharacter,
   onImportExport,
+  onManualLoad,
   onClose,
 }: CharacterGalleryProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,6 +82,15 @@ export default function CharacterGallery({
           </div>
           
           <div className="flex items-center gap-2">
+            {onManualLoad && (
+              <button
+                onClick={onManualLoad}
+                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                title="手動でキャラクターを読み込み"
+              >
+                <RefreshCw size={20} />
+              </button>
+            )}
             {onImportExport && (
               <button
                 onClick={onImportExport}

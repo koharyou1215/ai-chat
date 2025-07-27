@@ -2306,6 +2306,26 @@ export default function ChatPage() {
               }
             }
           }}
+          onManualLoad={async () => {
+            console.log('🔄 手動でキャラクター読み込み開始...');
+            try {
+              // CharacterLoaderを初期化
+              CharacterLoader.initialize();
+              
+              // publicキャラクターを手動で読み込み
+              await CharacterLoader.loadPublicCharacters();
+              
+              // 全キャラクターを取得して更新
+              const updatedCharacters = CharacterLoader.getAllCharacters();
+              setAllCharacters(updatedCharacters);
+              
+              console.log('✅ 手動読み込み完了:', updatedCharacters.length, '件');
+              alert(`キャラクター読み込み完了: ${updatedCharacters.length}件`);
+            } catch (error) {
+              console.error('❌ 手動読み込みエラー:', error);
+              alert('キャラクター読み込みに失敗しました');
+            }
+          }}
           onImportExport={() => setIsImportExportOpen(true)}
           onClose={() => setIsCharacterGalleryOpen(false)}
         />
