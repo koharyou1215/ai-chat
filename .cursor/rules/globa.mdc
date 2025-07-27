@@ -146,8 +146,8 @@ alwaysApply: true
 - AIモデルのバージョンは client.ts でのみ定義
 - 型定義は必ず types.ts を参照
 - 環境変数の利用は config.ts 経由のみ許可
+npm run dev -- -p 
 
----
 
 # プロジェクト構成
 

@@ -89,6 +89,7 @@ export interface Character {
   imageSteps?: number;
   imageCfgScale?: number;
   imageSampler?: string;
+  backgroundImageUrl?: string; // 背景画像URLを追加
 }
 
 export interface UserPersona {
@@ -157,8 +158,8 @@ export interface Theme {
 }
 
 export interface AppSettings {
-  geminiApiKey: string;
-  elevenLabsApiKey: string;
+  geminiApiKey?: string;
+  elevenLabsApiKey?: string;
   voiceEnabled?: boolean; // オプショナルに変更
   voiceAutoPlay?: boolean; // オプショナルに変更
   voiceId?: string;
@@ -172,11 +173,12 @@ export interface AppSettings {
   loraSettings?: string;
   negativePrompt?: string;
   imageEngine?: 'sd' | 'runware';
-  chatNotificationSound?: boolean; // オプショナルに変更
+  chatCompletionSound?: boolean; // chatNotificationSoundから変更
   currentTheme?: string;
-  customBackground?: string;
+  // customBackground?: string; // 削除: キャラクター個別設定へ移動
   bubbleOpacity?: number;
   bubbleBlur?: boolean;
+  bubbleDesign?: 'default' | 'rounded' | 'sharp'; // 追加
   autoScroll?: boolean;
   stableDiffusionApiKey?: string;
   temperature?: number;
@@ -187,10 +189,10 @@ export interface AppSettings {
   systemPrompt?: string;
   jailbreakPrompt?: string;
   responseFormat?: string;
-  enableJailbreak?: boolean;
-  enableSystemPrompt?: boolean;
-  model?: string;
-  provider?: string;
+  jailbreakPromptEnabled?: boolean; // enableJailbreakから変更
+  systemPromptEnabled?: boolean; // enableSystemPromptから変更
+  usedModel?: string; // modelから変更
+  // provider?: string; // 削除: OpenRouterに固定のため
   openRouterApiKey?: string;
   candidateCount?: number;
   runwareModelId?: string;
@@ -199,4 +201,9 @@ export interface AppSettings {
   inspirationPrompt?: string; // 追加
   enhancementPrompt?: string; // 追加
   inspirationMaxTokens?: number;
+  imageWidth?: number; // キャラクター編集画面からの移設
+  imageHeight?: number; // キャラクター編集画面からの移設
+  imageSteps?: number; // キャラクター編集画面からの移設
+  imageCfgScale?: number; // キャラクター編集画面からの移設
+  imageSampler?: string; // キャラクター編集画面からの移設
 } 
