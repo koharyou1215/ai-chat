@@ -17,7 +17,8 @@ const nextConfig: NextConfig = {
   },
   // Vercelデプロイ時の静的ファイル配信確保
   output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname, '../../'),
+  // 静的ファイルの配信設定
+  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
   // CSS最適化の問題を修正
   experimental: {
     optimizeCss: false,

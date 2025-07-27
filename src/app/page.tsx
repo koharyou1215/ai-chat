@@ -1548,9 +1548,8 @@ export default function ChatPage() {
         className="flex relative w-full chat-container"
         style={{
           background: '#ffffff',
-          overflow: 'hidden',
-          height: '100dvh',
-          minHeight: '100dvh', // 追加：最小高さを保証
+          overflow: 'auto',
+          height: '100vh',
           touchAction: 'pan-y' // デプロイ時のタッチアクション確保
         }}
       >
@@ -1952,7 +1951,7 @@ export default function ChatPage() {
           </div>
 
           {/* チャットメッセージエリア */}
-          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pb-safe">
+          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' ? (
@@ -2090,7 +2089,7 @@ export default function ChatPage() {
           </div>
 
           {/* メッセージ入力フォーム */}
-          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm sticky bottom-0 z-40">
+          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm">
             <div className="max-w-4xl mx-auto">
               {/* アクションボタン */}
               <div className="flex gap-1 md:gap-2 mb-2 flex-wrap">
