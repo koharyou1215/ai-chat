@@ -552,6 +552,67 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       AIの返答スタイルを選択します
                     </p>
                   </div>
+
+                  {/* インスピレーションプロンプト（電球マーク） */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💡 インスピレーションプロンプト
+                    </label>
+                    <textarea
+                      value={formSettings.inspirationPrompt || ''}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      rows={4}
+                      placeholder="例: ユーザーの会話から次の返信候補を3つ生成してください。自然で魅力的な返信を心がけてください。"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      電球マーク（💡）で返信候補を生成する際のプロンプト設定
+                    </p>
+                  </div>
+
+                  {/* 文章強化プロンプト（キラキラマーク） */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ✨ 文章強化プロンプト
+                    </label>
+                    <textarea
+                      value={formSettings.enhancementPrompt || ''}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, enhancementPrompt: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      rows={4}
+                      placeholder="例: 入力された文章をより魅力的で自然な表現に改善してください。"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      キラキラマーク（✨）で文章を強化する際のプロンプト設定
+                    </p>
+                  </div>
+
+                  {/* インスピレーション用トークン数 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      インスピレーション用トークン数: {formSettings.inspirationMaxTokens || 500}
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="1000"
+                      step="50"
+                      value={formSettings.inspirationMaxTokens || 500}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationMaxTokens: parseInt(e.target.value) }))}
+                      className="w-full slider mb-2"
+                    />
+                    <input
+                      type="number"
+                      min="100"
+                      max="1000"
+                      value={formSettings.inspirationMaxTokens || 500}
+                      onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationMaxTokens: parseInt(e.target.value) || 500 }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      インスピレーション機能で使用するトークン数（多いほど詳細な候補が生成されます）
+                    </p>
+                  </div>
                 </div>
               </section>
 

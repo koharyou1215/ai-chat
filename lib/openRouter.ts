@@ -49,8 +49,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     headers: {
       'Authorization': `Bearer ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-pby9shiay-kous-projects-ba188115.vercel.app',
-      'X-Title': 'AI Chat App',
+      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-6ntorx1qj-kous-projects-ba188115.vercel.app',
+      'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
     }
   });
 
@@ -61,8 +61,8 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-pby9shiay-kous-projects-ba188115.vercel.app',
-      'X-Title': 'AI Chat App',
+      'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-6ntorx1qj-kous-projects-ba188115.vercel.app',
+      'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
     },
     body: JSON.stringify(requestBody),
   });
@@ -96,7 +96,7 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
     hasMessage: !!data?.choices?.[0]?.message,
     hasContent: !!data?.choices?.[0]?.message?.content,
     contentLength: data?.choices?.[0]?.message?.content?.length || 0,
-    fullResponse: data
+    fullResponse: JSON.stringify(data, null, 2)
   });
   
   // data.choices[0].message.content にテキストが入る形式 (OpenAI 互換)

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, User, Heart, Tag, MessageSquare } from 'lucide-react';
 import { Character } from '../types/character';
+import { ImageCompressor } from '../lib/imageCompressor';
 
 interface CharacterModalProps {
   isOpen: boolean;
@@ -172,6 +173,55 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         ...prev,
         first_message: (prev.first_message || []).filter((_, i) => i !== index)
       }));
+    }
+  };
+
+  // 背景ファイルアップロード処理
+  const handleBackgroundFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // ファイルサイズチェック（10MB制限）
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。');
+      return;
+    }
+
+    // ファイル形式チェック
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/ogg'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('対応していないファイル形式です。画像（JPG、PNG、GIF、WebP）または動画（MP4、WebM、OGG）ファイルを選択してください。');
+      return;
+    }
+
+    try {
+      // 画像ファイルの場合は圧縮
+      if (file.type.startsWith('image/')) {
+        const compressedResult = await ImageCompressor.compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.8
+        });
+        setFormData(prev => ({ ...prev, background: compressedResult.dataUrl }));
+        console.log('✅ 画像ファイルを圧縮して背景に設定:', file.name);
+      } else {
+        // 動画ファイルの場合はそのままBase64変換
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setFormData(prev => ({ ...prev, background: result }));
+          console.log('✅ 動画ファイルを背景に設定:', file.name);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (error) {
+      console.error('ファイル処理エラー:', error);
+      alert('ファイルの処理中にエラーが発生しました。');
     }
   };
 
@@ -629,6 +679,82 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                 <p className="text-xs text-red-500 mt-1">
                   ⚠️ 責任を持って使用してください
                 </p>
+              </div>
+            </section>
+
+            {/* 背景設定 */}
+            <section>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">背景設定</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  チャット背景画像/動画
+                </label>
+                
+                {/* URL入力 */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    URLから設定
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.background || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    placeholder="画像URLまたは動画URLを入力してください"
+                  />
+                </div>
+
+                {/* ファイルアップロード */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                    ファイルからアップロード
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleBackgroundFileUpload}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-800 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, background: '' }))}
+                      className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                    >
+                      クリア
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 画像（JPG、PNG、GIF）または動画（MP4、WebM）ファイルをアップロードできます（最大10MB）
+                  </p>
+                </div>
+
+                {/* プレビュー */}
+                {formData.background && (
+                  <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">背景プレビュー:</p>
+                    {formData.background.startsWith('data:') || formData.background.startsWith('blob:') ? (
+                      <div className="relative">
+                        {formData.background.match(/^data:video|^blob:.*video/) ? (
+                          <video
+                            src={formData.background}
+                            className="w-full h-32 object-cover rounded"
+                            controls
+                            muted
+                          />
+                        ) : (
+                          <img
+                            src={formData.background}
+                            alt="背景プレビュー"
+                            className="w-full h-32 object-cover rounded"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600">URL: {formData.background}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
 

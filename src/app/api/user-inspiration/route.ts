@@ -43,7 +43,9 @@ export async function POST(req: NextRequest) {
     console.log(`[/api/user-inspiration] インスピレーション用トークン数: ${inspirationMaxTokens}`);
     console.log(`[/api/user-inspiration] プロンプトメッセージの長さ: ${message.length}`);
 
-    const prompt = `あなたは「ユーザーのメッセージから次のチャットのインスピレーションの候補を提示する」ことに特化したAIアシスタントです。
+    // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
+    const customPrompt = settings?.inspirationPrompt;
+    const prompt = customPrompt || `あなたは「ユーザーのメッセージから次のチャットのインスピレーションの候補を提示する」ことに特化したAIアシスタントです。
 あなたの役割は、ユーザーの過去のメッセージや現在の状況を考慮し、会話をさらに面白く、深く、または新しい方向に進めるための、簡潔で魅力的な発言の候補を3つ提案することです。
 各候補は、ユーザーの次の発言として自然に会話の流れにフィットするものであるべきです。
 候補は日本語で、ユーザーが直接使えるような短いフレーズや質問の形式で提供してください。

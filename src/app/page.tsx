@@ -813,6 +813,14 @@ export default function ChatPage() {
         }),
       });
 
+      console.log('📡 画像生成APIレスポンス状態:', imageResponse.status, imageResponse.statusText);
+      
+      if (!imageResponse.ok) {
+        const errorText = await imageResponse.text();
+        console.error('❌ 画像生成APIエラー:', imageResponse.status, errorText);
+        throw new Error(`画像生成APIエラー: ${imageResponse.status} ${errorText}`);
+      }
+      
       const imageData = await imageResponse.json();
       console.log('🖼️ 画像生成テスト結果:', imageData);
       
@@ -823,11 +831,12 @@ export default function ChatPage() {
           id: crypto.randomUUID(),
           role: 'assistant',
           content: '画像生成テストが完了しました。',
-          image: imageData.image,
+          image: imageData.imageUrl, // imageUrlを使用
           timestamp: Date.now()
         };
         setMessages(prev => [...prev, testMessage]);
       } else {
+        console.error('❌ 画像生成失敗:', imageData.error);
         alert(`画像生成テスト失敗: ${imageData.error || '不明なエラー'}`);
       }
     } catch (error) {
@@ -1505,6 +1514,21 @@ export default function ChatPage() {
               // 音声再生を停止
               VoiceManager.stopAudio();
               
+              // キャラクター個別の背景を適用
+              if (character.background) {
+                console.log('🎨 キャラクター背景を適用:', character.background);
+                import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
+                  const currentTheme = getDefaultTheme();
+                  ThemeManager.applyTheme(currentTheme, character.background);
+                });
+              } else {
+                console.log('🎨 キャラクター背景なし、デフォルトテーマを適用');
+                import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
+                  const currentTheme = getDefaultTheme();
+                  ThemeManager.applyTheme(currentTheme);
+                });
+              }
+              
               // 新しいキャラクターの初回メッセージを設定
               const firstMessage = Array.isArray(character.first_message) 
                 ? character.first_message.join('\n') 
@@ -1541,6 +1565,21 @@ export default function ChatPage() {
                     setCurrentCharacter(firstCharacter);
                     setCurrentSessionId(null);
                     
+                    // 代替キャラクターの背景を適用
+                    if (firstCharacter.background) {
+                      console.log('🎨 代替キャラクター背景を適用:', firstCharacter.background);
+                      import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
+                        const currentTheme = getDefaultTheme();
+                        ThemeManager.applyTheme(currentTheme, firstCharacter.background);
+                      });
+                    } else {
+                      console.log('🎨 代替キャラクター背景なし、デフォルトテーマを適用');
+                      import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
+                        const currentTheme = getDefaultTheme();
+                        ThemeManager.applyTheme(currentTheme);
+                      });
+                    }
+                    
                     const firstMessage = Array.isArray(firstCharacter.first_message) 
                       ? firstCharacter.first_message.join('\n') 
                       : (firstCharacter.first_message || 'こんにちは！');
@@ -1554,6 +1593,11 @@ export default function ChatPage() {
                   } else {
                     setCurrentCharacter(null);
                     setMessages([]);
+                    // キャラクターがなくなった場合はデフォルトテーマを適用
+                    import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
+                      const currentTheme = getDefaultTheme();
+                      ThemeManager.applyTheme(currentTheme);
+                    });
                   }
                 }
               }

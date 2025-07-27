@@ -307,12 +307,16 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         );
 
         try {
+          console.log('🔄 OpenRouter API呼び出し開始（複数候補）');
           const openRouterTexts = await Promise.all(candidatePromises);
+          console.log('✅ OpenRouter API呼び出し完了（複数候補）:', openRouterTexts.length);
+          
           const userName = persona?.name || 'あなた';
           
-          const candidates = openRouterTexts.map(text => 
-            text.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName)
-          );
+          const candidates = openRouterTexts.map((text, index) => {
+            console.log(`📝 候補${index + 1}:`, text.substring(0, 100) + '...');
+            return text.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName);
+          });
 
           console.log('📋 生成された候補:', {
             candidateCount: candidates.length,
@@ -343,27 +347,35 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             candidates: candidates
           });
         } catch (multipleRequestError) {
-          console.warn('複数候補生成に失敗、単一候補で再試行:', multipleRequestError);
+          console.warn('❌ 複数候補生成に失敗、単一候補で再試行:', multipleRequestError);
           
           // フォールバック: 1つだけ生成
-          const openRouterText = await callOpenRouter({
-            apiKey: openRouterApiKey as string, // 型アサーションを追加
-            model: openRouterModel,
-            messages: messagesForOpenRouter,
-            temperature: modelConfig.generationConfig.temperature,
-            maxTokens: modelConfig.generationConfig.maxOutputTokens,
-          });
+          try {
+            console.log('🔄 単一候補生成開始（フォールバック）');
+            const openRouterText = await callOpenRouter({
+              apiKey: openRouterApiKey as string, // 型アサーションを追加
+              model: openRouterModel,
+              messages: messagesForOpenRouter,
+              temperature: modelConfig.generationConfig.temperature,
+              maxTokens: modelConfig.generationConfig.maxOutputTokens,
+            });
 
-          const userName = persona?.name || 'あなた';
-          const replaced = openRouterText
-            .replace(/\{\{char}}/g, character.name)
-            .replace(/\{\{user}}/g, userName);
+            console.log('✅ 単一候補生成完了（フォールバック）:', openRouterText.substring(0, 100) + '...');
 
-          return NextResponse.json({
-            success: true,
-            content: replaced,
-            candidates: [replaced]
-          });
+            const userName = persona?.name || 'あなた';
+            const replaced = openRouterText
+              .replace(/\{\{char}}/g, character.name)
+              .replace(/\{\{user}}/g, userName);
+
+            return NextResponse.json({
+              success: true,
+              content: replaced,
+              candidates: [replaced]
+            });
+          } catch (singleRequestError) {
+            console.error('❌ 単一候補生成も失敗:', singleRequestError);
+            throw singleRequestError;
+          }
         }
       } catch (openRouterError) {
         console.error('OpenRouter error:', openRouterError);

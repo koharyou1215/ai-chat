@@ -181,7 +181,9 @@ export async function POST(request: NextRequest) {
 
     // ローカルStable Diffusionを試行
     const localSdUrl = process.env.LOCAL_SD_URL || settings?.localSdUrl; // settingsから取得
-    if (localSdUrl && localSdUrl !== '' && localSdUrl !== 'your-sd.example.com') {
+    console.log('[/api/generate-image] ローカルSD URL:', localSdUrl);
+    
+    if (localSdUrl && localSdUrl !== '' && localSdUrl !== 'your-sd.example.com' && !localSdUrl.includes('example.com')) {
       try {
         console.log(`[/api/generate-image] ローカルStable Diffusion APIを使用: ${localSdUrl}`);
         
