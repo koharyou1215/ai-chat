@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
     console.log("Aspect ratio:", aspectRatio);
     console.log("Safety checker:", safetyChecker);
 
-    // 環境変数を最優先で取得 - Runware
+    // 設定画面を優先で取得 - Runware
     const envRunwareApiKey = process.env.RUNWARE_API_KEY;
     const settingsRunwareApiKey = settings?.runwareApiKey; // settingsから取得
-    const runwareApiKey = envRunwareApiKey || settingsRunwareApiKey;
+    const runwareApiKey = settingsRunwareApiKey || envRunwareApiKey;
     
     // デバッグ用：環境変数の詳細確認
     console.log('Runware Environment variables debug:', {
@@ -63,8 +63,9 @@ export async function POST(request: NextRequest) {
     });
     
     const envRunwareModelId = process.env.RUNWARE_MODEL_ID;
-    const settingsRunwareModelId = settings?.runwaremodelid; // settingsから取得
-    const runwareModelId = envRunwareModelId || settingsRunwareModelId;
+    const settingsRunwareModelId = settings?.runwareModelId; // settingsから取得（キャメルケースに修正）
+    // 設定画面のモデルを優先、設定がない場合のみ環境変数を使用
+    const runwareModelId = settingsRunwareModelId || envRunwareModelId;
 
     console.log('[/api/generate-image] Runware API Key check:', {
       hasSettingsApiKey: !!settingsRunwareApiKey,
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Stable Diffusionフォールバック
     const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
     const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
-    const stableDiffusionApiKey = envStableDiffusionApiKey || settingsStableDiffusionApiKey;
+    const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
 
     console.log('[/api/generate-image] Stable Diffusion API Key check:', {
       hasSettingsApiKey: !!settingsStableDiffusionApiKey,

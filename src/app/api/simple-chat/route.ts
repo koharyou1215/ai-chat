@@ -227,10 +227,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
       try {
-        // 環境変数を最優先で取得
+        // 設定画面を優先で取得
         const envApiKey = process.env.OPENROUTER_API_KEY;
         const settingsApiKey = settings?.openRouterApiKey;
-        const openRouterApiKey = envApiKey || settingsApiKey;
+        const openRouterApiKey = settingsApiKey || envApiKey;
         
         // デバッグ用：環境変数の詳細確認
         console.log('Environment variables debug:', {

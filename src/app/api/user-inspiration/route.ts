@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
       character?: Character;
     } = await req.json();
 
-    // 環境変数を最優先で取得
+    // 設定画面を優先で取得
     const envApiKey = process.env.OPENROUTER_API_KEY;
     const settingsApiKey = settings?.openRouterApiKey as string | undefined;
-    const openRouterApiKey = envApiKey || settingsApiKey;
+    const openRouterApiKey = settingsApiKey || envApiKey;
     
     console.log('[/api/user-inspiration] OpenRouter API Key check:', {
       hasSettingsApiKey: !!settingsApiKey,

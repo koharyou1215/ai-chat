@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // フロント側の設定からAPIキーを取得
-    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // OpenRouter APIキーを取得
+    // 設定画面を優先でAPIキーを取得
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY; // 設定画面を優先
     
     if (!openRouterApiKey) {
       return NextResponse.json({

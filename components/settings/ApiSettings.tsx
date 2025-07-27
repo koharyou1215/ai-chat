@@ -177,6 +177,79 @@ export default function ApiSettings({ formSettings, setFormSettings }: ApiSettin
             カンマ区切りで複数指定できます。
           </p>
         </div>
+
+        {/* 画像生成設定 */}
+        <div className="border-t border-gray-200 pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">画像生成設定</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">デフォルトシード</label>
+              <div className="flex gap-1 items-center">
+                <input
+                  type="number"
+                  value={formSettings.imageSeed ?? ''}
+                  onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageSeed: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+                  placeholder="ランダム"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormSettings((prev: AppSettings) => ({ ...prev, imageSeed: Math.floor(Math.random()*2**32) }))}
+                  className="px-2 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                  title="ランダム生成"
+                >🎲</button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">幅</label>
+              <input 
+                type="number" 
+                value={formSettings.imageWidth || 512}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageWidth: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">高さ</label>
+              <input 
+                type="number" 
+                value={formSettings.imageHeight || 768}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageHeight: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Steps</label>
+              <input 
+                type="number" 
+                value={formSettings.imageSteps || 28}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageSteps: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CFG Scale</label>
+              <input 
+                type="number" 
+                value={formSettings.imageCfgScale || 8}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageCfgScale: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sampler</label>
+              <select 
+                value={formSettings.imageSampler || 'DPM++ 2M Karras'}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageSampler: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              >
+                {['DPM++ 2M Karras','Euler a','Euler','DDIM'].map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

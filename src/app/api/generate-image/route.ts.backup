@@ -63,8 +63,9 @@ export async function POST(request: NextRequest) {
     });
     
     const envRunwareModelId = process.env.RUNWARE_MODEL_ID;
-    const settingsRunwareModelId = settings?.runwaremodelid; // settingsから取得
-    const runwareModelId = envRunwareModelId || settingsRunwareModelId;
+    const settingsRunwareModelId = settings?.runwareModelId; // settingsから取得（キャメルケースに修正）
+    // 設定画面のモデルを優先、設定がない場合のみ環境変数を使用
+    const runwareModelId = settingsRunwareModelId || envRunwareModelId;
 
     console.log('[/api/generate-image] Runware API Key check:', {
       hasSettingsApiKey: !!settingsRunwareApiKey,

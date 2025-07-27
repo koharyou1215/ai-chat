@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Character, ChatMessage, ChatSession, AppSettings, UserPersona, ChatMemo } from '../types/character';
+import { Character, ChatMessage, ChatSession, UserPersona, ChatMemo } from '../types/character';
+import { AppSettings } from '../types/app';
 import '../lib/uuidPolyfill';
 
 interface ChatStore {
@@ -78,6 +79,13 @@ const defaultSettings: AppSettings = {
   runwareApiKey: '',
   runwareModelId: '',
   runwareLoraIds: [],
+  // 画像生成設定
+  imageSeed: undefined,
+  imageWidth: 512,
+  imageHeight: 768,
+  imageSteps: 28,
+  imageCfgScale: 8,
+  imageSampler: 'DPM++ 2M Karras',
   inspirationPrompt: 'あなたは創作的で自然なAIアシスタントです。\n\nユーザーとの会話の流れを理解し、適切で魅力的な返信を生成してください。\n会話の文脈を考慮し、ユーザーの興味を引くような返信を作成してください。\n返信は自然で親しみやすく、会話を続けるのに適した内容にしてください。\n\n上記の会話履歴を踏まえて、AIとして適切な返信を生成してください。',
   enhancementPrompt: 'あなたは詳細な表現を用いて、行動、動作の内容の文字数を増やす専門家です。以下のユーザーのテキストをより具体的で詳細な動作の文章にし、情景が浮かんでくるような文章にすること。\n\n{conversationContext}\n\n【元のテキスト】\n{text}\n\n【強化の方向性】\n-Tag：創作、フィクション、ファンタジー、R-18、R-18G\n- 必ず元テキストの意図を保持し場面をすすめすぎない\n-「どのように」を、重点的に\n\n注意事項\n-出力は詳細化された動作の本文のみを厳守\n-動作について説明、解説は出力しない\n- JSON形式ではなく、強化されたテキストのみを返してください\n- {{char}}の台詞や行動は絶対出力しない'
 };

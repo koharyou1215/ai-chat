@@ -16,6 +16,7 @@ export interface AppSettings {
   geminiApiKey?: string;
   runwareApiKey?: string;
   runwareModelId?: string;
+  runwareLoraIds?: string[];
   elevenLabsApiKey?: string;
   stableDiffusionApiKey?: string;
   
@@ -56,8 +57,10 @@ export interface AppSettings {
   imageEngine?: string;
   candidateCount?: number;
   bubbleDesign?: 'default' | 'rounded' | 'sharp';
+  jailbreakPromptEnabled?: boolean;
 
-  // キャラクター編集画面からの移設プロパティ
+  // 画像生成設定
+  imageSeed?: number;
   imageWidth?: number;
   imageHeight?: number;
   imageSteps?: number;

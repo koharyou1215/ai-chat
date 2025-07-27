@@ -1000,3 +1000,94 @@
 
 ### ステータス
 - [x] 完了 
+
+---
+
+## 2025年7月27日 - 画像生成モデル優先順位修正
+
+### 概要
+- 画像生成のモデル設定において、設定画面のモデルを環境変数よりも優先するように修正
+
+### 詳細
+- 現在の実装では環境変数`RUNWARE_MODEL_ID`が設定画面のモデルよりも優先されていた
+- ユーザーの要求により、設定画面で指定されたモデルIDを最優先にする必要があった
+- また、プロパティ名の不一致（`runwaremodelid` vs `runwareModelId`）も修正
+
+### 解決方法
+- `src/app/api/generate-image/route.ts`の優先順位ロジックを修正
+  ```typescript
+  // 修正前: 環境変数優先
+  const runwareModelId = envRunwareModelId || settingsRunwareModelId;
+  
+  // 修正後: 設定画面優先
+  const runwareModelId = settingsRunwareModelId || envRunwareModelId;
+  ```
+- プロパティ名を統一（`runwaremodelid` → `runwareModelId`）
+- `types/app.ts`に`runwareLoraIds?: string[]`プロパティを追加
+- バックアップファイルも同様に修正
+
+### 学んだ教訓
+- 設定の優先順位はユーザーの期待に合わせる必要がある
+- プロパティ名の統一は型安全性の観点から重要
+- バックアップファイルも同時に修正する必要がある
+
+### 関連ファイル
+- `src/app/api/generate-image/route.ts`
+- `src/app/api/generate-image/route.ts.backup`
+- `types/app.ts`
+
+### ステータス
+- [x] 完了 
+
+---
+
+## 2025年7月27日 - API優先順位と画像生成設定の統合修正
+
+### 概要
+- Vercel環境変数からのAPI読み込み確認と設定画面優先への修正
+- キャラクター編集画面から画像生成設定を削除し、設定画面に移動
+- 永続化機能の確認と修正
+
+### 詳細
+- **API優先順位修正**: すべてのAPIファイルで設定画面の値を環境変数よりも優先するように修正
+- **画像生成設定統合**: キャラクター編集画面から画像生成設定を削除し、設定画面に統合
+- **永続化機能確認**: キャラクター設定、背景設定、履歴の永続化機能を確認
+
+### 解決方法
+1. **API優先順位修正**:
+   - `src/app/api/generate-image/route.ts`: Runware APIキーとモデルIDの優先順位修正
+   - `src/app/api/simple-chat/route.ts`: OpenRouter APIキーの優先順位修正
+   - `src/app/api/user-inspiration/route.ts`: OpenRouter APIキーの優先順位修正
+   - `src/app/api/enhance-text/route.ts`: OpenRouter APIキーの優先順位修正
+
+2. **画像生成設定統合**:
+   - `components/CharacterModal.tsx`: 画像生成設定セクションを削除
+   - `components/settings/ApiSettings.tsx`: 画像生成設定セクションを追加
+   - `types/app.ts`: 画像生成設定プロパティを追加
+   - `stores/chatStore.ts`: 画像生成設定のデフォルト値を追加
+
+3. **永続化機能確認**:
+   - `lib/backgroundManager.ts`: キャラクター背景設定の永続化機能確認
+   - `src/app/api/save-background/route.ts`: サーバーサイド永続化機能確認
+   - `lib/characterLoader.ts`: キャラクター設定の自動読み込み機能確認
+
+### 学んだ教訓
+- 設定の優先順位は一貫性を保つことが重要
+- 画像生成設定は設定画面で一元管理する方が適切
+- 永続化機能は複数層（localStorage + サーバー）で実装されている
+
+### 関連ファイル
+- `src/app/api/generate-image/route.ts`
+- `src/app/api/simple-chat/route.ts`
+- `src/app/api/user-inspiration/route.ts`
+- `src/app/api/enhance-text/route.ts`
+- `components/CharacterModal.tsx`
+- `components/settings/ApiSettings.tsx`
+- `types/app.ts`
+- `stores/chatStore.ts`
+- `lib/backgroundManager.ts`
+- `src/app/api/save-background/route.ts`
+- `lib/characterLoader.ts`
+
+### ステータス
+- [x] 完了 

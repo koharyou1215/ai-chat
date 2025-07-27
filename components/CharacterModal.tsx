@@ -28,13 +28,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     likes: [],
     dislikes: [],
     background: '',
-    avatar_url: '',
-    imageSeed: undefined,
-    imageWidth: 512,
-    imageHeight: 768,
-    imageSteps: 28,
-    imageCfgScale: 8,
-    imageSampler: 'DPM++ 2M Karras'
+    avatar_url: ''
   });
 
   const [newTag, setNewTag] = useState('');
@@ -61,13 +55,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         age: character.age || '',
         occupation: character.occupation || '',
         background: character.background || '',
-        avatar_url: character.avatar_url || '',
-        imageSeed: character.imageSeed,
-        imageWidth: character.imageWidth,
-        imageHeight: character.imageHeight,
-        imageSteps: character.imageSteps,
-        imageCfgScale: character.imageCfgScale,
-        imageSampler: character.imageSampler
+        avatar_url: character.avatar_url || ''
       });
     } else {
       // 新規作成時はリセット
@@ -86,13 +74,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         likes: [],
         dislikes: [],
         background: '',
-        avatar_url: '',
-        imageSeed: undefined,
-        imageWidth: 512,
-        imageHeight: 768,
-        imageSteps: 28,
-        imageCfgScale: 8,
-        imageSampler: 'DPM++ 2M Karras'
+        avatar_url: ''
       });
     }
   }, [character, isOpen]);
@@ -759,62 +741,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
               </div>
             </section>
 
-            {/* 画像生成設定 */}
-            <section>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">画像生成設定</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">デフォルトシード</label>
-                  <div className="flex gap-1 items-center">
-                    <input
-                      type="number"
-                      value={formData.imageSeed ?? ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, imageSeed: e.target.value === '' ? undefined : Number(e.target.value) }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
-                      placeholder="ランダム"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, imageSeed: Math.floor(Math.random()*2**32) }))}
-                      className="px-2 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                      title="ランダム生成"
-                    >🎲</button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">幅</label>
-                  <input type="number" value={formData.imageWidth}
-                    onChange={e=>setFormData(prev=>({...prev, imageWidth:Number(e.target.value)}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">高さ</label>
-                  <input type="number" value={formData.imageHeight}
-                    onChange={e=>setFormData(prev=>({...prev, imageHeight:Number(e.target.value)}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Steps</label>
-                  <input type="number" value={formData.imageSteps}
-                    onChange={e=>setFormData(prev=>({...prev, imageSteps:Number(e.target.value)}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CFG Scale</label>
-                  <input type="number" value={formData.imageCfgScale}
-                    onChange={e=>setFormData(prev=>({...prev, imageCfgScale:Number(e.target.value)}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"/>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sampler</label>
-                  <select value={formData.imageSampler}
-                    onChange={e=>setFormData(prev=>({...prev, imageSampler:e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800">
-                    {['DPM++ 2M Karras','Euler a','Euler','DDIM'].map(opt=>(<option key={opt} value={opt}>{opt}</option>))}
-                  </select>
-                </div>
-              </div>
-            </section>
+
           </div>
         </div>
 
