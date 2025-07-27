@@ -8,7 +8,7 @@ import '../../lib/uuidPolyfill';
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
-import { Character, AppSettings, UserPersona } from '../../types/character';
+import { Character, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
 // ThemeManagerは削除 - シンプルなローカルストレージ管理に変更
 import { VoiceManager } from '../../lib/voiceManager';
@@ -18,7 +18,7 @@ import CharacterModal from '../../components/CharacterModal';
 import CharacterSelector from '../../components/CharacterSelector';
 import PersonaModal from '../../components/PersonaModal';
 import PersonaSelector from '../../components/PersonaSelector';
-import { MessageMemoButton, MemoListButton } from '../../components/ChatMemoProvider';
+import { MessageMemoButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
 // ThemeModal削除 - インライン実装に変更
 import AuthModal from '../../components/AuthModal';
@@ -435,10 +435,15 @@ export default function ChatPage() {
         document.body.style.background = '#ffffff';
       }
 
-      // キャラクターを読み込み（従来 + 自動読み込み）
-      const builtinCharacters = CharacterLoader.getAllCharacters();
-      const publicCharacters = await loadAllCharactersFromPublic();
-      const allCharacters = [...builtinCharacters, ...publicCharacters];
+      // キャラクターを読み込み（CharacterLoaderで一元管理）
+      console.log('🔄 キャラクター読み込み開始...');
+      
+      // publicキャラクターをCharacterLoaderに読み込ませる
+      await CharacterLoader.loadPublicCharacters();
+      
+      // 全キャラクターを取得（組み込み + カスタム + public）
+      const allCharacters = CharacterLoader.getAllCharacters();
+      console.log('📊 総キャラクター数:', allCharacters.length);
       setAllCharacters(allCharacters);
       
       // Personaを読み込み（保存済み + 自動読み込み）

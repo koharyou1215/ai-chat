@@ -3,6 +3,7 @@ import { Character } from '../types/character';
 // ブラウザ環境でキャラクターデータを管理
 export class CharacterLoader {
   private static characters: Character[] = [];
+  private static publicCharacters: Character[] = [];
   
   // 初期キャラクターデータ（Nami）
   private static readonly defaultCharacter: Character = {
@@ -92,33 +93,41 @@ export class CharacterLoader {
 
   static getAllCharacters(): Character[] {
     this.initialize();
-    return [...this.characters];
+    return [...this.characters, ...this.publicCharacters];
   }
 
   static getCharacterById(id: string): Character | null {
     this.initialize();
-    return this.characters.find(char => char['file-name'] === id) || null;
+    const allCharacters = [...this.characters, ...this.publicCharacters];
+    return allCharacters.find(char => char['file-name'] === id) || null;
   }
 
   static getCharacterByName(name: string): Character | null {
     this.initialize();
-    return this.characters.find(char => char.name === name) || null;
+    const allCharacters = [...this.characters, ...this.publicCharacters];
+    return allCharacters.find(char => char.name === name) || null;
   }
 
   static addCharacter(character: Character): void {
     this.initialize();
     
-    console.log('👤 キャラクター追加中:', character.name);
+    // 既存のキャラクターをチェック（カスタム + public）
+    const allCharacters = [...this.characters, ...this.publicCharacters];
+    const existingIndex = allCharacters.findIndex(char => char['file-name'] === character['file-name']);
     
-    // file-nameが未設定の場合は名前から生成
-    if (!character['file-name']) {
-      character['file-name'] = `${character.name.toLowerCase().replace(/\s+/g, '_')}.json`;
-    }
-    
-    const existingIndex = this.characters.findIndex(char => char['file-name'] === character['file-name']);
     if (existingIndex >= 0) {
       console.log('🔄 既存キャラクター更新:', character.name);
-      this.characters[existingIndex] = character;
+      
+      // カスタムキャラクターかpublicキャラクターかを判定
+      const isCustomCharacter = this.characters.findIndex(char => char['file-name'] === character['file-name']) >= 0;
+      
+      if (isCustomCharacter) {
+        const customIndex = this.characters.findIndex(char => char['file-name'] === character['file-name']);
+        this.characters[customIndex] = character;
+      } else {
+        const publicIndex = this.publicCharacters.findIndex(char => char['file-name'] === character['file-name']);
+        this.publicCharacters[publicIndex] = character;
+      }
     } else {
       console.log('➕ 新規キャラクター追加:', character.name);
       this.characters.push(character);
@@ -134,23 +143,93 @@ export class CharacterLoader {
 
   static deleteCharacter(characterName: string): boolean {
     this.initialize();
-    const index = this.characters.findIndex(char => char.name === characterName);
-    if (index >= 0) {
-      this.characters.splice(index, 1);
+    
+    // カスタムキャラクターから削除
+    const customIndex = this.characters.findIndex(char => char.name === characterName);
+    if (customIndex >= 0) {
+      this.characters.splice(customIndex, 1);
       this.saveToLocalStorage();
       return true;
     }
+    
+    // publicキャラクターから削除
+    const publicIndex = this.publicCharacters.findIndex(char => char.name === characterName);
+    if (publicIndex >= 0) {
+      this.publicCharacters.splice(publicIndex, 1);
+      this.savePublicCharactersToLocalStorage();
+      return true;
+    }
+    
     return false;
+  }
+
+  // publicキャラクターを読み込んで永続化
+  static async loadPublicCharacters(): Promise<void> {
+    try {
+      console.log('🔄 publicキャラクター読み込み開始...');
+      
+      // public/characters/ の一覧を取得
+      const response = await fetch('/api/list-characters');
+      if (!response.ok) {
+        console.warn('キャラクター一覧取得失敗:', response.status);
+        return;
+      }
+      
+      const fileList: string[] = await response.json();
+      const newPublicCharacters: Character[] = [];
+      
+      // 各JSONファイルを読み込み
+      for (const filename of fileList) {
+        if (!filename.endsWith('.json')) continue;
+        
+        try {
+          console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
+          const charResponse = await fetch(`/characters/character/${filename}`);
+          
+          if (charResponse.ok) {
+            const characterData = await charResponse.json();
+            console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
+            
+            // 簡易形式のキャラクターファイルを完全形式に変換
+            const { normalizeCharacterData } = await import('./autoLoader');
+            const normalizedCharacter = normalizeCharacterData(characterData, filename);
+            newPublicCharacters.push(normalizedCharacter);
+          } else {
+            console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status}`);
+          }
+        } catch (error) {
+          console.error(`❌ キャラクター読み込みエラー: ${filename}`, error);
+        }
+      }
+      
+      // publicキャラクターを更新
+      this.publicCharacters = newPublicCharacters;
+      this.savePublicCharactersToLocalStorage();
+      
+      console.log(`✅ publicキャラクター読み込み完了: ${newPublicCharacters.length} 件`);
+    } catch (error) {
+      console.error('❌ publicキャラクター読み込みエラー:', error);
+    }
   }
 
   private static saveToLocalStorage(): void {
     try {
       const customCharacters = this.characters.filter(char => char['file-name'] !== 'nami.json');
-      console.log('💾 キャラクター保存中:', customCharacters.length, '件');
+      console.log('💾 カスタムキャラクター保存中:', customCharacters.length, '件');
       localStorage.setItem('ai-chat-characters', JSON.stringify(customCharacters));
-      console.log('✅ キャラクター保存完了');
+      console.log('✅ カスタムキャラクター保存完了');
     } catch (error) {
-      console.error('❌ キャラクター保存エラー:', error);
+      console.error('❌ カスタムキャラクター保存エラー:', error);
+    }
+  }
+
+  private static savePublicCharactersToLocalStorage(): void {
+    try {
+      console.log('💾 publicキャラクター保存中:', this.publicCharacters.length, '件');
+      localStorage.setItem('ai-chat-public-characters', JSON.stringify(this.publicCharacters));
+      console.log('✅ publicキャラクター保存完了');
+    } catch (error) {
+      console.error('❌ publicキャラクター保存エラー:', error);
     }
   }
 
@@ -159,7 +238,17 @@ export class CharacterLoader {
       const saved = localStorage.getItem('ai-chat-characters');
       return saved ? JSON.parse(saved) : [];
     } catch (error) {
-      console.error('キャラクター読み込みエラー:', error);
+      console.error('カスタムキャラクター読み込みエラー:', error);
+      return [];
+    }
+  }
+
+  private static loadPublicCharactersFromLocalStorage(): Character[] {
+    try {
+      const saved = localStorage.getItem('ai-chat-public-characters');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('publicキャラクター読み込みエラー:', error);
       return [];
     }
   }
@@ -168,19 +257,37 @@ export class CharacterLoader {
     if (this.characters.length === 0) {
       console.log('🔄 キャラクター初期化中...');
       const customCharacters = this.loadFromLocalStorage();
-      console.log('📚 読み込み済みキャラクター:', customCharacters.length, '件');
+      const savedPublicCharacters = this.loadPublicCharactersFromLocalStorage();
+      
+      console.log('📚 読み込み済みカスタムキャラクター:', customCharacters.length, '件');
+      console.log('📚 読み込み済みpublicキャラクター:', savedPublicCharacters.length, '件');
+      
       this.characters = [this.defaultCharacter, ...customCharacters];
-      console.log('✅ キャラクター初期化完了:', this.characters.length, '件');
+      this.publicCharacters = savedPublicCharacters;
+      
+      console.log('✅ キャラクター初期化完了:', this.characters.length + this.publicCharacters.length, '件');
     }
   }
 
   static removeCharacter(id: string): boolean {
     this.initialize();
-    const index = this.characters.findIndex(char => char['file-name'] === id);
-    if (index >= 0) {
-      this.characters.splice(index, 1);
+    
+    // カスタムキャラクターから削除
+    const customIndex = this.characters.findIndex(char => char['file-name'] === id);
+    if (customIndex >= 0) {
+      this.characters.splice(customIndex, 1);
+      this.saveToLocalStorage();
       return true;
     }
+    
+    // publicキャラクターから削除
+    const publicIndex = this.publicCharacters.findIndex(char => char['file-name'] === id);
+    if (publicIndex >= 0) {
+      this.publicCharacters.splice(publicIndex, 1);
+      this.savePublicCharactersToLocalStorage();
+      return true;
+    }
+    
     return false;
   }
 
