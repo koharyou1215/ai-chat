@@ -83,6 +83,7 @@ interface CharacterGalleryProps {
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (character: Character) => void;
   onImportExport?: () => void;
+  onManualLoad?: () => void;
   onClose: () => void;
 }
 
@@ -2306,8 +2307,9 @@ export default function ChatPage() {
               }
             }
           }}
+          onImportExport={() => setIsImportExportOpen(true)}
           onManualLoad={async () => {
-            console.log('🔄 手動でキャラクター読み込み開始...');
+            console.log('🔄 手動キャラクター読み込み開始...');
             try {
               // CharacterLoaderを初期化
               CharacterLoader.initialize();
@@ -2319,14 +2321,15 @@ export default function ChatPage() {
               const updatedCharacters = CharacterLoader.getAllCharacters();
               setAllCharacters(updatedCharacters);
               
-              console.log('✅ 手動読み込み完了:', updatedCharacters.length, '件');
+              console.log('✅ 手動キャラクター読み込み完了:', updatedCharacters.length, '件');
+              console.log('📋 読み込まれたキャラクター:', updatedCharacters.map(c => c.name));
+              
               alert(`キャラクター読み込み完了: ${updatedCharacters.length}件`);
             } catch (error) {
-              console.error('❌ 手動読み込みエラー:', error);
+              console.error('❌ 手動キャラクター読み込みエラー:', error);
               alert('キャラクター読み込みに失敗しました');
             }
           }}
-          onImportExport={() => setIsImportExportOpen(true)}
           onClose={() => setIsCharacterGalleryOpen(false)}
         />
       )}

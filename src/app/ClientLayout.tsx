@@ -111,7 +111,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           sidebarOpen ? 'ml-64' : 'ml-0'
         }`}>
           {/* ヘッダー */}
-          <div className="bg-black bg-opacity-50 backdrop-blur-md border-b border-gray-700 p-4">
+          <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 flex-shrink-0 sticky top-0 z-40">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
