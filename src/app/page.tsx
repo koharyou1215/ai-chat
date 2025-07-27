@@ -6,7 +6,7 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy } from 'lucide-react';
+import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, AppSettings, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -626,7 +626,7 @@ export default function ChatPage() {
           characterId: currentCharacter?.name,
           character: currentCharacter,
           memos,
-          conversation: [...messages, newMessage].slice(-(settings.historySize || 4))
+          conversation: [...messages, newMessage].slice(-(settings.historySize || 8))
         }),
       });
 
@@ -863,7 +863,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: conversationText, // APIが期待するパラメータ名に修正
+          message: conversationText,
           settings
         })
       });
@@ -872,16 +872,24 @@ export default function ChatPage() {
       console.log('インスピレーションAPI応答:', data);
       console.log('候補配列:', data.candidates);
       if (data.candidates && data.candidates.length > 0) {
-        // 1本モードなので最初の候補を直接メッセージ欄に設定
-        const candidate = data.candidates[0];
-        console.log('候補をメッセージ欄に設定:', candidate);
-        if (candidate && candidate.trim()) {
-          setMessage(candidate);
+        // AIが生成した返信を直接チャットに送信
+        const aiResponse = data.candidates[0];
+        console.log('AIが生成した返信:', aiResponse);
+        if (aiResponse && aiResponse.trim()) {
+          // AIの返信として直接チャットに追加
+          const newMessage: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: aiResponse.trim(),
+            timestamp: Date.now()
+          };
+          setMessages(prev => [...prev, newMessage]);
+          scrollToBottom();
         } else {
-          console.error('候補が空です');
+          console.error('AIの返信が空です');
         }
       } else {
-        console.error('候補が取得できませんでした:', data);
+        console.error('AIの返信が取得できませんでした:', data);
       }
     } catch (error) {
       console.error('User inspiration error:', error);
@@ -1071,7 +1079,7 @@ export default function ChatPage() {
       // 会話履歴から最後のユーザーメッセージを除外してコンテキストを作成
       const conversationContext = messagesWithoutLast
         .filter((m) => m.id !== lastUserMessage.id)
-        .slice(-(settings.historySize || 4)); // 履歴サイズを削減
+        .slice(-(settings.historySize || 8)); // 履歴サイズを適切に設定
 
       console.log('📚 会話コンテキスト件数:', conversationContext.length);
 
@@ -1515,19 +1523,7 @@ export default function ChatPage() {
               VoiceManager.stopAudio();
               
               // キャラクター個別の背景を適用
-              if (character.background) {
-                console.log('🎨 キャラクター背景を適用:', character.background);
-                import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
-                  const currentTheme = getDefaultTheme();
-                  ThemeManager.applyTheme(currentTheme, character.background);
-                });
-              } else {
-                console.log('🎨 キャラクター背景なし、デフォルトテーマを適用');
-                import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
-                  const currentTheme = getDefaultTheme();
-                  ThemeManager.applyTheme(currentTheme);
-                });
-              }
+              handleThemeChange(settings.currentTheme || 'default', character.background);
               
               // 新しいキャラクターの初回メッセージを設定
               const firstMessage = Array.isArray(character.first_message) 
@@ -1566,19 +1562,7 @@ export default function ChatPage() {
                     setCurrentSessionId(null);
                     
                     // 代替キャラクターの背景を適用
-                    if (firstCharacter.background) {
-                      console.log('🎨 代替キャラクター背景を適用:', firstCharacter.background);
-                      import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
-                        const currentTheme = getDefaultTheme();
-                        ThemeManager.applyTheme(currentTheme, firstCharacter.background);
-                      });
-                    } else {
-                      console.log('🎨 代替キャラクター背景なし、デフォルトテーマを適用');
-                      import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
-                        const currentTheme = getDefaultTheme();
-                        ThemeManager.applyTheme(currentTheme);
-                      });
-                    }
+                    handleThemeChange(settings.currentTheme || 'default', firstCharacter.background);
                     
                     const firstMessage = Array.isArray(firstCharacter.first_message) 
                       ? firstCharacter.first_message.join('\n') 
@@ -1594,10 +1578,7 @@ export default function ChatPage() {
                     setCurrentCharacter(null);
                     setMessages([]);
                     // キャラクターがなくなった場合はデフォルトテーマを適用
-                    import('../../lib/themes').then(({ ThemeManager, getDefaultTheme }) => {
-                      const currentTheme = getDefaultTheme();
-                      ThemeManager.applyTheme(currentTheme);
-                    });
+                    handleThemeChange('default', undefined);
                   }
                 }
               }
@@ -1738,6 +1719,13 @@ export default function ChatPage() {
                   >
                     <Settings size={16} />
                     設定
+                  </button>
+                  <button 
+                    onClick={() => setIsCharacterGalleryOpen(true)}
+                    className="w-full bg-white/20 backdrop-blur-sm text-white py-3 px-4 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <User size={16} />
+                    キャラクターギャラリー
                   </button>
                   <button 
                     onClick={handleImageTest}
@@ -2090,6 +2078,53 @@ export default function ChatPage() {
           onClose={() => setIsEnhancedImpressionOpen(false)}
           impressions={currentImpressions}
           isLoading={isGeneratingImpression}
+        />
+      )}
+      {isCharacterGalleryOpen && (
+        <CharacterGallery
+          characters={allCharacters}
+          currentCharacter={currentCharacter}
+          onSelectCharacter={(character) => {
+            setCurrentCharacter(character);
+            setCurrentSessionId(null);
+            VoiceManager.stopAudio();
+            handleThemeChange(settings.currentTheme || 'default', character.background);
+            setInitialMessage(character);
+            setIsCharacterGalleryOpen(false);
+          }}
+          onAddCharacter={() => {
+            setEditingCharacter(null);
+            setIsCharacterModalOpen(true);
+            setIsCharacterGalleryOpen(false);
+          }}
+          onEditCharacter={(character) => {
+            setEditingCharacter(character);
+            setIsCharacterModalOpen(true);
+            setIsCharacterGalleryOpen(false);
+          }}
+          onDeleteCharacter={(character) => {
+            if (confirm(`「${character.name}」を削除しますか？`)) {
+              CharacterLoader.deleteCharacter(character.name);
+              const updatedCharacters = CharacterLoader.getAllCharacters();
+              setAllCharacters(updatedCharacters);
+              
+              if (currentCharacter?.name === character.name) {
+                const firstCharacter = updatedCharacters[0];
+                if (firstCharacter) {
+                  setCurrentCharacter(firstCharacter);
+                  setCurrentSessionId(null);
+                  handleThemeChange(settings.currentTheme || 'default', firstCharacter.background);
+                  setInitialMessage(firstCharacter);
+                } else {
+                  setCurrentCharacter(null);
+                  setMessages([]);
+                  handleThemeChange('default', undefined);
+                }
+              }
+            }
+          }}
+          onImportExport={() => setIsImportExportOpen(true)}
+          onClose={() => setIsCharacterGalleryOpen(false)}
         />
       )}
     </>

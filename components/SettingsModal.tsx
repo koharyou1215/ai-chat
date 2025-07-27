@@ -562,11 +562,11 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       value={formSettings.inspirationPrompt || ''}
                       onChange={(e) => setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                      rows={4}
-                      placeholder="例: ユーザーの会話から次の返信候補を3つ生成してください。自然で魅力的な返信を心がけてください。"
+                      rows={8}
+                      placeholder="電球マーク（💡）でAIが自ら返信を生成する際のプロンプトを設定してください"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      電球マーク（💡）で返信候補を生成する際のプロンプト設定
+                      電球マーク（💡）でAIが自ら返信を生成する際のプロンプト設定
                     </p>
                   </div>
 
@@ -579,8 +579,8 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
                       value={formSettings.enhancementPrompt || ''}
                       onChange={(e) => setFormSettings(prev => ({ ...prev, enhancementPrompt: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                      rows={4}
-                      placeholder="例: 入力された文章をより魅力的で自然な表現に改善してください。"
+                      rows={8}
+                      placeholder="キラキラマーク（✨）で文章を強化する際のプロンプトを設定してください"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       キラキラマーク（✨）で文章を強化する際のプロンプト設定

@@ -174,12 +174,24 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     
     // 会話履歴をテキスト化（空文字やundefinedを除外）
     // ---- プロンプト短縮 ----
-    // 1) 空行除去 2) 直近10件 3) assistant 長文 (>250文字) はスキップ
+    // 1) 空行除去 2) 直近の履歴を適切に制限 3) 長すぎるメッセージは要約
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
           .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-(settings?.historySize || 4)) // 履歴サイズをさらに削減
-          .filter((msg: { role: string; content: string }) => msg.role === 'user' || msg.content.length < 250)
+          .slice(-(settings?.historySize || 8)) // 履歴サイズを8件に増加
+          .map((msg: { role: string; content: string }) => {
+            // 長すぎるメッセージは要約
+            if (msg.content.length > 500) {
+              return {
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content.substring(0, 500) + '...'
+              };
+            }
+            return {
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content
+            };
+          })
       : [];
 
     let historyText = filteredConversation.map((msg: { role: string; content: string }) => {
@@ -196,8 +208,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       fullPrompt += '\n【重要】この続きでは、ユーザーの思考・行動・セリフは一切含めず、{{char}}（キャラクター）の返答・独白・行動・心情描写のみを自然に書き続けてください。物語や会話が進行するようにしてください。';
     }
     
-    // プロンプト長が30,000文字を超える場合は古い履歴から削除
-    const MAX_PROMPT_CHARS = 30000;
+    // プロンプト長が15,000文字を超える場合は古い履歴から削除（より厳しい制限）
+    const MAX_PROMPT_CHARS = 15000;
     if (fullPrompt.length > MAX_PROMPT_CHARS) {
       console.warn('プロンプトが長すぎるため履歴を削除して短縮します');
       // 履歴を古い順に削除しながら短縮

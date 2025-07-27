@@ -45,28 +45,15 @@ export async function POST(req: NextRequest) {
 
     // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
     const customPrompt = settings?.inspirationPrompt;
-    const prompt = customPrompt || `あなたは「ユーザーのメッセージから次のチャットのインスピレーションの候補を提示する」ことに特化したAIアシスタントです。
-あなたの役割は、ユーザーの過去のメッセージや現在の状況を考慮し、会話をさらに面白く、深く、または新しい方向に進めるための、簡潔で魅力的な発言の候補を3つ提案することです。
-各候補は、ユーザーの次の発言として自然に会話の流れにフィットするものであるべきです。
-候補は日本語で、ユーザーが直接使えるような短いフレーズや質問の形式で提供してください。
-また、候補にはユーザーが想像力を掻き立てられるような具体的な内容を含めてください。
-あなたの思考プロセスや解説は一切出力せず、純粋にJSON形式の候補リストのみを生成してください。
+    const prompt = customPrompt || `あなたは創作的で自然なAIアシスタントです。
+ユーザーとの会話の流れを理解し、適切で魅力的な返信を生成してください。
+会話の文脈を考慮し、ユーザーの興味を引くような返信を作成してください。
+返信は自然で親しみやすく、会話を続けるのに適した内容にしてください。
 
-ユーザーのメッセージ:
+会話履歴:
 ${message}
 
-提供する候補のJSON形式の例:
-\`\`\`json
-{
-  "candidates": [
-    "候補1のテキスト",
-    "候補2のテキスト",
-    "候補3のテキスト"
-  ]
-}
-\`\`\`
-
-候補を生成してください。`;
+上記の会話履歴を踏まえて、AIとして適切な返信を生成してください。`;
 
     console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。');
     const response = await chatCompletion({
@@ -83,44 +70,16 @@ ${message}
     const content: string = response;
     console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`);
 
-    try {
-      // JSONパースの改善
-      let cleanedContent = content
-        .replace(/```json\s*/g, '')
-        .replace(/```\s*$/g, '')
-        .trim();
-
-      // 不完全なJSONを検出して修正
-      if (!cleanedContent.endsWith('}')) {
-        const lastCompleteObject = cleanedContent.lastIndexOf('"');
-        if (lastCompleteObject > 0) {
-          const lastBrace = cleanedContent.lastIndexOf('}');
-          if (lastBrace > lastCompleteObject) {
-            cleanedContent = cleanedContent.substring(0, lastBrace + 1);
-          }
-        }
-      }
-
-      const parsedContent = JSON.parse(cleanedContent);
-      if (!parsedContent.candidates || !Array.isArray(parsedContent.candidates)) {
-        console.error('[/api/user-inspiration] 応答のJSON形式が不正です。candidates配列が見つかりません。');
-        return NextResponse.json({ error: 'Invalid JSON format from OpenRouter API: missing candidates array' }, { status: 500 });
-      }
-      console.log(`[/api/user-inspiration] 生成された候補数: ${parsedContent.candidates.length}`);
-      return NextResponse.json(parsedContent);
-    } catch (parseError: unknown) {
-      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
-      console.error(`[/api/user-inspiration] JSONパースエラー: ${errorMessage}, 応答内容: ${content}`);
-      
-      // フォールバック: 基本的な候補を生成
-      const fallbackCandidates = [
-        "もう少し詳しく教えてください",
-        "それは面白いですね。他には？",
-        "なるほど、それでどうなりましたか？"
-      ];
-      
+    // 直接的な返信として扱う（JSON形式ではない）
+    if (content && content.trim()) {
       return NextResponse.json({ 
-        candidates: fallbackCandidates,
+        candidates: [content.trim()],
+        directResponse: true 
+      });
+    } else {
+      console.error('[/api/user-inspiration] OpenRouterからの応答が空です。');
+      return NextResponse.json({ 
+        candidates: ["会話の流れを理解できませんでした。もう一度お聞かせください。"],
         fallback: true 
       });
     }
