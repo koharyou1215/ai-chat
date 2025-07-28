@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, User, Heart, Tag, MessageSquare } from 'lucide-react';
 import { Character } from '../types/character';
 import { ImageCompressor } from '../lib/imageCompressor';
@@ -28,8 +28,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     likes: [],
     dislikes: [],
     background: '',
-    avatar_url: '',
-    backgroundImageUrl: '' // 追加
+    avatar_url: ''
   });
 
   const [newTag, setNewTag] = useState('');
@@ -37,7 +36,6 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [backgroundFile, setBackgroundFile] = useState<File | null>(null); // 追加
 
   useEffect(() => {
     if (character) {
@@ -57,8 +55,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         age: character.age || '',
         occupation: character.occupation || '',
         background: character.background || '',
-        avatar_url: character.avatar_url || '',
-        backgroundImageUrl: character.backgroundImageUrl || '' // 追加
+        avatar_url: character.avatar_url || ''
       });
     } else {
       // 新規作成時はリセット
@@ -77,8 +74,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         likes: [],
         dislikes: [],
         background: '',
-        avatar_url: '',
-        backgroundImageUrl: '' // 追加
+        avatar_url: ''
       });
     }
   }, [character, isOpen]);
@@ -89,36 +85,22 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       return;
     }
 
-    // アバターファイルが選択されている場合はBase64に変換
+    // ファイルが選択されている場合はBase64に変換
     let finalAvatarUrl = formData.avatar_url;
     if (avatarFile) {
       try {
         const base64 = await fileToBase64(avatarFile);
         finalAvatarUrl = base64;
       } catch (error) {
-        console.error('アバターファイル変換エラー:', error);
-        alert('アバター画像の変換に失敗しました');
+        console.error('ファイル変換エラー:', error);
+        alert('画像ファイルの変換に失敗しました');
         return;
       }
     }
 
-    // 背景ファイルが選択されている場合はBase64に変換
-    let finalBackgroundUrl = formData.backgroundImageUrl; // 追加
-    if (backgroundFile) { // 追加
-      try { // 追加
-        const base64 = await fileToBase64(backgroundFile); // 追加
-        finalBackgroundUrl = base64; // 追加
-      } catch (error) { // 追加
-        console.error('背景ファイル変換エラー:', error); // 追加
-        alert('背景画像の変換に失敗しました'); // 追加
-        return; // 追加
-      } // 追加
-    } // 追加
-
     const characterData: Character = {
       ...formData,
       avatar_url: finalAvatarUrl,
-      backgroundImageUrl: finalBackgroundUrl, // 追加
       first_message: (formData.first_message || ['']).filter(msg => msg.trim() !== '')
     };
     
@@ -188,33 +170,41 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       return;
     }
 
-    // MIMEタイプチェック (画像または動画)
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      alert('画像ファイル（.jpg, .png, .gif, .webp）または動画ファイル（.mp4, .webm）を選択してください。');
+    // ファイル形式チェック
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/ogg'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('対応していないファイル形式です。画像（JPG、PNG、GIF、WebP）または動画（MP4、WebM、OGG）ファイルを選択してください。');
       return;
     }
 
     try {
-      const base64 = await fileToBase64(file);
-      setFormData(prev => ({ ...prev, backgroundImageUrl: base64 })); // backgroundImageUrlに代入
-      setBackgroundFile(file);
-      console.log('背景ファイルアップロード成功:', file.name);
+      // 画像ファイルの場合は圧縮
+      if (file.type.startsWith('image/')) {
+        const compressedResult = await ImageCompressor.compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.8
+        });
+        setFormData(prev => ({ ...prev, background: compressedResult.dataUrl }));
+        console.log('✅ 画像ファイルを圧縮して背景に設定:', file.name);
+      } else {
+        // 動画ファイルの場合はそのままBase64変換
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setFormData(prev => ({ ...prev, background: result }));
+          console.log('✅ 動画ファイルを背景に設定:', file.name);
+        };
+        reader.readAsDataURL(file);
+      }
     } catch (error) {
-      console.error('背景ファイル変換エラー:', error);
-      alert('ファイルの読み込みに失敗しました。');
+      console.error('ファイル処理エラー:', error);
+      alert('ファイルの処理中にエラーが発生しました。');
     }
-  };
-
-  // 背景画像の削除
-  const handleRemoveBackgroundImage = () => {
-    setFormData(prev => ({ ...prev, backgroundImageUrl: '' }));
-    setBackgroundFile(null);
-  };
-
-  // アバター画像の削除
-  const handleRemoveAvatarImage = () => {
-    setFormData(prev => ({ ...prev, avatar_url: '' }));
-    setAvatarFile(null);
   };
 
   if (!isOpen) return null;
@@ -327,7 +317,10 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                         />
                         {avatarFile && (
                           <button
-                            onClick={handleRemoveAvatarImage}
+                            onClick={() => {
+                              setAvatarFile(null);
+                              setFormData(prev => ({ ...prev, avatar_url: '' }));
+                            }}
                             className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                           >
                             クリア
@@ -708,7 +701,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                     />
                     <button
                       type="button"
-                      onClick={handleRemoveBackgroundImage}
+                      onClick={() => setFormData(prev => ({ ...prev, background: '' }))}
                       className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
                     >
                       クリア
@@ -720,28 +713,28 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                 </div>
 
                 {/* プレビュー */}
-                {formData.backgroundImageUrl && ( // backgroundImageUrlを使用
+                {formData.background && (
                   <div className="mt-4 p-3 bg-gray-100 rounded-lg">
                     <p className="text-xs text-gray-600 mb-2">背景プレビュー:</p>
-                    {formData.backgroundImageUrl.startsWith('data:') || formData.backgroundImageUrl.startsWith('blob:') ? (
+                    {formData.background.startsWith('data:') || formData.background.startsWith('blob:') ? (
                       <div className="relative">
-                        {formData.backgroundImageUrl.match(/^data:video|^blob:.*video/) ? (
+                        {formData.background.match(/^data:video|^blob:.*video/) ? (
                           <video
-                            src={formData.backgroundImageUrl}
+                            src={formData.background}
                             className="w-full h-32 object-cover rounded"
                             controls
                             muted
                           />
                         ) : (
                           <img
-                            src={formData.backgroundImageUrl}
+                            src={formData.background}
                             alt="背景プレビュー"
                             className="w-full h-32 object-cover rounded"
                           />
                         )}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-600">URL: {formData.backgroundImageUrl}</p>
+                      <p className="text-xs text-gray-600">URL: {formData.background}</p>
                     )}
                   </div>
                 )}

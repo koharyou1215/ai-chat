@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       .map((msg: ChatMessage) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`)
       .join('\n\n');
 
-    const prompt = `以下の会話を3つの異なる視点から分析して、それぞれ200字程度のインプレッションを生成してください。
+    const prompt = `以下の会話を、キャラクターの内心に焦点を当てて分析し、それぞれ200字程度のインプレッションを生成してください。
 
 【会話タイトル】: ${sessionTitle || '新しいチャット'}
 【キャラクター】: ${character?.name || 'AI'}
@@ -88,21 +88,21 @@ ${conversationText}
 {
   "impressions": [
     {
-      "title": "インプレッションのタイトル（10文字以内）",
-      "content": "200字程度のインプレッション内容",
-      "perspective": "視点の説明（例：感情面、関係性、成長など）",
+      "title": "内心の揺らぎ",
+      "content": "キャラクターの心の奥底で起こっている感情や葛藤、隠された思いを200字程度で描写",
+      "perspective": "内面的な心理描写",
       "wordCount": 文字数
     },
     {
-      "title": "インプレッションのタイトル（10文字以内）",
-      "content": "200字程度のインプレッション内容",
-      "perspective": "視点の説明（例：感情面、関係性、成長など）",
+      "title": "秘めた感情",
+      "content": "表面には出さない本音、心の中で抱えている感情や願望を200字程度で描写",
+      "perspective": "感情の深層",
       "wordCount": 文字数
     },
     {
-      "title": "インプレッションのタイトル（10文字以内）",
-      "content": "200字程度のインプレッション内容",
-      "perspective": "視点の説明（例：感情面、関係性、成長など）",
+      "title": "心の声",
+      "content": "キャラクターが言葉にしない内なる思考や感情、自己との対話を200字程度で描写",
+      "perspective": "内的独白",
       "wordCount": 文字数
     }
   ]

@@ -1,7 +1,5 @@
 'use client';
 
-// @ts-nocheck
-
 // crypto.randomUUID ポリフィル
 import '../../lib/uuidPolyfill';
 
@@ -523,74 +521,57 @@ export default function ChatPage() {
           // 完全なセッション情報を取得
           const fullSession = await historyManager.loadSession(lastSession.id);
           
-          // セッションが復元できた場合、メッセージを設定
-          if (fullSession && fullSession.messages && fullSession.messages.length > 0) {
-            setMessages(fullSession.messages.map(msg => ({ ...msg, content: msg.content || '' })));
-            // セッションに紐づくキャラクターをセット
-            let restoredCharacter = fullSession.character;
-            if (!restoredCharacter) {
-              restoredCharacter = allCharacters.find(c => c.name === fullSession.characterId);
+          if (fullSession && fullSession.messages.length > 0) {
+            // 保存されたキャラクター情報を優先使用
+            let lastCharacter = fullSession.character;
+            
+            // 保存されたキャラクター情報がない場合は、名前で検索
+            if (!lastCharacter) {
+              lastCharacter = allCharacters.find(c => c.name === fullSession.characterId);
             }
-            if (restoredCharacter) {
-              setCurrentCharacter(restoredCharacter);
-              loadCharacterBackground(restoredCharacter.name); // 背景も適用
+            
+            if (lastCharacter) {
+              setCurrentCharacter(lastCharacter);
+              setCurrentSessionId(fullSession.id);
+              setMessages(fullSession.messages);
+              console.log('✅ セッション復元完了:', fullSession.title, 'キャラクター:', lastCharacter.name);
             } else {
-              console.warn('復元されたセッションのキャラクターが見つかりません:', fullSession.characterId);
-              // 見つからない場合はデフォルトキャラクターを設定
-              const defaultChar = CharacterLoader.getCharacterByName('ナミ');
-              if (defaultChar) setCurrentCharacter(defaultChar);
+              console.log('❌ キャラクターが見つかりません:', fullSession.characterId);
+              // デフォルトキャラクター設定
+              const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+              if (defaultCharacter) {
+                setCurrentCharacter(defaultCharacter);
+                setInitialMessage(defaultCharacter);
+              }
             }
-            setCurrentSessionId(fullSession.id);
-            console.log('✅ セッション復元完了:', fullSession.title, 'キャラクター:', restoredCharacter?.name || '不明');
           } else {
-            // セッションが見つからない、またはメッセージが空の場合
-            console.log('💭 最後のセッションが見つからないかメッセージなし');
-            const defaultChar = CharacterLoader.getCharacterByName('ナミ');
-            if (defaultChar) {
-              setCurrentCharacter(defaultChar);
-              setInitialMessage(defaultChar); // 初回メッセージを設定
-            } else {
-              setMessages([{
-                id: 'initial-fallback',
-                role: 'assistant',
-                content: 'ようこそ！チャットを開始するには、まずキャラクターを選択してください。',
-                timestamp: Date.now()
-              }]);
+            console.log('💭 空のセッションまたはメッセージなし');
+            // デフォルトキャラクター設定
+            const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+            if (defaultCharacter) {
+              setCurrentCharacter(defaultCharacter);
+              setInitialMessage(defaultCharacter);
             }
           }
         } else {
           console.log('📝 セッション履歴なし - 新規開始');
-          // 履歴が全くない場合の初回メッセージ設定
-          const defaultChar = CharacterLoader.getCharacterByName('ナミ');
-          if (defaultChar) {
-            setCurrentCharacter(defaultChar);
-            setInitialMessage(defaultChar); // 初回メッセージを設定
-          } else {
-            setMessages([{
-              id: 'initial-fallback',
-              role: 'assistant',
-              content: 'ようこそ！チャットを開始するには、まずキャラクターを選択してください。',
-              timestamp: Date.now()
-            }]);
+          // デフォルトキャラクター設定
+          const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+          if (defaultCharacter) {
+            setCurrentCharacter(defaultCharacter);
+            setInitialMessage(defaultCharacter);
           }
         }
       } catch (error) {
         console.error('履歴読み込みエラー:', error);
-        // 履歴読み込みエラー時のフォールバックメッセージとデフォルトキャラクター設定
-        const defaultChar = CharacterLoader.getCharacterByName('ナミ');
-        if (defaultChar) {
-          setCurrentCharacter(defaultChar);
-          setInitialMessage(defaultChar);
-        } else {
-          setMessages([{
-            id: 'initial-fallback-error',
-            role: 'assistant',
-            content: '履歴の読み込み中にエラーが発生しました。チャットを開始するには、まずキャラクターを選択してください。',
-            timestamp: Date.now()
-          }]);
+        // エラー時はデフォルトキャラクター設定
+        const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+        if (defaultCharacter) {
+          setCurrentCharacter(defaultCharacter);
+          setInitialMessage(defaultCharacter);
         }
       }
-
+      
       setIsInitialized(true); // 初期化完了フラグ
     };
     
@@ -1349,8 +1330,8 @@ export default function ChatPage() {
       // グローバル背景設定も確認
       const globalBackground = localStorage.getItem('customBackground');
       
-      // 優先順位: キャラクター固有 > グローバル > デフォルト（dg.mp4）
-      const background = characterBackground || globalBackground || '/videos/dg.mp4';
+      // 優先順位: キャラクター固有 > グローバル > デフォルト
+      const background = characterBackground || globalBackground;
       
       const bgElement = document.getElementById('dynamic-background');
       if (bgElement) {
@@ -1375,7 +1356,7 @@ export default function ChatPage() {
             console.log('🖼️ 画像背景を適用:', characterName);
           }
         } else {
-          // 背景がない場合は白背景（これはほとんど実行されないはず）
+          // 背景がない場合は白背景
           bgElement.innerHTML = '';
           bgElement.style.background = '#ffffff';
           bgElement.style.backgroundSize = 'auto';
