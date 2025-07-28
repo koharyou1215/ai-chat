@@ -40,29 +40,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: "style-src 'self' 'unsafe-inline'; font-src 'self' data:;",
           },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
-          },
         ],
-      },
-      {
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-    ];
-  },
-  // 本番環境でのCSS適用を強制
-  async rewrites() {
-    return [
-      {
-        source: '/_next/static/css/:path*',
-        destination: '/_next/static/css/:path*',
       },
     ];
   },

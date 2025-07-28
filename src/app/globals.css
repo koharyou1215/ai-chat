@@ -50,21 +50,6 @@
   }
 }
 
-/* デプロイ時のCSS適用確保 */
-@layer base {
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom) !important;
-  }
-  
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom) !important;
-  }
-  
-  .chat-container {
-    touch-action: pan-y !important;
-  }
-}
-
 /* デプロイ後のCSS適用問題を解決するための緊急措置 */
 @layer base {
   html {
