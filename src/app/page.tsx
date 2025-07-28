@@ -1295,19 +1295,14 @@ export default function ChatPage() {
   // キャラクター背景設定を読み込む関数
   const loadCharacterBackground = (characterName: string) => {
     try {
-      console.log('🔄 背景読み込み開始:', characterName);
-      
       // キャラクター固有の背景設定を確認
       const characterBackground = BackgroundManager.getCharacterBackground(characterName);
-      console.log('📋 キャラクター固有背景:', characterBackground ? 'あり' : 'なし');
       
       // グローバル背景設定も確認
       const globalBackground = localStorage.getItem('customBackground');
-      console.log('📋 グローバル背景:', globalBackground ? 'あり' : 'なし');
       
       // 優先順位: キャラクター固有 > グローバル > デフォルト
       const background = characterBackground || globalBackground;
-      console.log('🎯 適用する背景:', background ? 'あり' : 'なし');
       
       const bgElement = document.getElementById('dynamic-background');
       if (bgElement) {
@@ -1319,7 +1314,7 @@ export default function ChatPage() {
                 muted 
                 loop 
                 playsInline 
-                style="width: 100%; height: 100%; object-fit: cover; z-index: 0;"
+                style="width: 100%; height: 100%; object-fit: cover;"
                 src="${background}"
               ></video>
             `;
@@ -1329,25 +1324,15 @@ export default function ChatPage() {
             bgElement.style.background = `url(${background})`;
             bgElement.style.backgroundSize = 'cover';
             bgElement.style.backgroundPosition = 'center';
-            bgElement.style.zIndex = '0';
             console.log('🖼️ 画像背景を適用:', characterName);
           }
         } else {
           // 背景がない場合は白背景
           bgElement.innerHTML = '';
           bgElement.style.background = '#ffffff';
-          bgElement.style.backgroundSize = 'cover';
-          bgElement.style.zIndex = '0';
+          bgElement.style.backgroundSize = 'auto';
           console.log('⚪ 白背景を適用:', characterName);
         }
-        
-        // 強制的に再描画
-        bgElement.style.display = 'none';
-        setTimeout(() => {
-          bgElement.style.display = 'block';
-        }, 10);
-      } else {
-        console.error('❌ 背景要素が見つかりません');
       }
     } catch (error) {
       console.error('背景読み込みエラー:', error);
@@ -1378,7 +1363,7 @@ export default function ChatPage() {
               muted 
               loop 
               playsInline 
-              style="width: 100%; height: 100%; object-fit: cover; z-index: 0;"
+              style="width: 100%; height: 100%; object-fit: cover;"
               src="${customBackground}"
             ></video>
           `;
@@ -1389,15 +1374,8 @@ export default function ChatPage() {
           bgElement.style.background = `url(${customBackground})`;
           bgElement.style.backgroundSize = 'cover';
           bgElement.style.backgroundPosition = 'center';
-          bgElement.style.zIndex = '0';
           console.log('🖼️ 画像背景を即座に適用');
         }
-        
-        // 強制的に再描画
-        bgElement.style.display = 'none';
-        setTimeout(() => {
-          bgElement.style.display = 'block';
-        }, 10);
       }
     } else {
       // 背景削除（白背景）
@@ -1569,9 +1547,10 @@ export default function ChatPage() {
         ref={mainContainerRef}
         className="flex relative w-full chat-container"
         style={{
-          overflow: 'auto',
-          height: '100vh',
-          touchAction: 'pan-y' // デプロイ時のタッチアクション確保
+          background: '#ffffff',
+          overflow: 'hidden',
+          height: '100dvh',
+          minHeight: '100dvh' // 追加：最小高さを保証
         }}
       >
         {/* 動的背景（画像・動画対応） */}
@@ -1580,10 +1559,9 @@ export default function ChatPage() {
           className="fixed inset-0 w-full h-full z-0"
           style={{
             background: '#ffffff',
-            backgroundSize: 'cover',
+            backgroundSize: 'auto',
             backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            zIndex: 0
+            backgroundRepeat: 'no-repeat'
           }}
         />
         {/* モバイル用オーバーレイ */}
@@ -1973,7 +1951,7 @@ export default function ChatPage() {
           </div>
 
           {/* チャットメッセージエリア */}
-          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto">
+          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pb-safe">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' ? (
@@ -2111,7 +2089,7 @@ export default function ChatPage() {
           </div>
 
           {/* メッセージ入力フォーム */}
-          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm">
+          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm sticky bottom-0 z-40">
             <div className="max-w-4xl mx-auto">
               {/* アクションボタン */}
               <div className="flex gap-1 md:gap-2 mb-2 flex-wrap">

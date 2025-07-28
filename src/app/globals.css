@@ -39,14 +39,14 @@
 /* モバイルでのスクロール固定のためのスタイル */
 @media (max-width: 768px) {
   body {
-    position: fixed !important;
-    width: 100% !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
   }
   
   .chat-container {
-    touch-action: pan-y !important;
+    touch-action: pan-y;
   }
 }
 

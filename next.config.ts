@@ -1,5 +1,4 @@
 import type { NextConfig } from 'next'
-import path from 'path'
 
 const nextConfig: NextConfig = {
   trailingSlash: true,
@@ -15,17 +14,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Vercelデプロイ時の静的ファイル配信確保
-  output: 'standalone',
-  // 静的ファイルの配信設定
-  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
   // CSS最適化の問題を修正
   experimental: {
     optimizeCss: false,
-  },
-  // デプロイ時のCSS適用確保
-  compiler: {
-    removeConsole: false,
   },
   // 本番環境でのCSS適用確保
   webpack: (config: any, { dev, isServer }: { dev: boolean; isServer: boolean }) => {
@@ -51,18 +42,27 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            value: 'public, max-age=0, must-revalidate',
           },
         ],
       },
       {
-        source: '/globals.css',
+        source: '/_next/static/(.*)',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
+      },
+    ];
+  },
+  // 本番環境でのCSS適用を強制
+  async rewrites() {
+    return [
+      {
+        source: '/_next/static/css/:path*',
+        destination: '/_next/static/css/:path*',
       },
     ];
   },
