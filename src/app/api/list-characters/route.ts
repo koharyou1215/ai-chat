@@ -4,34 +4,22 @@ import path from 'path';
 
 export async function GET() {
   try {
-    // 複数のキャラクターディレクトリをチェック (より堅牢なパス解決)
-    const publicDir = path.resolve(process.cwd(), 'public');
-    const possibleDirs = [
-      path.join(publicDir, 'characters'),
-      path.join(publicDir, 'character'),
-      path.join(process.cwd(), 'characters') // プロジェクトルート直下のcharactersもチェック
-    ];
+    // 全てのキャラクターファイルをpublic/charactersから読み込む
+    const charactersDir = path.resolve(process.cwd(), 'public', 'characters');
+    console.log('📂 キャラクターディレクトリパスをチェック:', charactersDir);
     
-    const allFiles: string[] = [];
-    
-    for (const dir of possibleDirs) {
-      console.log('📂 キャラクターディレクトリパスをチェック:', dir);
-      
-      if (fs.existsSync(dir)) {
-        console.log('✅ キャラクターディレクトリ確認済み:', dir);
-        
-        const files = fs.readdirSync(dir)
-          .filter(file => file.endsWith('.json'));
-        
-        console.log('📋 見つかったキャラクターファイル:', files);
-        allFiles.push(...files);
-      } else {
-        console.log('❌ キャラクターディレクトリが存在しません:', dir);
-      }
+    if (!fs.existsSync(charactersDir)) {
+      console.error('❌ キャラクターディレクトリが存在しません:', charactersDir);
+      return NextResponse.json([]);
     }
     
-    // 重複を除去
-    const uniqueFiles = [...new Set(allFiles)];
+    const files = fs.readdirSync(charactersDir)
+      .filter(file => file.endsWith('.json'));
+    
+    console.log('📋 見つかったキャラクターファイル:', files);
+    
+    // 重複を除去（念のため、実際は不要になるはず）
+    const uniqueFiles = [...new Set(files)];
     console.log('📋 最終的なキャラクターファイル一覧:', uniqueFiles);
     
     return NextResponse.json(uniqueFiles);
