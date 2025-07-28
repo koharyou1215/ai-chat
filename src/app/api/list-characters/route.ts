@@ -4,11 +4,12 @@ import path from 'path';
 
 export async function GET() {
   try {
-    // 複数のキャラクターディレクトリをチェック
+    // 複数のキャラクターディレクトリをチェック (より堅牢なパス解決)
+    const publicDir = path.resolve(process.cwd(), 'public');
     const possibleDirs = [
-      path.join(process.cwd(), 'public', 'characters'),
-      path.join(process.cwd(), 'public', 'character'),
-      path.join(process.cwd(), 'characters')
+      path.join(publicDir, 'characters'),
+      path.join(publicDir, 'character'),
+      path.join(process.cwd(), 'characters') // プロジェクトルート直下のcharactersもチェック
     ];
     
     const allFiles: string[] = [];
