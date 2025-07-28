@@ -12,7 +12,7 @@ interface PersonaModalProps {
   onSave: (persona: UserPersona) => void;
 }
 
-export default function PersonaModal({ isOpen, onClose, persona, onSave }: PersonaModalProps) {
+export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }: PersonaModalProps) {
   const [formData, setFormData] = useState<UserPersona>({
     id: '',
     name: '',
@@ -25,8 +25,8 @@ export default function PersonaModal({ isOpen, onClose, persona, onSave }: Perso
   const [newDislike, setNewDislike] = useState('');
 
   useEffect(() => {
-    if (persona) {
-      setFormData(persona);
+    if (initialPersona) {
+      setFormData(initialPersona);
     } else {
       const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
         ? crypto.randomUUID()
@@ -40,7 +40,7 @@ export default function PersonaModal({ isOpen, onClose, persona, onSave }: Perso
         other_settings: ''
       });
     }
-  }, [persona, isOpen]);
+  }, [initialPersona, isOpen]);
 
   const handleSave = () => {
     if (!formData.name.trim()) {

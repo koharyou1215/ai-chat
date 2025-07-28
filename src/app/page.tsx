@@ -489,6 +489,15 @@ export default function ChatPage() {
       console.log('📋 読み込まれたキャラクター一覧:', allCharacters.map(c => c.name));
       setAllCharacters(allCharacters);
       
+      // デフォルトキャラクターの設定確認
+      const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+      console.log('🎭 デフォルトキャラクター確認:', defaultCharacter ? defaultCharacter.name : 'なし');
+      
+      // キャラクターが一つもない場合の警告
+      if (allCharacters.length === 0) {
+        console.warn('⚠️ キャラクターが一つも読み込まれていません！');
+      }
+      
       // Personaを読み込み（保存済み + 自動読み込み）
       try {
         const savedPersonas = localStorage.getItem('ai-chat-personas');
@@ -648,7 +657,29 @@ export default function ChatPage() {
   }, [messages, currentCharacter, currentSessionId]);
 
   const handleSend = async () => {
-    if (!message.trim() || !currentCharacter || isLoading) return;
+    console.log('📤 送信ボタンがクリックされました', { 
+      message: message.trim(), 
+      messageLength: message.trim().length, 
+      isLoading, 
+      currentCharacter: currentCharacter?.name || 'なし' 
+    });
+    
+    if (!message.trim() || isLoading) {
+      console.log('❌ 送信条件未満: メッセージが空またはロード中');
+      return;
+    }
+    
+    // キャラクターが選択されていない場合は、デフォルトキャラクターを設定
+    if (!currentCharacter) {
+      console.log('⚠️ キャラクターが選択されていません。デフォルトキャラクターを設定します。');
+      const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+      if (defaultCharacter) {
+        setCurrentCharacter(defaultCharacter);
+      } else {
+        alert('キャラクターが選択されていません。サイドバーからキャラクターを選択してください。');
+        return;
+      }
+    }
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -1891,12 +1922,15 @@ export default function ChatPage() {
         </div>
 
         {/* メインチャットエリア */}
-        <div className="flex-1 flex flex-col w-full md:w-auto overflow-hidden">
-          {/* ヘッダー */}
-          <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0 sticky top-0 z-50">
+        <div className="flex-1 flex flex-col w-full md:w-auto h-full">
+          {/* ヘッダー - 固定 */}
+          <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                onClick={() => {
+                  console.log('🍔 バーガーメニューがクリックされました。現在の状態:', isSidebarOpen, '→', !isSidebarOpen);
+                  setIsSidebarOpen(!isSidebarOpen);
+                }}
                 className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
                 title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
               >
@@ -1950,8 +1984,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* チャットメッセージエリア */}
-          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pb-safe">
+          {/* チャットメッセージエリア - スクロール可能 */}
+          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pt-16 pb-20 md:pt-4 md:pb-4">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' ? (
@@ -2051,6 +2085,38 @@ export default function ChatPage() {
                          >
                           <Copy size={14} />
                          </button>
+                         {/* アクションボタン（続き、リセット、要約、感想） */}
+                         <button
+                          onClick={handleContinue}
+                          disabled={isLoading}
+                          className="touch-target text-gray-500 hover:text-blue-600 p-1 rounded disabled:opacity-50"
+                          title="続きを話す"
+                         >
+                          ▶
+                         </button>
+                         <button
+                          onClick={handleReset}
+                          className="touch-target text-gray-500 hover:text-cyan-600 p-1 rounded"
+                          title="リセット"
+                         >
+                          🔄
+                         </button>
+                         <button
+                          onClick={handleGenerateSummary}
+                          disabled={isGeneratingSummary || messages.length < 3}
+                          className="touch-target text-gray-500 hover:text-orange-600 p-1 rounded disabled:opacity-50"
+                          title="要約"
+                         >
+                          📝
+                         </button>
+                         <button
+                          onClick={handleGenerateEnhancedImpression}
+                          disabled={isGeneratingImpression || messages.length < 3}
+                          className="touch-target text-gray-500 hover:text-pink-600 p-1 rounded disabled:opacity-50"
+                          title="感想"
+                         >
+                          ✨
+                         </button>
                        </div>
                     </div>
                   </div>
@@ -2088,39 +2154,10 @@ export default function ChatPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* メッセージ入力フォーム */}
-          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/80 backdrop-blur-sm sticky bottom-0 z-40">
+          {/* メッセージ入力フォーム - 下固定 */}
+          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/60 backdrop-blur-sm fixed bottom-0 left-0 right-0 z-40 md:relative md:sticky md:bg-white/80">
             <div className="max-w-4xl mx-auto">
-              {/* アクションボタン */}
-              <div className="flex gap-1 md:gap-2 mb-2 flex-wrap">
-                <button
-                  onClick={handleContinue}
-                  disabled={isLoading}
-                  className="touch-target flex-1 bg-white/50 text-gray-700 px-2 md:px-4 py-1.5 md:py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-xs md:text-sm"
-                >
-                  ▶ 続きを話す
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="touch-target flex-1 bg-white/50 text-gray-700 px-2 md:px-4 py-1.5 md:py-2 rounded-lg hover:bg-white/80 transition-colors text-xs md:text-sm"
-                >
-                  🔄 リセット
-                </button>
-                <button
-                  onClick={handleGenerateSummary}
-                  disabled={isGeneratingSummary || messages.length < 3}
-                  className="touch-target flex-1 bg-white/50 text-gray-700 px-2 md:px-4 py-1.5 md:py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-xs md:text-sm"
-                >
-                  {isGeneratingSummary ? '生成中...' : '📝 要約'}
-                </button>
-                <button
-                  onClick={handleGenerateEnhancedImpression}
-                  disabled={isGeneratingImpression || messages.length < 3}
-                  className="touch-target flex-1 bg-white/50 text-gray-700 px-2 md:px-4 py-1.5 md:py-2 rounded-lg hover:bg-white/80 transition-colors disabled:opacity-50 text-xs md:text-sm"
-                >
-                  {isGeneratingImpression ? '生成中...' : '✨ 感想'}
-                </button>
-              </div>
+
               
               {/* 返答候補表示エリア */}
               {showInspirationCandidates && userInspirationCandidates.length > 0 && (
@@ -2161,7 +2198,7 @@ export default function ChatPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="メッセージを入力 (Ctrl+Enterで送信)"
-                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 shadow-md rounded-full resize-none transition-all duration-200 bg-white/70 text-gray-800 placeholder-gray-600 focus:outline-none focus:ring-0 border-0 text-sm md:text-base ${
+                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 rounded-full resize-none transition-all duration-200 bg-transparent text-gray-800 placeholder-gray-600 focus:outline-none focus:ring-0 border-0 text-sm md:text-base ${
                     isInputExpanded ? 'h-24 md:h-32' : 'h-12 md:h-16'
                   }`}
                   onFocus={() => setIsInputExpanded(true)}
@@ -2228,7 +2265,7 @@ export default function ChatPage() {
         <PersonaModal
           isOpen={isPersonaModalOpen}
           onClose={() => setIsPersonaModalOpen(false)}
-          persona={editingPersona}
+          initialPersona={editingPersona}
           onSave={(savedPersona) => {
             const newPersonas = editingPersona
               ? allPersonas.map(p => p.id === savedPersona.id ? savedPersona : p)
@@ -2308,7 +2345,10 @@ export default function ChatPage() {
               }
             }
           }}
-          onImportExport={() => setIsImportExportOpen(true)}
+          onImportExport={() => {
+            setIsImportExportOpen(true);
+            setIsCharacterGalleryOpen(false);
+          }}
           onManualLoad={async () => {
             console.log('🔄 手動キャラクター読み込み開始...');
             try {
@@ -2332,6 +2372,24 @@ export default function ChatPage() {
             }
           }}
           onClose={() => setIsCharacterGalleryOpen(false)}
+        />
+      )}
+
+      {/* キャラクターインポート/エクスポートモーダル */}
+      {isImportExportOpen && (
+        <CharacterImportExport
+          isOpen={isImportExportOpen}
+          onClose={() => setIsImportExportOpen(false)}
+          onImport={(characters) => {
+            characters.forEach(character => {
+              CharacterLoader.addCharacter(character);
+            });
+            const updatedCharacters = CharacterLoader.getAllCharacters();
+            setAllCharacters(updatedCharacters);
+            setIsImportExportOpen(false);
+            alert(`${characters.length}件のキャラクターをインポートしました`);
+          }}
+          allCharacters={allCharacters}
         />
       )}
     </>

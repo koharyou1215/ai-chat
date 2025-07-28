@@ -4,24 +4,36 @@ import path from 'path';
 
 export async function GET() {
   try {
-    const charactersDir = path.join(process.cwd(), 'public', 'characters', 'character');
-    console.log('📂 キャラクターディレクトリパス:', charactersDir);
+    // 複数のキャラクターディレクトリをチェック
+    const possibleDirs = [
+      path.join(process.cwd(), 'public', 'characters'),
+      path.join(process.cwd(), 'public', 'character'),
+      path.join(process.cwd(), 'characters')
+    ];
     
-    // ディレクトリが存在するかチェック
-    if (!fs.existsSync(charactersDir)) {
-      console.error('❌ キャラクターディレクトリが存在しません:', charactersDir);
-      return NextResponse.json([]);
+    const allFiles: string[] = [];
+    
+    for (const dir of possibleDirs) {
+      console.log('📂 キャラクターディレクトリパスをチェック:', dir);
+      
+      if (fs.existsSync(dir)) {
+        console.log('✅ キャラクターディレクトリ確認済み:', dir);
+        
+        const files = fs.readdirSync(dir)
+          .filter(file => file.endsWith('.json'));
+        
+        console.log('📋 見つかったキャラクターファイル:', files);
+        allFiles.push(...files);
+      } else {
+        console.log('❌ キャラクターディレクトリが存在しません:', dir);
+      }
     }
     
-    console.log('✅ キャラクターディレクトリ確認済み');
+    // 重複を除去
+    const uniqueFiles = [...new Set(allFiles)];
+    console.log('📋 最終的なキャラクターファイル一覧:', uniqueFiles);
     
-    // .jsonファイルのみをフィルター
-    const files = fs.readdirSync(charactersDir)
-      .filter(file => file.endsWith('.json'));
-    
-    console.log('📋 見つかったキャラクターファイル:', files);
-    
-    return NextResponse.json(files);
+    return NextResponse.json(uniqueFiles);
   } catch (error) {
     console.error('❌ Characters list error:', error);
     return NextResponse.json([], { status: 500 });
