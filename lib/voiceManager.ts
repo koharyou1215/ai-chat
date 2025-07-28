@@ -196,11 +196,14 @@ export class VoiceManager {
           this.currentAudio.onended = () => {
             this.isPlaying = false;
             URL.revokeObjectURL(audioUrl);
+            this.currentAudio = null;
           };
 
           this.currentAudio.onerror = (error) => {
             console.error('音声再生エラー:', error);
             this.isPlaying = false;
+            URL.revokeObjectURL(audioUrl);
+            this.currentAudio = null;
           };
 
           this.isPlaying = true;

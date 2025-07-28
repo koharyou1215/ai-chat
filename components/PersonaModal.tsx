@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface PersonaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  persona?: UserPersona | null;
+  initialPersona?: UserPersona | null;
   onSave: (persona: UserPersona) => void;
 }
 

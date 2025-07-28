@@ -1,7 +1,6 @@
 ﻿import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+import ClientLayout from './ClientLayout' // ClientLayoutをインポート
 
 export const metadata: Metadata = {
   title: 'AI Chat App',
@@ -18,11 +17,10 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body 
-        className={`${GeistSans.className} ${GeistMono.className} antialiased relative`}
-        suppressHydrationWarning={true}
-      >
-        {children}
+      <body>
+        <ClientLayout> {/* ClientLayoutでchildrenをラップ */}
+          {children}
+        </ClientLayout>
       </body>
     </html>
   )

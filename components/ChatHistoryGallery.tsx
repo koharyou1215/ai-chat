@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { MessageSquare, Plus, Trash2, Search, Clock, ArrowLeft, Grid, List, Calendar, Star } from 'lucide-react';
 import { SessionSummary } from '../lib/historyManager';
+import { Character } from '../types/character';
 
 interface ChatHistoryGalleryProps {
   sessions: SessionSummary[];
-  currentSessionId: string | null;
-  onSelectSession: (sessionId: string) => void;
+  characters: Character[];
+  onSelectSession: (session: SessionSummary) => void;
   onDeleteSession: (sessionId: string) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function ChatHistoryGallery({

@@ -12,6 +12,8 @@ interface CharacterSelectorProps {
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (character: Character) => void;
   onImportExport?: () => void;
+  onManualLoad?: () => void;
+  onClose?: () => void;
 }
 
 export default function CharacterSelector({

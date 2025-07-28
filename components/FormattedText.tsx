@@ -2,12 +2,12 @@
 import { mdToHtml } from '../lib/markdown';
 
 interface Props {
-  md: string;
+  text: string;
   className?: string;
 }
 
-export default function FormattedText({ md, className = '' }: Props) {
-  const html = mdToHtml(md);
+export default function FormattedText({ text, className = '' }: Props) {
+  const html = mdToHtml(text);
   return (
     <div
       className={className}
