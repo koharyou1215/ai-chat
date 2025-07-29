@@ -179,8 +179,16 @@ export class CharacterLoader {
         
         try {
           console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
-          const charResponse = await fetch(`/characters/character/${filename}`);
-          
+
+          // まず旧パス( /characters/character/ ) を試行
+          let charResponse = await fetch(`/characters/character/${filename}`);
+
+          // 旧パスが404なら新パス( /characters/ ) を試行
+          if (!charResponse.ok) {
+            console.warn(`⚠️ 旧パスで取得失敗 (${charResponse.status}). 新パスを試行します`);
+            charResponse = await fetch(`/characters/${filename}`);
+          }
+
           if (charResponse.ok) {
             const characterData = await charResponse.json();
             console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
@@ -191,7 +199,7 @@ export class CharacterLoader {
             console.log(`🔄 正規化完了: ${normalizedCharacter.name}`);
             newPublicCharacters.push(normalizedCharacter);
           } else {
-            console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status}`);
+            console.error(`❌ キャラクター読み込み失敗 (全パス): ${filename} - ${charResponse.status}`);
           }
         } catch (error) {
           console.error(`❌ キャラクター読み込みエラー: ${filename}`, error);

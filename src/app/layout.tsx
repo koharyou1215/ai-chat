@@ -1,8 +1,9 @@
 ﻿import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import ThemeInitializer from '../../components/ThemeInitializer'
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: 'AI Chat',
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body 
-        className={`${GeistSans.className} ${GeistMono.className} antialiased relative`}
+        className={`${inter.className} antialiased relative`}
         suppressHydrationWarning={true}
       >
         <ThemeInitializer />

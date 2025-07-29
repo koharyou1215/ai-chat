@@ -11,6 +11,18 @@ export async function GET() {
       path.join(process.cwd(), 'characters')
     ];
     
+    const walkDir = (dirPath: string, fileList: string[]) => {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          walkDir(fullPath, fileList);
+        } else if (entry.isFile() && entry.name.endsWith('.json')) {
+          fileList.push(entry.name);
+        }
+      }
+    };
+
     const allFiles: string[] = [];
     
     for (const dir of possibleDirs) {
@@ -18,12 +30,8 @@ export async function GET() {
       
       if (fs.existsSync(dir)) {
         console.log('✅ キャラクターディレクトリ確認済み:', dir);
-        
-        const files = fs.readdirSync(dir)
-          .filter(file => file.endsWith('.json'));
-        
-        console.log('📋 見つかったキャラクターファイル:', files);
-        allFiles.push(...files);
+        walkDir(dir, allFiles);
+        console.log('📋 見つかったキャラクターファイル:', allFiles);
       } else {
         console.log('❌ キャラクターディレクトリが存在しません:', dir);
       }

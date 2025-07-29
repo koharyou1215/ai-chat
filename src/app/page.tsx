@@ -138,6 +138,8 @@ const CharacterImportExport = dynamic(() => import('../../components/CharacterIm
 const PersonaImportExport = dynamic(() => import('../../components/PersonaImportExport'), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
+const MessageEditorModal = dynamic(() => import('../../components/MessageEditorModal').then(m => m.MessageEditorModal), { ssr: false });
+
 export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -1568,7 +1570,9 @@ export default function ChatPage() {
     }
   };
 
-
+  // メッセージ編集モーダル
+  const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
+  const [messageDraft, setMessageDraft] = useState('');
 
   return (
     <>
@@ -1922,7 +1926,7 @@ export default function ChatPage() {
         {/* メインチャットエリア */}
         <div className="flex-1 flex flex-col w-full md:w-auto h-full">
           {/* ヘッダー - 固定 */}
-          <div className="bg-black/30 backdrop-blur-sm border-b border-white/10 p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
+          <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
@@ -2153,7 +2157,7 @@ export default function ChatPage() {
           </div>
 
           {/* メッセージ入力フォーム - 下固定 */}
-          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-white/60 backdrop-blur-sm fixed bottom-0 left-0 right-0 z-40 md:relative md:sticky md:bg-white/80">
+          <div className="p-2 md:p-4 safe-area-bottom flex-shrink-0 bg-transparent fixed bottom-0 left-0 right-0 z-40 md:relative md:sticky">
             <div className="max-w-4xl mx-auto">
 
               
@@ -2165,7 +2169,8 @@ export default function ChatPage() {
                     <button
                       key={index}
                       onClick={() => {
-                        setMessage(candidate);
+                        setMessageDraft(candidate);
+                        setIsMessageEditorOpen(true);
                         setShowInspirationCandidates(false);
                         setUserInspirationCandidates([]);
                       }}
@@ -2388,6 +2393,18 @@ export default function ChatPage() {
             alert(`${characters.length}件のキャラクターをインポートしました`);
           }}
           allCharacters={allCharacters}
+        />
+      )}
+      {isMessageEditorOpen && (
+        <MessageEditorModal
+          isOpen={isMessageEditorOpen}
+          initialText={messageDraft}
+          onConfirm={(text) => {
+            setMessage(text);
+            setIsMessageEditorOpen(false);
+            setIsInputExpanded(true);
+          }}
+          onClose={() => setIsMessageEditorOpen(false)}
         />
       )}
     </>
