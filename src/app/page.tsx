@@ -2253,6 +2253,9 @@ export default function ChatPage() {
               setCurrentCharacter(updatedCharacter);
             }
             setIsCharacterModalOpen(false);
+            if (updatedCharacter.background) {
+              BackgroundManager.saveCharacterBackground(updatedCharacter.name, updatedCharacter.background);
+            }
           }}
         />
       )}

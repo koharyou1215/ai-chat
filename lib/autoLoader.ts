@@ -21,7 +21,8 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     likes: data.likes || [],
     dislikes: data.dislikes || [],
     avatar_url: data.avatar_url || '',
-    background: data.background,
+    // 背景メディアはURL/パス/データURIらしい文字列のみ採用（物語的な背景文を除外）
+    background: (typeof data.background === 'string' && /^(https?:\/\/|\/|data:|blob:)/.test(data.background)) ? data.background : undefined,
     
     // 簡易フィールドをそのまま保持
     personality: data.personality,
