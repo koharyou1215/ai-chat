@@ -384,7 +384,7 @@ export default function ChatPage() {
     
     const initializeApp = async () => {
       // タッチジェスチャー初期化（モバイルデバイスのみ）
-      if (isMobileDevice()) {
+      if (false /* スワイプでサイドバーを開かない */) {
         const gestureManager = new TouchGestureManager(
           () => {
             // 左スワイプ: サイドバーを開く
