@@ -2169,10 +2169,11 @@ export default function ChatPage() {
                     <button
                       key={index}
                       onClick={() => {
-                        setMessageDraft(candidate);
-                        setIsMessageEditorOpen(true);
-                        setShowInspirationCandidates(false);
-                        setUserInspirationCandidates([]);
+                              setMessageDraft(candidate);
+      setShowInspirationCandidates(false);
+      setUserInspirationCandidates([]);
+      // 初期テキストが確実に渡るように次のtickでモーダルを開く
+      setTimeout(() => setIsMessageEditorOpen(true), 0);
                       }}
                       className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
                     >

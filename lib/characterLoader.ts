@@ -219,8 +219,8 @@ export class CharacterLoader {
 
   private static saveToLocalStorage(): void {
     try {
-      const customCharacters = this.characters.filter(char => char['file-name'] !== 'nami.json');
-      console.log('💾 カスタムキャラクター保存中:', customCharacters.length, '件');
+      const customCharacters = this.characters;
+      console.log('💾 キャラクター保存中:', customCharacters.length, '件');
       localStorage.setItem('ai-chat-characters', JSON.stringify(customCharacters));
       console.log('✅ カスタムキャラクター保存完了');
     } catch (error) {
@@ -267,7 +267,9 @@ export class CharacterLoader {
       console.log('📚 読み込み済みカスタムキャラクター:', customCharacters.length, '件');
       console.log('📚 読み込み済みpublicキャラクター:', savedPublicCharacters.length, '件');
       
-      this.characters = [this.defaultCharacter, ...customCharacters];
+      // デフォルトキャラクター(ナミ)が存在しない場合のみ追加
+      const hasNami = customCharacters.some(c => c['file-name'] === 'nami.json');
+      this.characters = hasNami ? [...customCharacters] : [this.defaultCharacter, ...customCharacters];
       this.publicCharacters = savedPublicCharacters;
       
       console.log('✅ キャラクター初期化完了:', this.characters.length + this.publicCharacters.length, '件');

@@ -316,6 +316,7 @@ export const useChatStore = create<ChatStore>()(
     {
       name: 'ai-chat-store',
       partialize: (state) => ({
+        currentCharacter: state.currentCharacter,
         sessions: state.sessions,
         userPersonas: state.userPersonas,
         settings: state.settings,
