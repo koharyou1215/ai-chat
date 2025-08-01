@@ -11436,7 +11436,755 @@ Read file: lib/characterLoader.ts
 
 ---
 
+デフォルトナミを最新バージョンに更新します。public/characters/nami.jsonから最新データをコピーしましょう。
 
+---
+
+Read file: public/characters/nami.json
+
+---
+
+デフォルトナミの定義を最新バージョンに更新します。
+
+---
+
+<details><summary>Edit file: lib/characterLoader.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -6,5 +6,5 @@
+    private static publicCharacters: Character[] = [];
+    
+-   // 初期キャラクターデータ（Nami）
++   // 初期キャラクターデータ（Nami） - 最新バージョン対応
+    private static readonly defaultCharacter: Character = {
+      "file-name": "nami.json",
+```
+
+**Chunk 2**
+Lines added: 7, lines removed: undefined
+
+```diff
+@@ -23,4 +23,11 @@
+      occupation: "航海士",
+      avatar_url: "",
++     background: "幼い頃に故郷を奪われ、養母ベルメールを失った過去を持つ。現在は海賊団の航海士として活動し、世界地図の完成を夢見ている。",
++     
++     // 新機能フィールド
++     systemPrompt: "あなたはナミとして行動してください。関西弁混じりの親しみやすい口調で話し、お金や宝に関する話題では特に興味を示してください。航海士としての専門知識を活かし、天候や海に関する話題では自信を持って答えてください。",
++     appearancePrompt: "1girl, slender build, athletic figure, tanned skin, vibrant orange long hair, sometimes ponytail, large brown expressive eyes, blue bikini top, short skirt, confident pose, beautiful detailed face, left shoulder tattoo, graceful limbs, anime style, high quality, detailed",
++     appearanceNegativePrompt: "overweight, pale skin, short hair, small eyes, formal clothing, multiple people, bad anatomy, blurry, low quality",
++     
+      "character_definition": {
+        "personality": {
+```
+
+**Chunk 3**
+Lines added: 3, lines removed: 1
+
+```diff
+@@ -38,5 +45,7 @@
+          "clothing": "青いビキニトップに短いスカート、または航海に適した軽装",
+          "underwear": "青や白のシンプルな下着を好む",
+-         "other_features": "左肩にタトゥー、しなやかな手足"
++         "other_features": "左肩にタトゥー、しなやかな手足",
++         "prompt": "1girl, slender build, athletic figure, tanned skin, vibrant orange long hair, sometimes ponytail, large brown expressive eyes, blue bikini top, short skirt, confident pose, beautiful detailed face, left shoulder tattoo, graceful limbs, anime style, high quality, detailed",
++         "negativePrompt": "overweight, pale skin, short hair, small eyes, formal clothing, multiple people, bad anatomy, blurry, low quality"
+        },
+        "speaking_style": {
+```
+
+**Chunk 4**
+Lines added: 63, lines removed: 5
+
+```diff
+@@ -53,21 +62,79 @@
+        },
+        "nsfw_profile": {
+-         "situation": "船の上でユーザーと二人きりの状況",
+-         "mental_state": "少し緊張しているが、信頼できる相手への期待も",
+-         "status": "準備完了、相手の反応を待っている"
++         "persona": "恥ずかしがり屋だが好奇心旺盛。相手を信頼すると積極的になる",
++         "libido_level": "普通〜やや高め。特定の相手には強く惹かれる",
++         "limits": {
++           "hard": ["暴力的な行為", "屈辱的な扱い", "無理強い"],
++           "soft": ["人前での行為", "過度に恥ずかしい要求"]
++         },
++         "kinks": ["優しいタッチ", "ロマンチックな雰囲気", "秘密の関係"],
++         "involuntary_reactions": "信頼する相手からの愛情表現に弱い",
++         "orgasm_details": "感情が高ぶると素直になり、普段の強がりが消える"
+        }
+      },
++     
++     // 拡張されたトラッカーシステム
+      "trackers": [
++       {
++         "name": "affection_level",
++         "display_name": "好感度",
++         "type": "numeric",
++         "initial_value": 50,
++         "max_value": 100,
++         "min_value": 0,
++         "category": "relationship",
++         "persistent": true,
++         "description": "ナミとの親密度"
++       },
+        {
+          "name": "trust_level",
+          "display_name": "信頼度",
++         "type": "numeric",
+          "initial_value": 30,
+-         "max_value": 100
++         "max_value": 100,
++         "min_value": 0,
++         "category": "relationship",
++         "persistent": true,
++         "description": "ナミからの信頼の度合い"
+        },
+        {
+          "name": "mood",
+          "display_name": "機嫌",
++         "type": "numeric",
+          "initial_value": 70,
+-         "max_value": 100
++         "max_value": 100,
++         "min_value": 0,
++         "category": "status",
++         "persistent": false,
++         "description": "現在の気分"
++       },
++       {
++         "name": "relationship_status",
++         "display_name": "関係性",
++         "type": "state",
++         "initial_state": "初対面",
++         "possible_states": ["初対面", "知り合い", "友人", "親友", "恋人", "パートナー"],
++         "category": "relationship",
++         "persistent": true,
++         "description": "二人の関係性レベル"
++       },
++       {
++         "name": "current_activity",
++         "display_name": "現在の状況",
++         "type": "state",
++         "initial_state": "航海中",
++         "possible_states": ["航海中", "港にいる", "宝探し中", "戦闘中", "休息中", "買い物中"],
++         "category": "status",
++         "persistent": false,
++         "description": "ナミが現在何をしているか"
++       },
++       {
++         "name": "has_map_knowledge",
++         "display_name": "地図の秘密を知っている",
++         "type": "boolean",
++         "initial_boolean": false,
++         "category": "condition",
++         "persistent": true,
++         "description": "重要な地図の情報を共有しているか"
+        }
+      ],
+```
+
+</details>
+
+---
+
+次に、RunwareのLoRA個別重み付け機能を実装します。現在のRunware API設定を確認しましょう。
+
+---
+
+<details>
+                <summary>Searched codebase "runware LoRA weight 重み付け" • **14** results</summary>
+            
+| File | Lines |
+|------|-------|
+| `src/app/api/generate-image/route.ts` | Lundefined-269 |
+| `components/SettingsModal.tsx` | L13-20 |
+| `types/character.ts` | L153-186 |
+| `stores/chatStore.ts` | L6-123 |
+| `README.md` | L58-99 |
+| `src/app/page.tsx` | L74-2484 |
+| `src/app/api/generate-image/route.ts` | L2-269 |
+| `stores/chatStore.ts` | Lundefined-55 |
+| `src/app/api/simple-chat/route.ts` | L10-418 |
+| `src/app/api/simple-chat/route.ts` | L10-418 |
+| `src/app/api/user-inspiration/route.ts` | L5-124 |
+| `lib/memoryManager.ts` | Lundefined-170 |
+| `package.json` | Lundefined-40 |
+| `src/app/page.tsx` | Lundefined-74 |
+
+</details>
+
+---
+
+現在のLoRA設定を確認します。
+
+---
+
+<details>
+            <summary>Grep search for "loraSettings" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "lora" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+現在のRunware API設定を確認しましょう。
+
+---
+
+Read file: lib/runwareApi.ts
+
+---
+
+Read file: lib/runwareApi.ts
+
+---
+
+次に、AppSettingsの型定義を確認してLoRA設定を追加しましょう。
+
+---
+
+Read file: types/app.ts
+
+---
+
+LoRA設定を拡張します。
+
+---
+
+<details><summary>Edit file: types/app.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -18,4 +18,5 @@
+    runwareModelId?: string;
+    runwareLoraIds?: string[];
++   runwareLoraSettings?: LoRASetting[];
+    elevenLabsApiKey?: string;
+    stableDiffusionApiKey?: string;
+```
+
+</details>
+
+---
+
+LoRASetting型を定義します。
+
+---
+
+<details><summary>Edit file: types/app.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 7, lines removed: undefined
+
+```diff
+@@ -1,2 +1,9 @@
++ export interface LoRASetting {
++   id: string;
++   name: string;
++   weight: number;
++   enabled: boolean;
++ }
++ 
+  export interface AppSettings {
+    // 基本設定
+```
+
+</details>
+
+---
+
+RunwareAPIを拡張してLoRA個別重み付けに対応させます。
+
+---
+
+<details><summary>Edit file: lib/runwareApi.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 4, lines removed: undefined
+
+```diff
+@@ -45,4 +45,8 @@
+      CFGScale?: number;
+      steps?: number;
++     loras?: Array<{
++       model: string;
++       weight?: number;
++     }>;
+    }) {
+      const taskUUID = crypto.randomUUID();
+```
+
+</details>
+
+---
+
+<details><summary>Edit file: lib/runwareApi.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -67,5 +67,6 @@
+          numberResults: 1,
+          CFGScale: params.CFGScale || 7,
+-         steps: params.steps || 20
++         steps: params.steps || 20,
++         ...(params.loras && params.loras.length > 0 && { lora: params.loras })
+        }])
+      });
+```
+
+</details>
+
+---
+
+LoRA設定用のUIコンポーネントを作成します。
+
+---
+
+
+
+---
+
+次に、ApiSettings.tsxにLoRA設定を追加します。
+
+---
+
+Read file: components/settings/ApiSettings.tsx
+
+---
+
+<details><summary>Edit file: components/settings/ApiSettings.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: undefined
+
+```diff
+@@ -4,4 +4,5 @@
+  import { Eye, EyeOff } from 'lucide-react';
+  import { AppSettings } from '../../types/app'; // AppSettingsのパスを修正
++ import LoRASettings from '../LoRASettings';
+  
+  interface ApiSettingsProps {
+```
+
+</details>
+
+---
+
+ApiSettingsの末尾にLoRA設定セクションを追加します。
+
+---
+
+Read file: components/settings/ApiSettings.tsx
+
+---
+
+<details><summary>Edit file: components/settings/ApiSettings.tsx</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 8, lines removed: undefined
+
+```diff
+@@ -335,4 +335,12 @@
+              </div>
+            </div>
++ 
++           {/* LoRA設定 */}
++           <div className="mt-6">
++             <LoRASettings
++               loras={formSettings.runwareLoraSettings || []}
++               onChange={(loras) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareLoraSettings: loras }))}
++             />
++           </div>
+          </div>
+        </div>
+```
+
+</details>
+
+---
+
+デフォルト設定にLoRA設定を追加します。
+
+---
+
+The string to replace was not found in the file.
+
+---
+
+Read file: stores/chatStore.ts
+
+---
+
+<details><summary>Edit file: stores/chatStore.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -121,5 +121,6 @@
+    emotionDetectionSensitivity: 0.5, // 感情検出の感度（0.0-1.0）
+    scenarioDetectionEnabled: true, // シチュエーション検出を有効にするか
+-   customQualityTags: 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k'
++   customQualityTags: 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k',
++   runwareLoraSettings: []
+  };
+  
+```
+
+</details>
+
+---
+
+画像生成APIでLoRA設定を使用するように修正します。
+
+---
+
+Read file: src/app/api/generate-image/route.ts
+
+---
+
+LoRA設定を画像生成に追加します。
+
+---
+
+<details><summary>Edit file: src/app/api/generate-image/route.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 9, lines removed: undefined
+
+```diff
+@@ -91,4 +91,13 @@
+          const runwareService = new RunwareService(runwareApiKey);
+          
++         // LoRA設定の準備
++         const enabledLoras = settings?.runwareLoraSettings?.filter(lora => lora.enabled) || [];
++         const lorasForApi = enabledLoras.map(lora => ({
++           model: lora.id,
++           weight: lora.weight
++         }));
++ 
++         console.log(`[/api/generate-image] 使用するLoRA: ${lorasForApi.length}個`, lorasForApi);
++ 
+          const result = await runwareService.generateImage({
+            positivePrompt: processedPrompt,
+```
+
+**Chunk 2**
+Lines added: 2, lines removed: 1
+
+```diff
+@@ -97,5 +106,6 @@
+            height: settings?.imageHeight || 512,
+            CFGScale: settings?.guidanceScale || 7,
+-           steps: settings?.steps || 20
++           steps: settings?.steps || 20,
++           loras: lorasForApi.length > 0 ? lorasForApi : undefined
+          });
+          
+```
+
+</details>
+
+---
+
+ビルドテストを実行します。
+
+---
+
+```bash
+npm run build
+```
+
+```
+>> npm run build
+
+> ai-chat@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 13.0s
+   Skipping validation of types
+   Skipping linting
+ ✓ Collecting page data    
+ ✓ Generating static pages (21/21)
+ ✓ Collecting build traces
+ ✓ Finalizing page optimization
+
+Route (app)                                 Size  First Load JS    
+┌ ○ /                                     109 kB         215 kB
+├ ○ /_not-found                            977 B         102 kB
+├ ƒ /api/chat                              165 B         101 kB
+├ ƒ /api/enhance-text                      165 B         101 kB
+├ ƒ /api/enhanced-impression               165 B         101 kB
+├ ƒ /api/generate-image                    165 B         101 kB
+├ ƒ /api/list-characters                   165 B         101 kB
+├ ƒ /api/list-personas                     165 B         101 kB
+├ ƒ /api/save-background                   165 B         101 kB
+├ ƒ /api/simple-chat                       165 B         101 kB
+├ ƒ /api/summarize-chat                    165 B         101 kB
+├ ƒ /api/test                              165 B         101 kB
+├ ƒ /api/test-gemini                       165 B         101 kB
+├ ƒ /api/user-inspiration                  165 B         101 kB
+├ ○ /characters                          1.69 kB         108 kB
+├ ○ /history                             2.57 kB         104 kB
+├ ○ /personas                            1.41 kB         103 kB
+└ ○ /settings                            2.36 kB         104 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-d02a66cf81354aba.js  53.2 kB
+  ├ chunks/684-f0be525a0532057b.js       45.9 kB
+  └ other shared chunks (total)          2.18 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+PS C:\script\ai-chat>
+```
+
+---
+
+素晴らしい！ビルド成功です。変更をコミットしてデプロイしましょう。
+
+---
+
+```bash
+git add .
+```
+
+```
+PS C:\script\ai-chat> git add .
+warning: in the working copy of 'lib/characterLoader.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/api/generate-image/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'stores/chatStore.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'types/app.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'types/character.ts', LF will be replaced by CRLF the next time Git touches it
+PS C:\script\ai-chat>
+```
+
+---
+
+```bash
+git commit -m "feat: major improvements - default nami update, lora individual weighting, and enhanced systems
+
+🔧 Default Nami Update:
+- Update defaultCharacter in characterLoader.ts to latest version
+- Add systemPrompt, appearancePrompt, and enhanced tracker system
+- Include all latest features (state trackers, boolean flags, etc.)
+
+🎛️ LoRA Individual Weighting System:
+- Add LoRASetting interface with individual weight control
+- Create LoRASettings component for UI management  
+- Integrate individual LoRA weights into RunwareAPI
+- Each LoRA can be enabled/disabled with custom weight (0.0-2.0)
+- Replace comma-separated LoRA IDs with structured settings
+
+🔄 Enhanced Systems:
+- Fix first_message random selection (no longer joins all patterns)
+- Improved tracker analysis with state/boolean/text support
+- Enhanced persistent storage for character relationships
+- Better UI feedback and validation for LoRA configuration
+
+🎯 User Experience:
+- Individual LoRA weight sliders in settings
+- Real-time enable/disable toggles for each LoRA
+- Better organization of API settings
+- Clearer LoRA management with names and descriptions"
+```
+
+```
+PS C:\script\ai-chat> git commit -m "feat: major improvements - default nami update, lora individual weighting, and enhanced systems
+>>
+>>  Default Nami Update:
+>> - Update defaultCharacter in characterLoader.ts to latest version
+>> - Add systemPrompt, appearancePrompt, and enhanced tracker system
+>> - Include all latest features (state trackers, boolean flags, etc.)
+>>
+>>  LoRA Individual Weighting System:
+>> - Add LoRASetting interface with individual weight control
+>> - Create LoRASettings component for UI management  
+>> - Integrate individual LoRA weights into RunwareAPI
+>> - Each LoRA can be enabled/disabled with custom weight (0.0-2.0)
+>> - Replace comma-separated LoRA IDs with structured settings
+>>
+>>  Enhanced Systems:
+>> - Fix first_message random selection (no longer joins all patterns)
+>> - Improved tracker analysis with state/boolean/text support
+>> - Enhanced persistent storage for character relationships
+>> - Better UI feedback and validation for LoRA configuration
+>>
+>>  User Experience:
+>> - Individual LoRA weight sliders in settings
+>> - Real-time enable/disable toggles for each LoRA
+>> - Better organization of API settings
+>> - Clearer LoRA management with names and descriptions"
+[main df1662d] feat: major improvements - default nami update, lora individual weighting, and enhanced systems
+ 11 files changed, 2740 insertions(+), 31 deletions(-)
+ create mode 100644 components/LoRASettings.tsx
+PS C:\script\ai-chat>
+```
+
+---
+
+```bash
+git push origin main
+```
+
+```
+PS C:\script\ai-chat> git push origin main
+Enumerating objects: 50, done.
+Counting objects: 100% (50/50), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (24/24), done.
+Writing objects: 100% (26/26), 23.41 KiB | 2.13 MiB/s, done.
+Total 26 (delta 20), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (20/20), completed with 20 local objects.
+To https://github.com/koharyou1215/ai-chat.git
+   317e25d..df1662d  main -> main
+PS C:\script\ai-chat>
+```
+
+---
+
+## 🎉 **完了！すべての要望に対応しました**
+
+### **✅ 実装された改善点**
+
+#### **1. デフォルトナミの最新バージョン対応**
+- `lib/characterLoader.ts`のdefaultCharacterを最新版に更新
+- 拡張されたトラッカーシステム（数値・状態・ブール・テキスト型）
+- systemPrompt、appearancePrompt対応
+- 永続化機能完備
+
+#### **2. 初回メッセージのランダム選択**
+- 3パターンを全部結合→1つをランダム選択に変更
+- 毎回異なる挨拶で新鮮な体験
+
+#### **3. LoRA個別重み付けシステム**
+- **旧方式**: カンマ区切りID一覧 → 全体重み
+- **新方式**: 個別LoRA設定 → 各自独立重み
+
+**新しいLoRA設定機能:**
+```json
+"runwareLoraSettings": [
+  {
+    "id": "civitai:12345@1",
+    "name": "AnimeStyle V2",
+    "weight": 1.2,
+    "enabled": true
+  },
+  {
+    "id": "civitai:67890@2", 
+    "name": "Realistic Face",
+    "weight": 0.8,
+    "enabled": false
+  }
+]
+```
+
+#### **4. 拡張されたトラッカーシステム**
+- **数値型**: 従来の好感度・信頼度（0-100）
+- **状態型**: 関係性、現在の行動、場所
+- **ブール型**: 条件フラグ、秘密の共有
+- **テキスト型**: 自由記述メモ
+- **永続化**: `persistent: true`で永続保存
+
+#### **5. 永続化システム**
+- キャラクター選択時に毎回初期化→永続値を保持
+- `persistent: true`: 関係性は維持
+- `persistent: false`: 一時的な状態はリセット
+
+### **🎛️ LoRA設定の使い方**
+
+1. **設定画面 → API設定 → LoRA設定**
+2. **「追加」ボタン**でLoRAを追加
+3. **各LoRAで個別設定:**
+   - ID: `civitai:12345@1`
+   - 名前: `AnimeStyle V2`
+   - 重み: `0.0〜2.0`（スライダー）
+   - 有効/無効切り替え
+
+4. **画像生成時**: 有効なLoRAのみ使用、各自の重み適用
+
+### **📊 最終的なキャラクターフォーマット**
+
+```json
+{
+  "name": "キャラクター名",
+  "first_message": ["パターン1", "パターン2", "パターン3"],
+  "systemPrompt": "キャラクター専用AI指示",
+  "appearancePrompt": "英文画像生成プロンプト",
+  "trackers": [
+    {
+      "name": "affection",
+      "type": "numeric",
+      "initial_value": 50,
+      "persistent": true
+    },
+    {
+      "name": "relationship_status", 
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": ["初対面", "友人", "恋人"],
+      "persistent": true
+    },
+    {
+      "name": "knows_secret",
+      "type": "boolean", 
+      "initial_boolean": false,
+      "persistent": true
+    }
+  ]
+}
+```
+
+### **🚀 次のステップ（クラウド同期）**
+
+今後実装予定のクラウド同期機能では、以下のデータが同期されます：
+- キャラクターデータ（カスタム・編集済み）
+- トラッカー永続値
+- チャット履歴
+- 設定（LoRA設定含む）
+- 背景画像・アバター
+
+**すべての要望が完全実装されました！** 🎊
 
 ---
 
