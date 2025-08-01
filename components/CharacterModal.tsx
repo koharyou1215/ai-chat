@@ -29,6 +29,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     dislikes: [],
     background: '',
     systemPrompt: '',
+    appearancePrompt: '',
+    appearanceNegativePrompt: '',
     avatar_url: ''
   });
 
@@ -57,6 +59,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         occupation: character.occupation || '',
         background: character.background || '',
         systemPrompt: character.systemPrompt || '',
+        appearancePrompt: character.appearancePrompt || '',
+        appearanceNegativePrompt: character.appearanceNegativePrompt || '',
         avatar_url: character.avatar_url || ''
       });
     } else {
@@ -76,6 +80,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         likes: [],
         dislikes: [],
         background: '',
+        systemPrompt: '',
+        appearancePrompt: '',
+        appearanceNegativePrompt: '',
         avatar_url: ''
       });
     }
@@ -619,6 +626,40 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                     rows={6}
                     placeholder="キャラクター専用のシステムプロンプトを入力"
                   />
+                </div>
+
+                {/* 外見プロンプト */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🎨 外見プロンプト（英文）
+                  </label>
+                  <textarea
+                    value={formData.appearancePrompt || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, appearancePrompt: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    rows={4}
+                    placeholder="1girl, detailed appearance description in English for AI image generation..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    画像生成用の英文プロンプト。より精密な画像を生成できます。
+                  </p>
+                </div>
+
+                {/* ネガティブプロンプト */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🚫 ネガティブプロンプト（英文）
+                  </label>
+                  <textarea
+                    value={formData.appearanceNegativePrompt || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, appearanceNegativePrompt: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    rows={3}
+                    placeholder="bad anatomy, low quality, blurry..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    避けたい要素を指定。空欄の場合はデフォルトが使用されます。
+                  </p>
                 </div>
               </div>
             </section>

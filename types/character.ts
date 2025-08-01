@@ -13,6 +13,9 @@ export interface CharacterAppearance {
   clothing: string;
   underwear: string;
   other_features: string;
+  // 新形式: 英文プロンプト対応
+  prompt?: string;
+  negativePrompt?: string;
 }
 
 export interface CharacterSpeakingStyle {
@@ -78,6 +81,10 @@ export interface Character {
   background?: string;
   /** キャラクター専用システムプロンプト（任意） */
   systemPrompt?: string;
+  /** 英文画像生成プロンプト（任意） */
+  appearancePrompt?: string;
+  /** 英文ネガティブプロンプト（任意） */
+  appearanceNegativePrompt?: string;
   avatar_url?: string;
   imageSeed?: number; // 画像生成用のデフォルトシード（未設定はランダム）
   imageWidth?: number;

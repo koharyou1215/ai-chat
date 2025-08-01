@@ -49,7 +49,7 @@ export default function UISettings({ formSettings, setFormSettings }: UISettings
         {/* LORA設定 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            LORA設定
+            LORA設定（Stable Diffusion専用）
           </label>
           <textarea
             value={formSettings.loraSettings || ''}
@@ -59,25 +59,20 @@ export default function UISettings({ formSettings, setFormSettings }: UISettings
             placeholder="例: <lora:character_name:0.8>"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Stable Diffusion用のLORA設定を入力してください
+            Stable Diffusion用のLORA設定。Runware使用時は無効です。
           </p>
         </div>
 
-        {/* ネガティブプロンプト */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            追加ネガティブプロンプト
-          </label>
-          <textarea
-            value={formSettings.negativePrompt || ''}
-            onChange={(e) => setFormSettings(prev => ({ ...prev, negativePrompt: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-            rows={2}
-            placeholder="例: lowres, bad anatomy, blurry"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            画像生成時に自動付与されるネガティブプロンプトに追加されます
-          </p>
+        {/* 注意書き */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-2">
+            ℹ️ 画像生成設定について
+          </h4>
+          <div className="text-xs text-blue-700 space-y-1">
+            <p>• 品質タグ・ネガティブプロンプトは <strong>API設定</strong> の「画像生成詳細設定」で管理されています</p>
+            <p>• キャラクター固有の外見は <strong>キャラクター編集</strong> の「外見プロンプト」で設定できます</p>
+            <p>• LORA設定はStable Diffusionでのみ使用されます（Runwareでは無効）</p>
+          </div>
         </div>
 
         {/* 画像生成エンジン */}

@@ -811,7 +811,7 @@ export default function ChatPage() {
       setIsGeneratingImage(true);
       // ImagePromptGeneratorをインポートして使用
       const { ImagePromptGenerator } = await import('../../lib/imagePromptGenerator');
-      const imagePromptResult = ImagePromptGenerator.generateImagePrompt(currentCharacter, aiContent, messages.slice(-5).map(m => m.content));
+      const imagePromptResult = ImagePromptGenerator.generateImagePrompt(currentCharacter, aiContent, messages.slice(-5).map(m => m.content), settings);
       console.log('Generated Image Prompt:', imagePromptResult);
 
       if (!imagePromptResult) {
@@ -828,6 +828,7 @@ export default function ChatPage() {
           prompt: imagePromptResult,
           character: currentCharacter,
           conversationContext: messages.slice(-5).map(m => m.content),
+          settings: settings,
           loraSettings: settings.loraSettings,
           negativePrompt: settings.negativePrompt,
           width: currentCharacter?.imageWidth,
@@ -882,6 +883,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           prompt: testPrompt,
           character: currentCharacter,
+          settings: settings,
           conversationContext: ['テスト用の会話'],
           loraSettings: settings.loraSettings,
           negativePrompt: settings.negativePrompt,
@@ -1512,6 +1514,7 @@ export default function ChatPage() {
           aiResponse: msg.content,
           character: currentCharacter,
           conversationContext: recentMessages,
+          settings: settings,
           loraSettings: settings.loraSettings,
           negativePrompt: settings.negativePrompt,
           seed: Math.floor(Math.random() * 2 ** 32),
@@ -1613,7 +1616,7 @@ export default function ChatPage() {
         
         {/* サイドバー */}
         <div className={`
-          ${isSidebarOpen ? 'w-80' : 'w-0'} 
+          ${isSidebarOpen ? 'w-80 pointer-events-auto' : 'w-0 pointer-events-none'} 
           bg-black/80 backdrop-blur-md border-r border-white/20 flex flex-col h-screen transition-all duration-300 md:overflow-hidden overflow-y-auto scroll-touch
           relative z-50
           ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}
@@ -2209,7 +2212,15 @@ export default function ChatPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="メッセージを入力 (Ctrl+Enterで送信)"
-                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 rounded-full resize-none transition-all duration-200 bg-transparent text-gray-800 placeholder-gray-600 focus:outline-none focus:ring-0 border-0 text-sm md:text-base ${
+                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 rounded-full resize-none transition-all duration-300 
+                    ${isInputExpanded ? 
+                      'bg-white/95 dark:bg-gray-800/95 backdrop-blur-md shadow-xl border border-blue-300/50' : 
+                      'bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm border border-white/30 shadow-md'
+                    }
+                    text-gray-900 dark:text-white placeholder-gray-700 dark:placeholder-gray-400 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60
+                    focus:bg-white/98 dark:focus:bg-gray-800/98 focus:shadow-xl
+                    text-sm md:text-base font-medium ${
                     isInputExpanded ? 'h-24 md:h-32' : 'h-12 md:h-16'
                   }`}
                   onFocus={() => setIsInputExpanded(true)}

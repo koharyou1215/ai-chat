@@ -26,8 +26,12 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
         console.warn('音声リスト取得失敗:', e);
       }
     };
-    fetchVoices();
-  }, [formSettings.elevenLabsApiKey, customVoices, setVoiceList]);
+    
+    // APIキーが変わった時のみ実行
+    if (formSettings.elevenLabsApiKey) {
+      fetchVoices();
+    }
+  }, [formSettings.elevenLabsApiKey]); // customVoicesとsetVoiceListを依存配列から除外
 
   return (
     <section>

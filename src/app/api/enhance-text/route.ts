@@ -9,7 +9,7 @@ import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter'; /
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, character, context, variantCount = 1, settings, isUserText = false } = await request.json();
+    const { text, character, context, variantCount = 11, settings, isUserText = false } = await request.json();
     
     if (!text || text.trim().length === 0) {
       return NextResponse.json({
@@ -60,13 +60,14 @@ ${text}
 
 【改善されたテキスト】`;
 
+    // enhancementPrompt を定義
+    const enhancementPrompt = settings?.enhancementPrompt || basePrompt;
+
     // キャラクター情報を構築
     const characterInfo = character ? `
 【キャラクター情報】
 名前: {{char}}
-性格: ${character.personality || ''}
-話し方: ${character.speaking_style || ''}
-職業: ${character.occupation || ''}
+
 ` : '';
 
     // 会話コンテキストを構築
@@ -80,17 +81,13 @@ ${context.slice(-3).map((msg: { role: string; content: string }) => `${msg.role 
       const simplePrompt = isUserText ? 
         `${basePrompt}
 
+【元のテキスト】
+${text}
+
 ${conversationContext}
 
 【重要な指示】
-- 元のテキストの意図や内容は保持してください
-- ユーザーとして自然で魅力的な表現にしてください
-- 会話の流れを考慮して自然な表現にしてください
-- 大幅に強化して魅力的にしてください
-- JSON形式ではなく、強化されたテキストのみを返してください
-- 遠慮せずに魅力的で面白い表現にしてください
-**- {{char}}のセリフや行動は絶対に含めないでください。**
-**- 強化された文章は必ず元のテキストの内容に関連付けてください。**
+${enhancementPrompt}
 
 強化されたテキスト:` :
         `${basePrompt}
@@ -99,13 +96,24 @@ ${characterInfo}
 ${conversationContext}
 
 【重要な指示】
-- 元のテキストの意図や内容は保持してください
-- キャラクターの設定がある場合は、その個性を反映してください
-- 会話の流れを考慮して自然な表現にしてください
-- 過度に長くならないよう適切な長さに調整してください
-- JSON形式ではなく、強化されたテキストのみを返してください
-**- {{char}}のセリフや行動は絶対に含めないでください。**
-**- 強化された文章は必ず元のテキストの内容に関連付けてください。**
+**役割設定**
+あなたは文章表現の専門家として、簡潔なテキストを詳細で臨場感あふれる描写に変換する役割を担います。  **タスク内容**
+提供されたテキストを、読者が情景を鮮明に想像できる詳細な文章に拡張してください。  **入力情報**
+- 会話の文脈: {conversationContext}
+- 変換対象のテキスト: {text}
+- 対象キャラクター: {{user}}  
+**具体的な変換指示** 
+ 1. **動作の詳細化**  - 身体の動き、表情、仕草を具体的に描写  - 「どのように」行動するかを重点的に表現  - 五感に訴える要素（音、触感、視覚的詳細）を追加  
+2. **情景描写の強化**  - 周囲の環境や雰囲気を織り交ぜる  - 心理状態が伝わる身体的反応を含める  - 時間の流れや動作の順序を明確に  
+**必須の制約事項**
+- 元のテキストの意図と内容を完全に保持する
+- 場面を先に進めすぎない（現在の状況内で詳細化）
+- {{user}}キャラクターの台詞と行動のみを出力する
+- 他のキャラクターの反応や行動は一切含めない
+- JSON形式や構造化された形式は使用しない
+- 強化されたテキストのみをそのまま出力する  
+**出力形式**
+変換されたテキストを、追加の説明や注釈なしで直接出力してください。 
 
 強化されたテキスト:`;
 

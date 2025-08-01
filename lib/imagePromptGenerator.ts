@@ -14,16 +14,42 @@ export class ImagePromptGenerator {
   static generateImagePrompt(
     character: Character,
     aiResponse: string,
-    conversationContext?: string[]
+    conversationContext?: string[],
+    settings?: any
   ): ImagePromptResult {
+    // 設定値の取得（デフォルト値付き）
+    const contextWeight = settings?.contextPromptWeight ?? 0.7;
+    const emotionSensitivity = settings?.emotionDetectionSensitivity ?? 0.5;
+    const scenarioEnabled = settings?.scenarioDetectionEnabled ?? true;
+    const qualityTags = settings?.customQualityTags || 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k';
+    
+    console.log('🎨 画像生成設定:', {
+      contextWeight,
+      emotionSensitivity,
+      scenarioEnabled,
+      customQualityTags: settings?.customQualityTags ? 'カスタム設定' : 'デフォルト使用'
+    });
+    
     // 基本キャラクター情報
     const baseCharacter = this.buildBaseCharacterPrompt(character);
     
-    // 感情分析（より詳細に）
-    const emotion = this.analyzeEmotion(aiResponse);
+    // 会話履歴が無効な場合は基本外見のみ
+    if (contextWeight === 0.0) {
+      return {
+        prompt: `${baseCharacter}, ${qualityTags}`,
+        negativePrompt: this.buildNegativePrompt(character),
+        emotion: '自然',
+        scenario: 'デフォルト'
+      };
+    }
     
-    // シチュエーション分析（文脈を重視）
-    const scenario = this.analyzeScenario(aiResponse, conversationContext);
+    // 感情分析（感度に基づいて調整）
+    const emotion = this.analyzeEmotion(aiResponse, emotionSensitivity);
+    
+    // シチュエーション分析（設定で無効にできる）
+    const scenario = scenarioEnabled ? 
+      this.analyzeScenario(aiResponse, conversationContext) : 
+      { name: 'デフォルト', prompt: '' };
     
     // アクション分析（何をしているか）
     const action = this.analyzeAction(aiResponse);
@@ -34,11 +60,20 @@ export class ImagePromptGenerator {
     // 衣装の状態分析（新機能）
     const clothingState = this.analyzeClothingState(aiResponse, conversationContext);
     
-    // 最終プロンプトを構築（衣装状態を含む）
-    const prompt = this.buildEnhancedPrompt(baseCharacter, emotion, scenario, action, expression, clothingState);
+    // 最終プロンプトを構築（重みを考慮）
+    const prompt = this.buildEnhancedPrompt(
+      baseCharacter, 
+      emotion, 
+      scenario, 
+      action, 
+      expression, 
+      clothingState, 
+      contextWeight,
+      qualityTags
+    );
     
     // ネガティブプロンプト
-    const negativePrompt = this.buildNegativePrompt();
+    const negativePrompt = this.buildNegativePrompt(character);
     
     return {
       prompt,
@@ -53,6 +88,20 @@ export class ImagePromptGenerator {
    */
   private static buildBaseCharacterPrompt(character: Character): string {
     const appearance = character.character_definition?.appearance;
+    
+    // 1. ルートレベルの英文プロンプトを最優先使用
+    if (character.appearancePrompt) {
+      console.log('🎨 ルートレベルの外見プロンプト使用:', character.appearancePrompt);
+      return character.appearancePrompt;
+    }
+    
+    // 2. character_definition内の英文プロンプトをチェック
+    if (appearance?.prompt) {
+      console.log('🎨 character_definition内の外見プロンプト使用:', appearance.prompt);
+      return appearance.prompt;
+    }
+    
+    // フォールバック: 従来の日本語描写から構築
     if (!appearance) {
       return `beautiful anime girl, {{char}}`;
     }
@@ -79,15 +128,13 @@ export class ImagePromptGenerator {
       parts.push(appearance.clothing);
     }
     
-
-    
     return parts.join(', ');
   }
 
   /**
    * AIの返答から感情を分析
    */
-  private static analyzeEmotion(text: string): { name: string; prompt: string } {
+  private static analyzeEmotion(text: string, sensitivity: number = 0.5): { name: string; prompt: string } {
     const emotions = [
       {
         keywords: ['嬉しい', '楽しい', '笑', 'うふふ', 'わーい', '最高', 'やったー', '😊', '😄', '🎉'],
@@ -418,9 +465,11 @@ export class ImagePromptGenerator {
     scenario: { name: string; prompt: string },
     action: { name: string; prompt: string },
     expression: { name: string; prompt: string },
-    clothingState: { name: string; prompt: string }
+    clothingState: { name: string; prompt: string },
+    contextWeight: number = 0.7,
+    customQualityTags?: string
   ): string {
-    const qualityTags = [
+    const qualityTags = customQualityTags || [
       'masterpiece',
       'best quality',
       'highly detailed',
@@ -437,16 +486,26 @@ export class ImagePromptGenerator {
     const lighting = this.getTimeBasedLighting();
     const season = this.getSeasonalEnvironment();
 
-    // プロンプトの構成要素を結合（重要度順）
-    const components = [
-      baseCharacter,
+    // コンテキスト重みに基づいてプロンプト構成を調整
+    const contextComponents = [
       emotion.prompt,
       expression.prompt,
       action.prompt,
-      clothingState.prompt, // 衣装状態を追加
+      clothingState.prompt,
       scenario.prompt,
       lighting,
-      season,
+      season
+    ].filter(component => component && component.trim() !== '');
+
+    // 重みに基づいてコンテキスト要素を調整
+    const adjustedContextComponents = contextWeight === 0 ? [] : 
+      contextWeight < 0.5 ? contextComponents.slice(0, 2) : // 低重み：感情と表情のみ
+      contextWeight < 0.8 ? contextComponents.slice(0, 4) : // 中重み：アクションまで
+      contextComponents; // 高重み：すべて含む
+
+    const components = [
+      baseCharacter,
+      ...adjustedContextComponents,
       qualityTags
     ].filter(component => component && component.trim() !== '');
 
@@ -481,8 +540,8 @@ export class ImagePromptGenerator {
   /**
    * ネガティブプロンプトを構築
    */
-  private static buildNegativePrompt(): string {
-    return [
+  private static buildNegativePrompt(character?: Character): string {
+    const baseNegative = [
       'lowres',
       'bad anatomy',
       'bad hands',
@@ -523,7 +582,18 @@ export class ImagePromptGenerator {
       'extra legs',
       'fused fingers',
       'too many fingers'
-    ].join(', ');
+    ];
+
+    // キャラクター固有のネガティブプロンプトがあれば優先使用
+    if (character?.appearanceNegativePrompt) {
+      return character.appearanceNegativePrompt;
+    }
+    
+    if (character?.character_definition?.appearance?.negativePrompt) {
+      return character.character_definition.appearance.negativePrompt;
+    }
+
+    return baseNegative.join(', ');
   }
 
   /**

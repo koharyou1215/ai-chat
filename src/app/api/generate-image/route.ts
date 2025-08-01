@@ -79,8 +79,12 @@ export async function POST(request: NextRequest) {
       modelId: runwareModelId
     });
 
-    // Runwareを優先的に使用
-    if (runwareApiKey && runwareModelId) {
+    // 設定で指定されたエンジンを優先使用
+    const preferredEngine = settings?.imageEngine || 'runware';
+    console.log(`[/api/generate-image] 選択されたエンジン: ${preferredEngine}`);
+    
+    // Runwareを使用（設定で指定、またはデフォルト）
+    if (preferredEngine === 'runware' && runwareApiKey && runwareModelId) {
       try {
         console.log(`[/api/generate-image] Runware APIを使用して画像生成: モデル ${runwareModelId}`);
         
@@ -109,10 +113,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Stable Diffusionフォールバック
-    const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
-    const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
-    const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
+    // Stable Diffusion使用 (設定で指定またはRunwareフォールバック)
+    if (preferredEngine === 'sd' || !runwareApiKey || !runwareModelId) {
+      const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
+      const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
+      const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
 
     console.log('[/api/generate-image] Stable Diffusion API Key check:', {
       hasSettingsApiKey: !!settingsStableDiffusionApiKey,
@@ -228,6 +233,7 @@ export async function POST(request: NextRequest) {
         localSdUrlExists: !!localSdUrl
       }
     }, { status: 400 });
+    }
 
   } catch (error) {
     console.error('[/api/generate-image] 予期しないエラー:', error);

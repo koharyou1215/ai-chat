@@ -251,6 +251,90 @@ export default function ApiSettings({ formSettings, setFormSettings }: ApiSettin
           </div>
         </div>
       </div>
+
+      {/* 画像生成詳細設定 */}
+      <div className="bg-gray-50 rounded-xl p-6">
+        <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          🎨 画像生成詳細設定
+        </h4>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">
+              会話履歴からの自動画像生成
+            </label>
+            <input
+              type="checkbox"
+              checked={formSettings.imageGenerationEnabled ?? true}
+              onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, imageGenerationEnabled: e.target.checked }))}
+              className="rounded text-blue-600"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              会話履歴プロンプトの重み: {formSettings.contextPromptWeight ?? 0.7}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={formSettings.contextPromptWeight ?? 0.7}
+              onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, contextPromptWeight: Number(e.target.value) }))}
+              className="w-full"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              0.0: 基本外見のみ / 1.0: 会話内容を重視
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              感情検出感度: {formSettings.emotionDetectionSensitivity ?? 0.5}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={formSettings.emotionDetectionSensitivity ?? 0.5}
+              onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, emotionDetectionSensitivity: Number(e.target.value) }))}
+              className="w-full"
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              0.0: 感情を無視 / 1.0: 微細な感情も検出
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">
+              シチュエーション自動検出
+            </label>
+            <input
+              type="checkbox"
+              checked={formSettings.scenarioDetectionEnabled ?? true}
+              onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, scenarioDetectionEnabled: e.target.checked }))}
+              className="rounded text-blue-600"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              カスタム品質タグ
+            </label>
+            <textarea
+              value={formSettings.customQualityTags || 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k'}
+              onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, customQualityTags: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800"
+              rows={2}
+              placeholder="品質向上のためのタグを入力..."
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              画像生成時に自動追加される品質向上タグ
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 } 

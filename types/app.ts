@@ -68,4 +68,11 @@ export interface AppSettings {
   imageSteps?: number;
   imageCfgScale?: number;
   imageSampler?: string;
+  
+  // 画像生成詳細設定
+  imageGenerationEnabled?: boolean;
+  contextPromptWeight?: number;
+  emotionDetectionSensitivity?: number;
+  scenarioDetectionEnabled?: boolean;
+  customQualityTags?: string;
 }
