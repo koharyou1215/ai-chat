@@ -168,6 +168,8 @@ export default function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [pendingSelection, setPendingSelection] = useState('');
 
   // インスピレーション関連
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -977,6 +979,8 @@ export default function ChatPage() {
   // ユーザー文章強化実行
   const handleUserTextEnhancement = async () => {
     if (!message.trim() || !currentCharacter) return;
+    let targetText = pendingSelection || message;
+    setPendingSelection('');
     
     setIsEnhancingUserText(true);
     
@@ -986,10 +990,10 @@ export default function ChatPage() {
       const response = await fetch('/api/enhance-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: message,
+                  body: JSON.stringify({
+          text: targetText,
           character: currentCharacter,
-          context: messages.slice(-5),
+          context: [], // 入力中テキストのみを強化
           variantCount: 1, // 1本モード
           settings: settings,
           isUserText: true // ユーザーテキスト強化フラグ
@@ -2174,9 +2178,8 @@ export default function ChatPage() {
                               setEditorInitialText(candidate);
       setShowInspirationCandidates(false);
       setUserInspirationCandidates([]);
-      // モーダルを開く
-      
-            setIsMessageEditorOpen(true);
+      // モーダルを開く（state反映後の次フレームで実行）
+      setTimeout(() => setIsMessageEditorOpen(true), 0);
           }}
                       className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
                     >
@@ -2201,6 +2204,7 @@ export default function ChatPage() {
               {/* 入力エリア */}
               <div className="relative">
                 <textarea
+                  ref={inputRef}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -2221,7 +2225,17 @@ export default function ChatPage() {
                     {isLoadingUserInspiration ? <Loader className="animate-spin" size={16} /> : '💡'}
                   </button>
                   <button
-                    onClick={handleUserTextEnhancement}
+                    onMouseDown={() => {
+                    if (inputRef.current) {
+                      const { selectionStart, selectionEnd, value } = inputRef.current;
+                      if (selectionEnd > selectionStart) {
+                        setPendingSelection(value.substring(selectionStart, selectionEnd));
+                      } else {
+                        setPendingSelection('');
+                      }
+                    }
+                  }}
+                  onClick={handleUserTextEnhancement}
                     disabled={isEnhancingUserText}
                     className="touch-target text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-colors disabled:opacity-50"
                     title="文章を強化"

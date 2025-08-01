@@ -11,11 +11,12 @@ export function MessageEditorModal({ isOpen, initialText, onConfirm, onClose }: 
   const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // モーダルを開いたタイミングだけ初期テキストを流し込み、
+  // ユーザー編集中は親の再レンダーで上書きしない
   useEffect(() => {
-    // Reset text when initialText changes or modal re-opens
-    if (isOpen && initialText !== '') {
+    if (isOpen) {
       setText(initialText);
-      // Auto-focus after open
+      // 自動フォーカス
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 0);
@@ -36,7 +37,13 @@ export function MessageEditorModal({ isOpen, initialText, onConfirm, onClose }: 
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full h-60 md:h-80 p-4 rounded-md border border-gray-300 dark:border-gray-600 bg-transparent text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onFocus={(e) => {
+            const el = e.target as HTMLTextAreaElement;
+            // キャレットを末尾に移動し全選択を防止
+            const len = el.value.length;
+            el.setSelectionRange(len, len);
+          }}
+          className="w-full h-60 md:h-80 p-4 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" style={{color:'#111'}}
           placeholder="編集してください"
         />
 

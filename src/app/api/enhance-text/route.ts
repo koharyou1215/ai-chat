@@ -82,7 +82,7 @@ ${context.slice(-3).map((msg: { role: string; content: string }) => `${msg.role 
 
 ${conversationContext}
 
-【重要な指示】
+【重要な指示}`
 - 元のテキストの意図や内容は保持してください
 - ユーザーとして自然で魅力的な表現にしてください
 - 会話の流れを考慮して自然な表現にしてください
@@ -117,11 +117,17 @@ ${conversationContext}
         temperature: 0.8,
         maxTokens: variantCount === 1 ? 500 : 1000,
       });
+      // --- 余計なヘッダー行を除去 ---
+      const delimiter = '強化されたテキスト:';
+      const finalText = enhancedText.includes(delimiter)
+        ? enhancedText.split(delimiter).pop()?.trim() || enhancedText.trim()
+        : enhancedText.trim();
 
+// ★ ここまで追加 ----------------------------------
       return NextResponse.json({
         success: true,
         originalText: text,
-        enhancedText: enhancedText
+        enhancedText: finalText
       });
     } else {
       // 従来の3バリエーション版
