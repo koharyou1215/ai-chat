@@ -167,7 +167,14 @@ export async function POST(request: NextRequest) {
     const localSdUrl = process.env.LOCAL_SD_URL || settings?.localSdUrl; // settingsから取得
     console.log('[/api/generate-image] ローカルSD URL:', localSdUrl);
     
-    if (localSdUrl && localSdUrl !== '' && localSdUrl !== 'your-sd.example.com' && !localSdUrl.includes('example.com')) {
+    // プレースホルダーURLや無効なURLを除外
+    const isValidLocalUrl = localSdUrl && 
+                           localSdUrl !== '' && 
+                           !localSdUrl.includes('example.com') && 
+                           !localSdUrl.includes('your-sd') &&
+                           (localSdUrl.startsWith('http://localhost') || localSdUrl.startsWith('http://127.0.0.1'));
+    
+    if (isValidLocalUrl) {
       try {
         console.log(`[/api/generate-image] ローカルStable Diffusion APIを使用: ${localSdUrl}`);
         
@@ -220,8 +227,25 @@ export async function POST(request: NextRequest) {
       stableDiffusionApiKeyExists: !!stableDiffusionApiKey,
       stableDiffusionApiKeyLength: stableDiffusionApiKey?.length || 0,
       localSdUrlExists: !!localSdUrl,
-      localSdUrl: localSdUrl
+      localSdUrl: localSdUrl,
+      isValidLocalUrl: isValidLocalUrl,
+      preferredEngine: preferredEngine
     });
+    
+    // Runware APIが利用可能だが設定でStable Diffusionが選択されている場合の提案
+    if (preferredEngine === 'sd' && runwareApiKey && runwareModelId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Stable Diffusionが選択されていますが、有効な設定がありません。UI設定でRunwareに切り替えることをお勧めします。',
+        suggestion: 'UI設定 > 画像生成エンジン > Runware に変更してください',
+        debug: {
+          runwareAvailable: true,
+          stableDiffusionAvailable: false,
+          currentEngine: preferredEngine,
+          localUrlValid: isValidLocalUrl
+        }
+      }, { status: 400 });
+    }
     
     return NextResponse.json({
       success: false,
@@ -230,7 +254,8 @@ export async function POST(request: NextRequest) {
         runwareApiKeyExists: !!runwareApiKey,
         runwareModelIdExists: !!runwareModelId,
         stableDiffusionApiKeyExists: !!stableDiffusionApiKey,
-        localSdUrlExists: !!localSdUrl
+        localSdUrlExists: !!localSdUrl,
+        isValidLocalUrl: isValidLocalUrl
       }
     }, { status: 400 });
     }
