@@ -1000,7 +1000,8 @@ export default function ChatPage() {
       console.log('強化API応答:', data);
       if (data.success) {
         console.log('強化されたテキスト:', data.enhancedText);
-        setMessage(data.enhancedText);
+        setEditorInitialText(data.enhancedText);
+        setIsMessageEditorOpen(true);
       }
     } catch (error) {
       console.error('User text enhancement error:', error);
@@ -1573,6 +1574,7 @@ export default function ChatPage() {
   // メッセージ編集モーダル
   const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
   const [messageDraft, setMessageDraft] = useState('');
+  const [editorInitialText, setEditorInitialText] = useState('');
 
   return (
     <>
@@ -2169,12 +2171,13 @@ export default function ChatPage() {
                     <button
                       key={index}
                       onClick={() => {
-                              setMessageDraft(candidate);
+                              setEditorInitialText(candidate);
       setShowInspirationCandidates(false);
       setUserInspirationCandidates([]);
-      // 初期テキストが確実に渡るように次のtickでモーダルを開く
-      setTimeout(() => setIsMessageEditorOpen(true), 0);
-                      }}
+      // モーダルを開く
+      
+            setIsMessageEditorOpen(true);
+          }}
                       className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
                     >
                       <div className="flex items-start gap-2">
@@ -2402,11 +2405,12 @@ export default function ChatPage() {
       {isMessageEditorOpen && (
         <MessageEditorModal
           isOpen={isMessageEditorOpen}
-          initialText={messageDraft}
+          initialText={editorInitialText}
           onConfirm={(text) => {
             setMessage(text);
             setIsMessageEditorOpen(false);
             setIsInputExpanded(true);
+            setEditorInitialText('');
           }}
           onClose={() => setIsMessageEditorOpen(false)}
         />

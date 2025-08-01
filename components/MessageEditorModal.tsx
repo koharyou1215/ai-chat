@@ -13,7 +13,7 @@ export function MessageEditorModal({ isOpen, initialText, onConfirm, onClose }: 
 
   useEffect(() => {
     // Reset text when initialText changes or modal re-opens
-    if (isOpen) {
+    if (isOpen && initialText !== '') {
       setText(initialText);
       // Auto-focus after open
       setTimeout(() => {
