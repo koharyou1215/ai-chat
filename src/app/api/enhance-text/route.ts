@@ -122,12 +122,7 @@ ${conversationContext}
       const finalText = enhancedText.includes(delimiter)
         ? enhancedText.split(delimiter).pop()?.trim() || enhancedText.trim()
         : enhancedText.trim();
-// ★ ここから追加 ----------------------------------
-const delimiter = '強化されたテキスト:';
-const finalText = enhancedText.includes(delimiter)
-  ? enhancedText.split(delimiter).pop().trim()
-  : enhancedText.trim();
-// ★ ここまで追加 ----------------------------------
+
       return NextResponse.json({
         success: true,
         originalText: text,

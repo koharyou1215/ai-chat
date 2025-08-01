@@ -1270,3 +1270,273 @@ _**Assistant**_
 
 ---
 
+```bash
+npx --yes rimraf .next && npm run build
+```
+
+```
+PS C:\script\ai-chat> npm run build
+
+> ai-chat@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production
+
+バッチ ジョブを終了しますか (Y/N)? 
+^C
+
+```
+
+---
+
+
+
+---
+
+_**User**_
+
+やはりエラーが続きますね。
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+```bash
+npx --yes rimraf .next
+```
+
+```
+PS C:\script\ai-chat> npx --yes rimraf .next
+PS C:\script\ai-chat> npx --yes rimraf .next
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PS C:\script\ai-chat>
+```
+
+---
+
+Cancelled
+
+---
+
+_**User**_
+
+今何待ちですか？
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+```bash
+npm run build
+```
+
+```
+PS C:\script\ai-chat> npm run build
+
+> ai-chat@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/app/api/enhance-text/route.ts
+Module parse failed: Identifier 'delimiter' has already been declared (118:18)
+File was processed with these loaders:
+ * ./node_modules/next/dist/build/webpack/loaders/next-flight-loader/index.js
+ * ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+You may need an additional loader to handle the result of these loaders.
+|             const finalText = enhancedText.includes(delimiter) ? enhancedText.split(delimiter).pop()?.trim() || enhancedText.trim() : enhancedText.tr
+im();
+|             // ★ ここから追加 ----------------------------------
+>             const delimiter = '強化されたテキスト:';
+|             const finalText = enhancedText.includes(delimiter) ? enhancedText.split(delimiter).pop().trim() : enhancedText.trim();
+|             // ★ ここまで追加 ----------------------------------
+
+Import trace for requested module:
+./src/app/api/enhance-text/route.ts
+
+
+> Build failed because of webpack errors
+PS C:\script\ai-chat>
+```
+
+---
+
+ビルドは `.next` フォルダ問題ではなく、**コード重複エラー** で停止していました。
+
+エラー箇所  
+`src/app/api/enhance-text/route.ts` 118 行目付近  
+```
+const finalText = ...  // 既にある行
+const delimiter = '強化されたテキスト:';  // ★ 重複宣言
+const finalText = ...  // ★ 2 回目の同名宣言
+```
+→ `delimiter` と `finalText` が同じスコープで二重定義されています。
+
+対処  
+1. 片方の重複行を削除、もしくは変数名を変更  
+2. 保存後に `npm run build` を再実行
+
+修正しておきますので、こちらで続行してよろしいでしょうか？
+
+---
+
+_**User**_
+
+ok
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Read file: src/app/api/enhance-text/route.ts
+
+---
+
+
+
+---
+
+<details><summary>Edit file: src/app/api/enhance-text/route.ts</summary>
+
+undefined
+
+**Chunk 1**
+Lines added: 1, lines removed: 6
+
+```diff
+@@ -123,10 +123,5 @@
+          ? enhancedText.split(delimiter).pop()?.trim() || enhancedText.trim()
+          : enhancedText.trim();
+- // ★ ここから追加 ----------------------------------
+- const delimiter = '強化されたテキスト:';
+- const finalText = enhancedText.includes(delimiter)
+-   ? enhancedText.split(delimiter).pop().trim()
+-   : enhancedText.trim();
+- // ★ ここまで追加 ----------------------------------
++ 
+        return NextResponse.json({
+          success: true,
+```
+
+</details>
+
+---
+
+
+
+---
+
+```bash
+npm run build
+```
+
+```
+PS C:\script\ai-chat> npm run build
+
+> ai-chat@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 5.0s
+   Skipping validation of types
+   Skipping linting
+ ✓ Collecting page data    
+ ✓ Generating static pages (21/21)
+ ✓ Collecting build traces
+ ✓ Finalizing page optimization
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                     105 kB         207 kB
+├ ○ /_not-found                            977 B         102 kB
+├ ƒ /api/chat                              165 B         101 kB
+├ ƒ /api/enhance-text                      165 B         101 kB
+├ ƒ /api/enhanced-impression               165 B         101 kB
+├ ƒ /api/generate-image                    165 B         101 kB
+├ ƒ /api/list-characters                   165 B         101 kB
+├ ƒ /api/list-personas                     165 B         101 kB
+├ ƒ /api/save-background                   165 B         101 kB
+├ ƒ /api/simple-chat                       165 B         101 kB
+├ ƒ /api/summarize-chat                    165 B         101 kB
+├ ƒ /api/test                              165 B         101 kB
+├ ƒ /api/test-gemini                       165 B         101 kB
+├ ƒ /api/user-inspiration                  165 B         101 kB
+├ ○ /characters                          5.19 kB         106 kB
+├ ○ /history                             2.57 kB         104 kB
+├ ○ /personas                            1.41 kB         103 kB
+└ ○ /settings                            2.36 kB         104 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-d02a66cf81354aba.js  53.2 kB
+  ├ chunks/684-f0be525a0532057b.js       45.9 kB
+  └ other shared chunks (total)          2.18 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+PS C:\script\ai-chat>
+```
+
+---
+
+🎉 ビルド成功しました！
+
+原因: `enhance-text/route.ts` の重複宣言  
+修正: 重複した `delimiter` と `finalText` 行を削除
+
+確認結果  
+```
+npm run build  →  Compiled successfully
+```
+
+これで Vercel でも問題なくデプロイ可能です。  
+他に気になる点があればお知らせください。
+
+---
+
