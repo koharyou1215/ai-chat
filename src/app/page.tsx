@@ -27,6 +27,7 @@ import { loadAllPersonasFromPublic } from '../../lib/autoLoader';
 import { TouchGestureManager } from '../../lib/touchGestures';
 import dynamic from 'next/dynamic';
 import { BackgroundManager } from '../../lib/backgroundManager';
+import CharacterTrackerDisplay from '../../components/CharacterTracker';
 
 // 画像圧縮関数
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -228,7 +229,16 @@ export default function ChatPage() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
   // Zustandストアから設定を取得
-  const { memos, settings, updateSettings } = useChatStore();
+  const { 
+    memos, 
+    settings, 
+    updateSettings,
+    trackerValues,
+    updateTrackerValue,
+    getTrackerValues,
+    initializeTrackersForSession,
+    analyzeMessageForTrackerUpdates
+  } = useChatStore();
 
   // タッチジェスチャー管理
   const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
@@ -1485,6 +1495,12 @@ export default function ChatPage() {
 
       setMessages(prev => prev.map(m => (m.id === aiMsg.id ? { ...m, content: aiContent } : m)));
 
+      // トラッカー分析（AIメッセージが完了した後）
+      if (aiContent && currentCharacter && currentSessionId) {
+        const completedMessage = { ...aiMsg, content: aiContent };
+        analyzeMessageForTrackerUpdates(currentSessionId, completedMessage, currentCharacter);
+      }
+
       if (aiContent && settings.chatNotificationSound) {
         VoiceManager.playNotificationSound(true, 0.3);
       }
@@ -1695,6 +1711,15 @@ export default function ChatPage() {
               
               // キャラクター個別の背景を適用
               loadCharacterBackground(character.name);
+              
+              // 新しいセッションID生成
+              const newSessionId = crypto.randomUUID();
+              setCurrentSessionId(newSessionId);
+              
+              // トラッカー初期化
+              if (character.trackers) {
+                initializeTrackersForSession(newSessionId, character);
+              }
               
               // 新しいキャラクターの初回メッセージを設定
               const firstMessage = Array.isArray(character.first_message) 
@@ -1975,6 +2000,19 @@ export default function ChatPage() {
                   </h3>
                   <p className="text-white/70 text-xs md:text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
                 </button>
+                
+                {/* トラッカー表示（コンパクト） */}
+                {currentCharacter?.trackers && currentSessionId && (
+                  <div className="mt-1">
+                    <CharacterTrackerDisplay
+                      trackers={currentCharacter.trackers}
+                      currentValues={getTrackerValues(currentSessionId)}
+                      onChange={(name, value) => updateTrackerValue(currentSessionId, name, value)}
+                      readOnly={false}
+                      compact={true}
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <button

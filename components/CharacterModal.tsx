@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Save, User, Heart, Tag, MessageSquare } from 'lucide-react';
+import { X, Save, User, Heart, Tag, MessageSquare, TrendingUp } from 'lucide-react';
 import { Character } from '../types/character';
 import { ImageCompressor } from '../lib/imageCompressor';
+import TrackerEditor from './TrackerEditor';
 
 interface CharacterModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     likes: [],
     dislikes: [],
     background: '',
+    trackers: [],
     systemPrompt: '',
     appearancePrompt: '',
     appearanceNegativePrompt: '',
@@ -61,7 +63,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         systemPrompt: character.systemPrompt || '',
         appearancePrompt: character.appearancePrompt || '',
         appearanceNegativePrompt: character.appearanceNegativePrompt || '',
-        avatar_url: character.avatar_url || ''
+        avatar_url: character.avatar_url || '',
+        trackers: Array.isArray(character.trackers) ? character.trackers : []
       });
     } else {
       // 新規作成時はリセット
@@ -83,7 +86,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         systemPrompt: '',
         appearancePrompt: '',
         appearanceNegativePrompt: '',
-        avatar_url: ''
+        avatar_url: '',
+        trackers: []
       });
     }
   }, [character, isOpen]);
@@ -798,7 +802,17 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
               </div>
             </section>
 
-
+            {/* トラッカーパラメータ */}
+            <section>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <TrendingUp size={20} />
+                パラメータトラッカー
+              </h3>
+              <TrackerEditor
+                trackers={formData.trackers || []}
+                onChange={(trackers) => setFormData(prev => ({ ...prev, trackers }))}
+              />
+            </section>
           </div>
         </div>
 

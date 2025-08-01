@@ -16,6 +16,9 @@ interface ChatStore {
   isLoading: boolean;
   sidebarOpen: boolean;
   
+  // Tracker state
+  trackerValues: Record<string, Record<string, number>>; // sessionId -> {trackerName: value}
+  
   // Actions
   setCurrentCharacter: (character: Character | null) => void;
   setCurrentSession: (session: ChatSession | null) => void;
@@ -40,6 +43,12 @@ interface ChatStore {
   deleteMemo: (memoId: string) => void;
   getMemosBySession: (sessionId: string) => ChatMemo[];
   getMemoByMessage: (messageId: string) => ChatMemo | null;
+  
+  // Tracker actions
+  updateTrackerValue: (sessionId: string, trackerName: string, value: number) => void;
+  getTrackerValues: (sessionId: string) => Record<string, number>;
+  initializeTrackersForSession: (sessionId: string, character: Character) => void;
+  analyzeMessageForTrackerUpdates: (sessionId: string, message: ChatMessage, character: Character) => void;
 }
 
 // デフォルトペルソナの定義
@@ -123,6 +132,7 @@ export const useChatStore = create<ChatStore>()(
       memos: [],
       isLoading: false,
       sidebarOpen: false,
+      trackerValues: {},
 
       // Actions
       setCurrentCharacter: (character) => {
@@ -320,6 +330,114 @@ export const useChatStore = create<ChatStore>()(
         const { memos } = get();
         return memos.find((memo) => memo.messageId === messageId) || null;
       },
+
+      // Tracker actions
+      updateTrackerValue: (sessionId, trackerName, value) => {
+        set((state) => ({
+          trackerValues: {
+            ...state.trackerValues,
+            [sessionId]: {
+              ...state.trackerValues[sessionId],
+              [trackerName]: value,
+            },
+          },
+        }));
+      },
+
+      getTrackerValues: (sessionId) => {
+        const { trackerValues } = get();
+        return trackerValues[sessionId] || {};
+      },
+
+      initializeTrackersForSession: (sessionId, character) => {
+        if (!character.trackers) return;
+        
+        const { trackerValues } = get();
+        if (trackerValues[sessionId]) return; // 既に初期化済み
+
+        const initialValues: Record<string, number> = {};
+        character.trackers.forEach(tracker => {
+          initialValues[tracker.name] = tracker.initial_value;
+        });
+
+        set((state) => ({
+          trackerValues: {
+            ...state.trackerValues,
+            [sessionId]: initialValues,
+          },
+        }));
+      },
+
+      analyzeMessageForTrackerUpdates: (sessionId, message, character) => {
+        if (!character.trackers || message.role !== 'assistant') return;
+
+        const { trackerValues, updateTrackerValue } = get();
+        const currentValues = trackerValues[sessionId] || {};
+        
+        // 簡単な感情・行動分析
+        const content = message.content.toLowerCase();
+        
+        character.trackers.forEach(tracker => {
+          const currentValue = currentValues[tracker.name] || tracker.initial_value;
+          const maxValue = tracker.max_value || 100;
+          let delta = 0;
+
+          // トラッカー名に基づく分析
+          switch (tracker.name) {
+            case 'affection':
+            case 'love':
+            case 'favorability':
+              // 好感度分析
+              if (content.includes('好き') || content.includes('嬉しい') || content.includes('ありがとう')) delta += 2;
+              if (content.includes('素敵') || content.includes('優しい') || content.includes('素晴らしい')) delta += 3;
+              if (content.includes('愛してる') || content.includes('大好き')) delta += 5;
+              if (content.includes('嫌い') || content.includes('ひどい') || content.includes('最悪')) delta -= 3;
+              if (content.includes('むかつく') || content.includes('うざい')) delta -= 2;
+              break;
+
+            case 'trust':
+            case 'confidence':
+              // 信頼度分析
+              if (content.includes('信頼') || content.includes('頼り') || content.includes('安心')) delta += 3;
+              if (content.includes('秘密') || content.includes('打ち明け')) delta += 2;
+              if (content.includes('裏切') || content.includes('嘘') || content.includes('疑')) delta -= 4;
+              if (content.includes('信じられない')) delta -= 3;
+              break;
+
+            case 'mood':
+            case 'happiness':
+            case 'emotion':
+              // 機嫌・感情分析
+              if (content.includes('楽しい') || content.includes('面白い') || content.includes('笑')) delta += 3;
+              if (content.includes('嬉しい') || content.includes('幸せ')) delta += 4;
+              if (content.includes('つまらない') || content.includes('退屈')) delta -= 2;
+              if (content.includes('悲しい') || content.includes('落ち込')) delta -= 3;
+              if (content.includes('怒') || content.includes('イライラ')) delta -= 4;
+              break;
+
+            case 'arousal':
+            case 'excitement':
+              // 興奮度分析
+              if (content.includes('ドキドキ') || content.includes('興奮')) delta += 3;
+              if (content.includes('エッチ') || content.includes('いやらしい')) delta += 2;
+              if (content.includes('恥ずかし') || content.includes('照れ')) delta += 1;
+              break;
+
+            default:
+              // 汎用的な感情分析
+              if (content.includes('♡') || content.includes('❤')) delta += 1;
+              if (content.includes('😊') || content.includes('😄')) delta += 2;
+              if (content.includes('😢') || content.includes('😭')) delta -= 2;
+              if (content.includes('😡') || content.includes('💢')) delta -= 3;
+          }
+
+          // 値を更新（範囲チェック）
+          if (delta !== 0) {
+            const newValue = Math.max(0, Math.min(maxValue, currentValue + delta));
+            updateTrackerValue(sessionId, tracker.name, newValue);
+          }
+        });
+      },
     }),
     {
       name: 'ai-chat-store',
@@ -329,6 +447,7 @@ export const useChatStore = create<ChatStore>()(
         userPersonas: state.userPersonas,
         settings: state.settings,
         memos: state.memos,
+        trackerValues: state.trackerValues,
       }),
     }
   )
