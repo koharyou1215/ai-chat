@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RunwareService } from '../../../../lib/runwareApi';
 import { StableDiffusionService } from '../../../../lib/stableDiffusionApi';
+import { StableDiffusionService } from '../../../../lib/stableDiffusionApi';
 
 export async function POST(request: NextRequest) {
   console.log('[/api/generate-image] 画像生成APIが呼び出されました');
