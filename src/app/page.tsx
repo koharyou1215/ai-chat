@@ -24,7 +24,7 @@ import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
 import Image from 'next/image';
 import { loadAllPersonasFromPublic } from '../../lib/autoLoader';
-import { TouchGestureManager, isMobileDevice } from '../../lib/touchGestures';
+import { TouchGestureManager } from '../../lib/touchGestures';
 import dynamic from 'next/dynamic';
 import { BackgroundManager } from '../../lib/backgroundManager';
 
@@ -979,7 +979,7 @@ export default function ChatPage() {
   // ユーザー文章強化実行
   const handleUserTextEnhancement = async () => {
     if (!message.trim() || !currentCharacter) return;
-    let targetText = pendingSelection || message;
+    const targetText = pendingSelection || message;
     setPendingSelection('');
     
     setIsEnhancingUserText(true);
@@ -1577,7 +1577,7 @@ export default function ChatPage() {
 
   // メッセージ編集モーダル
   const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
-  const [messageDraft, setMessageDraft] = useState('');
+  // const [messageDraft, setMessageDraft] = useState('');
   const [editorInitialText, setEditorInitialText] = useState('');
 
   return (
