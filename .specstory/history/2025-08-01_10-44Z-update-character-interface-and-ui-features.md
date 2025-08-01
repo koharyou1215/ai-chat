@@ -5794,3 +5794,55 @@ Lines added: 6, lines removed: 2
 
 ---
 
+_**User**_
+
+枠めっちゃいい感じです。
+vercelデプロイがなってないっぽいです。
+
+---
+
+_**Assistant**_
+
+素晴らしい！入力欄の見た目が気に入ってもらえて嬉しいです。
+
+Vercelデプロイの問題を修正しましょう。まず現在のポート占有を解決してからデプロイします：
+
+---
+
+```bash
+netstat -ano | findstr :3004
+```
+
+```
+PS C:\script\ai-chat> netstat -ano | findstr :3004
+  TCP         0.0.0.0:3004           0.0.0.0:0              LISTENING       9460
+  TCP         192.168.11.7:3004      192.168.11.7:59960     ESTABLISHED     9460
+  TCP         192.168.11.7:3004      192.168.11.7:60167     TIME_WAIT       0
+  TCP         192.168.11.7:3004      192.168.11.7:60291     TIME_WAIT       0
+  TCP         192.168.11.7:3004      192.168.11.7:60292     TIME_WAIT       0
+  TCP         192.168.11.7:59960     192.168.11.7:3004      ESTABLISHED     31504
+PS C:\script\ai-chat>
+```
+
+---
+
+ポート9460と31504がまだ動いています。これらを停止してからデプロイしましょう：
+
+---
+
+```bash
+taskkill /f /pid 9460
+```
+
+```
+PS C:\script\ai-chat> taskkill /f /pid 9460
+成功: PID 9460 のプロセスは強制終了されました。
+PS C:\script\ai-chat>
+```
+
+---
+
+
+
+---
+
