@@ -90,13 +90,23 @@ export async function POST(request: NextRequest) {
         
         const runwareService = new RunwareService(runwareApiKey);
         
+        // LoRA設定の準備
+        const enabledLoras = settings?.runwareLoraSettings?.filter(lora => lora.enabled) || [];
+        const lorasForApi = enabledLoras.map(lora => ({
+          model: lora.id,
+          weight: lora.weight
+        }));
+
+        console.log(`[/api/generate-image] 使用するLoRA: ${lorasForApi.length}個`, lorasForApi);
+
         const result = await runwareService.generateImage({
           positivePrompt: processedPrompt,
           model: runwareModelId,
           width: settings?.imageWidth || 512,
           height: settings?.imageHeight || 512,
           CFGScale: settings?.guidanceScale || 7,
-          steps: settings?.steps || 20
+          steps: settings?.steps || 20,
+          loras: lorasForApi.length > 0 ? lorasForApi : undefined
         });
         
         console.log(`[/api/generate-image] Runware成功: 画像生成完了`);

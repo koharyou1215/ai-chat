@@ -50,8 +50,34 @@ export interface CharacterDefinition {
 export interface CharacterTracker {
   name: string;
   display_name: string;
-  initial_value: number;
-  max_value: number;
+  type: 'numeric' | 'state' | 'boolean' | 'text';
+  
+  // 数値型の場合
+  initial_value?: number;
+  max_value?: number;
+  min_value?: number;
+  
+  // 状態型の場合
+  initial_state?: string;
+  possible_states?: string[];
+  
+  // ブール型の場合
+  initial_boolean?: boolean;
+  
+  // テキスト型の場合
+  initial_text?: string;
+  
+  // 表示設定
+  category?: string; // 'status', 'relationship', 'condition', etc.
+  icon?: string;
+  description?: string;
+  persistent?: boolean; // false の場合、セッション終了時にリセット
+}
+
+export interface TrackerValue {
+  type: 'numeric' | 'state' | 'boolean' | 'text';
+  value: number | string | boolean;
+  lastUpdate?: number; // タイムスタンプ
 }
 
 export interface ExampleDialogue {

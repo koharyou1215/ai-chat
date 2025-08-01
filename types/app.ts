@@ -1,3 +1,10 @@
+export interface LoRASetting {
+  id: string;
+  name: string;
+  weight: number;
+  enabled: boolean;
+}
+
 export interface AppSettings {
   // 基本設定
   temperature: number;
@@ -17,6 +24,7 @@ export interface AppSettings {
   runwareApiKey?: string;
   runwareModelId?: string;
   runwareLoraIds?: string[];
+  runwareLoraSettings?: LoRASetting[];
   elevenLabsApiKey?: string;
   stableDiffusionApiKey?: string;
   

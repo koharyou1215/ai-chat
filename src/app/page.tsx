@@ -1291,9 +1291,9 @@ export default function ChatPage() {
     // 音声再生を停止
     VoiceManager.stopAudio();
     
-    const firstMessage = Array.isArray(currentCharacter.first_message) 
-      ? currentCharacter.first_message.join('\n') 
-      : (currentCharacter.first_message || 'こんにちは！');
+        const firstMessage = Array.isArray(currentCharacter.first_message) && currentCharacter.first_message.length > 0
+      ? currentCharacter.first_message[Math.floor(Math.random() * currentCharacter.first_message.length)]
+      : (currentCharacter.first_message as string || 'こんにちは！');
       
     console.log('リセット後の初回メッセージ:', firstMessage);
     
@@ -1330,7 +1330,9 @@ export default function ChatPage() {
         setMessages(currentCharacter ? [{
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: currentCharacter.first_message.join('\n'),
+          content: Array.isArray(currentCharacter.first_message) && currentCharacter.first_message.length > 0
+        ? currentCharacter.first_message[Math.floor(Math.random() * currentCharacter.first_message.length)]
+        : (currentCharacter.first_message as string || 'こんにちは！'),
           timestamp: Date.now()
         }] : []);
       }
@@ -1721,10 +1723,10 @@ export default function ChatPage() {
                 initializeTrackersForSession(newSessionId, character);
               }
               
-              // 新しいキャラクターの初回メッセージを設定
-              const firstMessage = Array.isArray(character.first_message) 
-                ? character.first_message.join('\n') 
-                : (character.first_message || 'こんにちは！');
+              // 新しいキャラクターの初回メッセージを設定（ランダム選択）
+              const firstMessage = Array.isArray(character.first_message) && character.first_message.length > 0
+                ? character.first_message[Math.floor(Math.random() * character.first_message.length)]
+                : (character.first_message as string || 'こんにちは！');
                 
               console.log('初回メッセージ設定:', firstMessage);
               

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Character, ChatMessage, ChatSession, UserPersona, ChatMemo } from '../types/character';
+import { Character, ChatMessage, ChatSession, UserPersona, ChatMemo, TrackerValue } from '../types/character';
 import { AppSettings } from '../types/app';
 import '../lib/uuidPolyfill';
 
@@ -17,7 +17,8 @@ interface ChatStore {
   sidebarOpen: boolean;
   
   // Tracker state
-  trackerValues: Record<string, Record<string, number>>; // sessionId -> {trackerName: value}
+  trackerValues: Record<string, Record<string, TrackerValue>>; // sessionId -> {trackerName: TrackerValue}
+  persistentTrackerValues: Record<string, Record<string, TrackerValue>>; // characterId -> {trackerName: TrackerValue}
   
   // Actions
   setCurrentCharacter: (character: Character | null) => void;
@@ -45,10 +46,13 @@ interface ChatStore {
   getMemoByMessage: (messageId: string) => ChatMemo | null;
   
   // Tracker actions
-  updateTrackerValue: (sessionId: string, trackerName: string, value: number) => void;
-  getTrackerValues: (sessionId: string) => Record<string, number>;
+  updateTrackerValue: (sessionId: string, trackerName: string, value: number | string | boolean, character: Character) => void;
+  getTrackerValues: (sessionId: string) => Record<string, TrackerValue>;
+  getPersistentTrackerValues: (characterId: string) => Record<string, TrackerValue>;
   initializeTrackersForSession: (sessionId: string, character: Character) => void;
   analyzeMessageForTrackerUpdates: (sessionId: string, message: ChatMessage, character: Character) => void;
+  resetSessionTrackers: (sessionId: string) => void;
+  savePersistentTrackers: (sessionId: string, characterId: string) => void;
 }
 
 // デフォルトペルソナの定義
@@ -116,7 +120,8 @@ const defaultSettings: AppSettings = {
   contextPromptWeight: 0.7, // 会話履歴からのプロンプトの重み（0.0-1.0）
   emotionDetectionSensitivity: 0.5, // 感情検出の感度（0.0-1.0）
   scenarioDetectionEnabled: true, // シチュエーション検出を有効にするか
-  customQualityTags: 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k'
+  customQualityTags: 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k',
+  runwareLoraSettings: []
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -133,6 +138,7 @@ export const useChatStore = create<ChatStore>()(
       isLoading: false,
       sidebarOpen: false,
       trackerValues: {},
+      persistentTrackerValues: {},
 
       // Actions
       setCurrentCharacter: (character) => {
@@ -332,13 +338,22 @@ export const useChatStore = create<ChatStore>()(
       },
 
       // Tracker actions
-      updateTrackerValue: (sessionId, trackerName, value) => {
+      updateTrackerValue: (sessionId, trackerName, value, character) => {
+        const tracker = character.trackers?.find(t => t.name === trackerName);
+        if (!tracker) return;
+
+        const trackerValue: TrackerValue = {
+          type: tracker.type,
+          value: value,
+          lastUpdate: Date.now(),
+        };
+
         set((state) => ({
           trackerValues: {
             ...state.trackerValues,
             [sessionId]: {
               ...state.trackerValues[sessionId],
-              [trackerName]: value,
+              [trackerName]: trackerValue,
             },
           },
         }));
@@ -349,15 +364,54 @@ export const useChatStore = create<ChatStore>()(
         return trackerValues[sessionId] || {};
       },
 
+      getPersistentTrackerValues: (characterId) => {
+        const { persistentTrackerValues } = get();
+        return persistentTrackerValues[characterId] || {};
+      },
+
       initializeTrackersForSession: (sessionId, character) => {
         if (!character.trackers) return;
         
-        const { trackerValues } = get();
+        const { trackerValues, persistentTrackerValues } = get();
         if (trackerValues[sessionId]) return; // 既に初期化済み
 
-        const initialValues: Record<string, number> = {};
+        const characterId = character.name;
+        const persistentValues = persistentTrackerValues[characterId] || {};
+        const initialValues: Record<string, TrackerValue> = {};
+
         character.trackers.forEach(tracker => {
-          initialValues[tracker.name] = tracker.initial_value;
+          // 永続化されている値があり、persistent=true の場合はそれを使用
+          const existingPersistent = persistentValues[tracker.name];
+          const usePersistent = tracker.persistent !== false && existingPersistent;
+
+          if (usePersistent) {
+            initialValues[tracker.name] = existingPersistent;
+          } else {
+            // 初期値を設定
+            let initialValue: number | string | boolean;
+            switch (tracker.type) {
+              case 'numeric':
+                initialValue = tracker.initial_value ?? 0;
+                break;
+              case 'state':
+                initialValue = tracker.initial_state ?? (tracker.possible_states?.[0] || '');
+                break;
+              case 'boolean':
+                initialValue = tracker.initial_boolean ?? false;
+                break;
+              case 'text':
+                initialValue = tracker.initial_text ?? '';
+                break;
+              default:
+                initialValue = 0;
+            }
+
+            initialValues[tracker.name] = {
+              type: tracker.type,
+              value: initialValue,
+              lastUpdate: Date.now(),
+            };
+          }
         });
 
         set((state) => ({
@@ -438,6 +492,34 @@ export const useChatStore = create<ChatStore>()(
           }
         });
       },
+
+      resetSessionTrackers: (sessionId) => {
+        set((state) => {
+          const newTrackerValues = { ...state.trackerValues };
+          delete newTrackerValues[sessionId];
+          return { trackerValues: newTrackerValues };
+        });
+      },
+
+      savePersistentTrackers: (sessionId, characterId) => {
+        const { trackerValues } = get();
+        const sessionTrackers = trackerValues[sessionId];
+        if (!sessionTrackers) return;
+
+        // persistent=true のトラッカーのみ永続化
+        const persistentValues: Record<string, TrackerValue> = {};
+        Object.entries(sessionTrackers).forEach(([name, value]) => {
+          // TODO: キャラクター定義からpersistent設定を確認
+          persistentValues[name] = value;
+        });
+
+        set((state) => ({
+          persistentTrackerValues: {
+            ...state.persistentTrackerValues,
+            [characterId]: persistentValues,
+          },
+        }));
+      },
     }),
     {
       name: 'ai-chat-store',
@@ -448,6 +530,7 @@ export const useChatStore = create<ChatStore>()(
         settings: state.settings,
         memos: state.memos,
         trackerValues: state.trackerValues,
+        persistentTrackerValues: state.persistentTrackerValues,
       }),
     }
   )

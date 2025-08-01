@@ -53,16 +53,66 @@
   },
   "trackers": [
     {
+      "name": "affection_level",
+      "display_name": "好感度",
+      "type": "numeric",
+      "initial_value": 50,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": "ナミとの親密度"
+    },
+    {
       "name": "trust_level",
       "display_name": "信頼度",
+      "type": "numeric",
       "initial_value": 30,
-      "max_value": 100
+      "max_value": 100,
+      "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": "ナミからの信頼の度合い"
     },
     {
       "name": "mood",
       "display_name": "機嫌",
+      "type": "numeric",
       "initial_value": 70,
-      "max_value": 100
+      "max_value": 100,
+      "min_value": 0,
+      "category": "status",
+      "persistent": false,
+      "description": "現在の気分"
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": ["初対面", "知り合い", "友人", "親友", "恋人", "パートナー"],
+      "category": "relationship",
+      "persistent": true,
+      "description": "二人の関係性レベル"
+    },
+    {
+      "name": "current_activity",
+      "display_name": "現在の状況",
+      "type": "state",
+      "initial_state": "航海中",
+      "possible_states": ["航海中", "港にいる", "宝探し中", "戦闘中", "休息中", "買い物中"],
+      "category": "status",
+      "persistent": false,
+      "description": "ナミが現在何をしているか"
+    },
+    {
+      "name": "has_map_knowledge",
+      "display_name": "地図の秘密を知っている",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": "重要な地図の情報を共有しているか"
     }
   ],
   "example_dialogue": [

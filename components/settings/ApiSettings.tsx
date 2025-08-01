@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { AppSettings } from '../../types/app'; // AppSettingsのパスを修正
+import LoRASettings from '../LoRASettings';
 
 interface ApiSettingsProps {
   formSettings: AppSettings;
@@ -332,6 +333,14 @@ export default function ApiSettings({ formSettings, setFormSettings }: ApiSettin
             <div className="text-xs text-gray-500 mt-1">
               画像生成時に自動追加される品質向上タグ
             </div>
+          </div>
+
+          {/* LoRA設定 */}
+          <div className="mt-6">
+            <LoRASettings
+              loras={formSettings.runwareLoraSettings || []}
+              onChange={(loras) => setFormSettings((prev: AppSettings) => ({ ...prev, runwareLoraSettings: loras }))}
+            />
           </div>
         </div>
       </div>

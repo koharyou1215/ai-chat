@@ -44,6 +44,10 @@ export class RunwareService {
     height?: number;
     CFGScale?: number;
     steps?: number;
+    loras?: Array<{
+      model: string;
+      weight?: number;
+    }>;
   }) {
     const taskUUID = crypto.randomUUID();
     
@@ -62,7 +66,8 @@ export class RunwareService {
         model: params.model,
         numberResults: 1,
         CFGScale: params.CFGScale || 7,
-        steps: params.steps || 20
+        steps: params.steps || 20,
+        ...(params.loras && params.loras.length > 0 && { lora: params.loras })
       }])
     });
 
