@@ -22,7 +22,7 @@ if errorlevel 1 (
 
 REM --- Vercel 本番デプロイ ---
 echo ■ Vercel に本番デプロイ
-vercel --prod --confirm
+vercel --prod --yes
 if errorlevel 1 (
   echo ！！Vercel デプロイ失敗
   call :toast "AI-Chat Deploy" "❌ デプロイ失敗"
