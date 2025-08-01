@@ -28,6 +28,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     likes: [],
     dislikes: [],
     background: '',
+    systemPrompt: '',
     avatar_url: ''
   });
 
@@ -55,6 +56,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         age: character.age || '',
         occupation: character.occupation || '',
         background: character.background || '',
+        systemPrompt: character.systemPrompt || '',
         avatar_url: character.avatar_url || ''
       });
     } else {
@@ -602,6 +604,20 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                     rows={3}
                     placeholder="キャラクターの詳細な生い立ちや世界観を記述してください"
+                  />
+                </div>
+
+                {/* システムプロンプト */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    システムプロンプト
+                  </label>
+                  <textarea
+                    value={formData.systemPrompt || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, systemPrompt: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    rows={6}
+                    placeholder="キャラクター専用のシステムプロンプトを入力"
                   />
                 </div>
               </div>

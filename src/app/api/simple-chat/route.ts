@@ -129,10 +129,13 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       
       personaInfo += `\n上記の{{user}}情報を考慮して、{{char}}として{{user}}に合わせた返答をしてください。`;
       basePrompt += personaInfo;
-    }
-    
-    // デフォルトシステムプロンプトを先頭に
+    }   // デフォルトシステムプロンプトを先頭に
     basePrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${basePrompt}`;
+    
+    // キャラクター専用 System Prompt があれば最優先で追加
+    if (character?.systemPrompt) {
+      basePrompt = `${character.systemPrompt}\n\n${basePrompt}`;
+    }
 
     // 追加のユーザー設定プロンプト
     if (settings?.enableSystemPrompt && settings?.systemPrompt) {
@@ -319,7 +322,12 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
         try {
           console.log('🔄 OpenRouter API呼び出し開始（複数候補）');
-          const openRouterTexts = await Promise.all(candidatePromises);
+          const settledResults = await Promise.allSettled(candidatePromises);
+          const fulfilled = settledResults.filter(r => r.status === 'fulfilled') as PromiseFulfilledResult<string>[];
+          if (fulfilled.length === 0) {
+            throw new Error('All OpenRouter candidate requests failed');
+          }
+          const openRouterTexts = fulfilled.map(r => r.value);
           console.log('✅ OpenRouter API呼び出し完了（複数候補）:', openRouterTexts.length);
           
           const userName = persona?.name || 'あなた';

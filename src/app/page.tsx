@@ -1932,14 +1932,14 @@ export default function ChatPage() {
         {/* メインチャットエリア */}
         <div className="flex-1 flex flex-col w-full md:w-auto h-full">
           {/* ヘッダー - 固定 */}
-          <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
+          <div className="pointer-events-none bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
                   console.log('🍔 バーガーメニューがクリックされました。現在の状態:', isSidebarOpen, '→', !isSidebarOpen);
                   setIsSidebarOpen(!isSidebarOpen);
                 }}
-                className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
+                className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
                 title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
               >
                 <Menu size={18} />
@@ -1965,7 +1965,7 @@ export default function ChatPage() {
                       setIsCharacterModalOpen(true);
                     }
                   }}
-                  className="text-left w-full"
+                  className="pointer-events-auto text-left w-full"
                 >
                   <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors text-sm md:text-base">
                     {currentCharacter?.name || 'キャラクター'}

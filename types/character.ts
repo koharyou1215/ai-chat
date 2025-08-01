@@ -76,6 +76,8 @@ export interface Character {
   likes: string[];
   dislikes: string[];
   background?: string;
+  /** キャラクター専用システムプロンプト（任意） */
+  systemPrompt?: string;
   avatar_url?: string;
   imageSeed?: number; // 画像生成用のデフォルトシード（未設定はランダム）
   imageWidth?: number;
