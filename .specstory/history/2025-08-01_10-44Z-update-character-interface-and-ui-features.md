@@ -1085,19 +1085,15 @@ Invalid: old_string and new_string are exactly the same.
 
 ---
 
+<details>
+            <summary>Grep search for "messageDraft" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1580 | `// const [messageDraft, setMessageDraft] = useState('');` |
+| `file:///c%3A/script/ai-chat/src/app/page.tsx` | L1580 | `// const [messageDraft, setMessageDraft] = useState('');` |
 
-
----
-
-
-
----
-
-
-
----
-
-
+</details>
 
 ---
 
@@ -1112,6 +1108,42 @@ Invalid: old_string and new_string are exactly the same.
 
 
 ---
+
+
+
+---
+
+
+
+---
+
+
+
+---
+
+ビルド失敗の主因は ESLint の “error” レベル警告でした。  
+該当ファイル `src/app/page.tsx` を修正し、エラー扱いの項目をすべて解消しました。
+
+✔️ 主な対応  
+1. 未使用インポート `isMobileDevice` を削除  
+2. 不要な `messageDraft` State をコメントアウト  
+3. `targetText` を `let` → `const` に変更  
+4. そのほか ESLint の “error” はゼロに
+
+現在は ESLint で **error 0 件** となっています（warning は残りますがビルドは通ります）。
+
+この状態で再ビルドをお試しください。  
+もしまだ失敗する場合は、Vercel ビルドログ詳細を共有いただければ追加で対処します。
+
+---
+
+_**User**_
+
+こうなってると赤字ですけど反映されてるんですよね。
+
+---
+
+_**Assistant**_
 
 
 
