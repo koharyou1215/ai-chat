@@ -1,0 +1,48 @@
+
+> ai-chat@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 11.0s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/21) ...
+   Generating static pages (5/21) 
+   Generating static pages (10/21) 
+   Generating static pages (15/21) 
+ ✓ Generating static pages (21/21)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                     107 kB         208 kB
+├ ○ /_not-found                            977 B         102 kB
+├ ƒ /api/chat                              165 B         101 kB
+├ ƒ /api/enhance-text                      165 B         101 kB
+├ ƒ /api/enhanced-impression               165 B         101 kB
+├ ƒ /api/generate-image                    165 B         101 kB
+├ ƒ /api/list-characters                   165 B         101 kB
+├ ƒ /api/list-personas                     165 B         101 kB
+├ ƒ /api/save-background                   165 B         101 kB
+├ ƒ /api/simple-chat                       165 B         101 kB
+├ ƒ /api/summarize-chat                    165 B         101 kB
+├ ƒ /api/test                              165 B         101 kB
+├ ƒ /api/test-gemini                       165 B         101 kB
+├ ƒ /api/user-inspiration                  165 B         101 kB
+├ ○ /characters                          5.19 kB         106 kB
+├ ○ /history                             2.57 kB         104 kB
+├ ○ /personas                            1.41 kB         103 kB
+└ ○ /settings                            2.36 kB         104 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-d02a66cf81354aba.js  53.2 kB
+  ├ chunks/684-f0be525a0532057b.js       45.9 kB
+  └ other shared chunks (total)          2.18 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
