@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       modelId: runwareModelId
     });
 
-    // 設定で指定されたエンジンを優先使用
+    // 設定で指定されたエンジンを優先使用（明示的なRunwareデフォルト）
     const preferredEngine = settings?.imageEngine || 'runware';
     console.log(`[/api/generate-image] 選択されたエンジン: ${preferredEngine}`);
     

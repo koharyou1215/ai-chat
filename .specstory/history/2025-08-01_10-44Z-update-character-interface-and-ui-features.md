@@ -8093,7 +8093,327 @@ _**Assistant**_
 
 なるほど！画像を見ると確かに `LOCAL_SD_URL=http://localhost:78...` で、7860ポートに設定されていますね。
 
-でも、ログ
+でも、ログを見ると問題が分かりました：
+
+## 🔍 **問題の詳細分析**
+
+### **ログからの重要な情報**
+```
+[/api/generate-image] ローカルSD URL: https://your-sd.example.com:7860
+```
+
+**問題**: Vercelの環境変数は正しく `http://localhost:7860` に設定されているのに、サーバー側では古い値 `https://your-sd.example.com:7860` が読み込まれています。
+
+### **原因**: キャッシュ問題
+
+## ✅ **解決方法**
+
+### **1. 即座の解決（推奨）**
+最新の修正をデプロイして反映させましょう：
+
+---
+
+```bash
+.\simple_deploy.bat
+```
+
+```
+
+Step 2/4: キャッシュクリア...
+  ✓ キャッシュクリア完了
+
+Step 3/4: Git操作...
+  ✓ Git操作完了
+
+Step 4/4: Vercelデプロイ...
+  ▶ vercel --prod --yes を実行中...
+Vercel CLI 44.6.6
+🔍  Inspect: https://vercel.com/kous-projects-ba188115/ai-chat/8VUBZRXqUQBnV93UGiUZc8iQPsTU [2s]
+✅  Production: https://ai-chat-qc0n2sh73-kous-projects-ba188115.vercel.app [2s]
+2025-08-01T17:20:28.565Z  Running build in Washington, D.C., USA (East) – iad1
+2025-08-01T17:20:28.566Z  Build machine configuration: 2 cores, 8 GB
+2025-08-01T17:20:28.593Z  Retrieving list of deployment files...
+2025-08-01T17:20:28.933Z  Downloading 303 deployment files...
+2025-08-01T17:20:30.661Z  Restored build cache from previous deployment (zZq51hdTZNkZez8bdwPAbe9EnNDt)
+2025-08-01T17:20:31.213Z  Running "vercel build"
+2025-08-01T17:20:32.000Z  Vercel CLI 44.6.4
+2025-08-01T17:20:33.086Z  Installing dependencies...
+2025-08-01T17:20:34.687Z  
+2025-08-01T17:20:34.688Z  up to date in 1s
+2025-08-01T17:20:34.688Z  
+2025-08-01T17:20:34.689Z  163 packages are looking for funding
+2025-08-01T17:20:34.689Z    run `npm fund` for details
+2025-08-01T17:20:34.699Z  Detected Next.js version: 15.3.4
+2025-08-01T17:20:34.703Z  Running "npm run vercel-build"
+2025-08-01T17:20:34.825Z  
+2025-08-01T17:20:34.825Z  > ai-chat@0.1.0 vercel-build
+2025-08-01T17:20:34.826Z  > next build
+2025-08-01T17:20:34.826Z  
+2025-08-01T17:20:35.826Z     ▲ Next.js 15.3.4
+2025-08-01T17:20:35.827Z     - Environments: .env.production
+2025-08-01T17:20:35.827Z
+2025-08-01T17:20:35.854Z     Creating an optimized production build ...
+2025-08-01T17:20:39.343Z   ✓ Compiled successfully in 3.0s
+2025-08-01T17:20:39.347Z     Skipping validation of types
+2025-08-01T17:20:39.348Z     Skipping linting
+2025-08-01T17:20:39.642Z     Collecting page data ...
+2025-08-01T17:20:41.524Z     Generating static pages (0/21) ...
+2025-08-01T17:20:42.696Z     Generating static pages (5/21) 
+2025-08-01T17:20:42.696Z     Generating static pages (10/21) 
+2025-08-01T17:20:42.696Z     Generating static pages (15/21)
+2025-08-01T17:20:42.816Z   ✓ Generating static pages (21/21)
+2025-08-01T17:20:43.141Z     Finalizing page optimization ...
+2025-08-01T17:20:43.146Z     Collecting build traces ...
+2025-08-01T17:20:49.488Z  
+2025-08-01T17:20:49.491Z  Route (app)                                 Size  First Load JS
+2025-08-01T17:20:49.492Z  ┌ ○ /                                     107 kB         208 kB
+2025-08-01T17:20:49.492Z  ├ ○ /_not-found                            977 B         102 kB
+2025-08-01T17:20:49.492Z  ├ ƒ /api/chat                              165 B         101 kB
+2025-08-01T17:20:49.493Z  ├ ƒ /api/enhance-text                      165 B         101 kB
+2025-08-01T17:20:49.493Z  ├ ƒ /api/enhanced-impression               165 B         101 kB
+2025-08-01T17:20:49.493Z  ├ ƒ /api/generate-image                    165 B         101 kB
+2025-08-01T17:20:49.493Z  ├ ƒ /api/list-characters                   165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/list-personas                     165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/save-background                   165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/simple-chat                       165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/summarize-chat                    165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/test                              165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/test-gemini                       165 B         101 kB
+2025-08-01T17:20:49.494Z  ├ ƒ /api/user-inspiration                  165 B         101 kB
+2025-08-01T17:20:49.495Z  ├ ○ /characters                          5.19 kB         106 kB
+2025-08-01T17:20:49.495Z  ├ ○ /history                             2.57 kB         104 kB
+2025-08-01T17:20:49.495Z  ├ ○ /personas                            1.41 kB         103 kB
+2025-08-01T17:20:49.495Z  └ ○ /settings                            2.36 kB         104 kB
+2025-08-01T17:20:49.495Z  + First Load JS shared by all             101 kB
+2025-08-01T17:20:49.495Z    ├ chunks/4bd1b696-d02a66cf81354aba.js  53.2 kB
+2025-08-01T17:20:49.496Z    ├ chunks/684-f0be525a0532057b.js       45.9 kB
+2025-08-01T17:20:49.496Z    └ other shared chunks (total)          2.15 kB
+2025-08-01T17:20:49.496Z
+2025-08-01T17:20:49.496Z
+2025-08-01T17:20:49.496Z  ○  (Static)   prerendered as static content
+2025-08-01T17:20:49.496Z  ƒ  (Dynamic)  server-rendered on demand
+2025-08-01T17:20:49.496Z
+2025-08-01T17:20:49.656Z  Traced Next.js server files in: 91.811ms
+2025-08-01T17:20:49.831Z  Created all serverless functions in: 175.442ms
+2025-08-01T17:20:49.852Z  Collected static files (public/, static/, .next/static): 12.128ms
+2025-08-01T17:20:49.958Z  Build Completed in /vercel/output [17s]
+2025-08-01T17:20:50.041Z  Deploying outputs...
+2025-08-01T17:20:57.426Z  Deployment completed
+
+```
+
+---
+
+## ✅ **デプロイ完了！**
+
+**新しい本番URL**: `https://ai-chat-qc0n2sh73-kous-projects-ba188115.vercel.app`
+
+## 🔧 **次のステップ**
+
+### **1. ローカルでStable Diffusion WebUIを起動**
+
+Stable Diffusionを使用するには、ローカルでWebUIを起動する必要があります：
+
+```bash
+# AUTOMATIC1111の場合
+python launch.py --api --listen
+
+# または既に起動している場合
+# ブラウザで http://localhost:7860 にアクセスできることを確認
+```
+
+### **2. アプリで画像生成をテスト**
+
+1. 新しいURL `https://ai-chat-qc0n2sh73-kous-projects-ba188115.vercel.app` でアプリを開く
+2. ⚙️ **設定** → **UI設定** → **画像生成エンジン** → **Stable Diffusion** が選択されていることを確認
+3. チャットで画像生成をテスト
+
+### **3. 問題が続く場合の代替案**
+
+もしまだエラーが出る場合：
+
+1. **Runwareに切り替え**: 即座に動作する確実な方法
+2. **ローカルSD確認**: `http://localhost:7860` でStable Diffusion WebUIにアクセスできるか確認
+3. **APIエンドポイント確認**: `http://localhost:7860/docs` でAPI仕様を確認
+
+## 📊 **期待される結果**
+
+デプロイ後、環境変数が正しく反映され：
+- ✅ `LOCAL_SD_URL: http://localhost:7860` が使用される
+- ✅ Stable Diffusionが正常に動作する（WebUI起動時）
+- ✅ または、Runwareに切り替えて即座に画像生成可能
+
+新しいURLでテストしてみてください！
+
+---
+
+_**User**_
+
+{
+    "success": false,
+    "error": "Stable Diffusionが選択されていますが、有効な設定がありません。UI設定でRunwareに切り替えることをお勧めします。",
+    "suggestion": "UI設定 > 画像生成エンジン > Runware に変更してください",
+    "debug": {
+        "runwareAvailable": true,
+        "stableDiffusionAvailable": false,
+        "currentEngine": "sd",
+        "localUrlValid": false
+    }
+}
+---
+https://ai-chat-qc0n2sh73-kous-projects-ba188115.vercel.app/api/generate-image/ 400 (Bad Request)
+tP @ page-44bc357a5bae542c.js:1
+iX @ 4bd1b696-d02a66cf81354aba.js:1
+（匿名） @ 4bd1b696-d02a66cf81354aba.js:1
+nS @ 4bd1b696-d02a66cf81354aba.js:1
+i2 @ 4bd1b696-d02a66cf81354aba.js:1
+s7 @ 4bd1b696-d02a66cf81354aba.js:1
+s5 @ 4bd1b696-d02a66cf81354aba.js:1このエラーを分析
+page-44bc357a5bae542c.js:1 📡 画像生成APIレスポンス状態: 400 
+684-f0be525a0532057b.js:1 ❌ 画像生成APIエラー: 400 {"success":false,"error":"Stable Diffusionが選択されていますが、有効な設定がありません。UI設定でRunwareに切り替えることをお勧めします。","suggestion":"UI設定 > 画像生成エンジン > Runware に変更してください","debug":{"runwareAvailable":true,"stableDiffusionAvailable":false,"currentEngine":"sd","localUrlValid":false}}
+window.console.error @ 684-f0be525a0532057b.js:1
+tP @ page-44bc357a5bae542c.js:1
+await in tP
+iX @ 4bd1b696-d02a66cf81354aba.js:1
+（匿名） @ 4bd1b696-d02a66cf81354aba.js:1
+nS @ 4bd1b696-d02a66cf81354aba.js:1
+i2 @ 4bd1b696-d02a66cf81354aba.js:1
+s7 @ 4bd1b696-d02a66cf81354aba.js:1
+s5 @ 4bd1b696-d02a66cf81354aba.js:1このエラーを分析
+684-f0be525a0532057b.js:1 🖼️ 画像生成テストエラー: Error: 画像生成APIエラー: 400 {"success":false,"error":"Stable Diffusionが選択されていますが、有効な設定がありません。UI設定でRunwareに切り替えることをお勧めします。","suggestion":"UI設定 > 画像生成エンジン > Runware に変更してください","debug":{"runwareAvailable":true,"stableDiffusionAvailable":false,"currentEngine":"sd","localUrlValid":false}}
+    at tP (page-44bc357a5bae542c.js:1:147995)
+window.console.error @ 684-f0be525a0532057b.js:1
+tP @ page-44bc357a5bae542c.js:1
+await in tP
+iX @ 4bd1b696-d02a66cf81354aba.js:1
+（匿名） @ 4bd1b696-d02a66cf81354aba.js:1
+nS @ 4bd1b696-d02a66cf81354aba.js:1
+i2 @ 4bd1b696-d02a66cf81354aba.js:1
+s7 @ 4bd1b696-d02a66cf81354aba.js:1
+s5 @ 4bd1b696-d02a66cf81354aba.js:1このエラーを分析
+- 再びなりませんでした。
+
+---
+
+_**Assistant**_
+
+エラーメッセージから詳細が分かりました！重要な情報があります：
+
+## 🔍 **問題の核心**
+
+```json
+"debug": {
+    "runwareAvailable": true,
+    "stableDiffusionAvailable": false, 
+    "currentEngine": "sd",
+    "localUrlValid": false  ← ここが重要！
+}
+```
+
+**`localUrlValid: false`** = ローカルStable DiffusionのURLが無効と判定されています。
+
+## 🔧 **根本原因と解決方法**
+
+### **原因**: Vercel上では `localhost` にアクセスできない
+
+Vercelのサーバーから `http://localhost:7860` にアクセスしようとしていますが、Vercelのサーバーマシンには当然ながらユーザーのローカルStable Diffusionサーバーは存在しません。
+
+### **解決方法 1: Runwareに切り替え（推奨）**
+
+---
+
+```bash
+echo "Runwareへの切り替えを推奨します"
+```
+
+```
+PS C:\script\ai-chat> echo "Runwareへの切り替えを推奨します"
+Runwareへの切り替えを推奨します
+PS C:\script\ai-chat>
+```
+
+---
+
+## ✅ **即座の解決策**
+
+### **ステップ1: アプリでRunwareに切り替え**
+
+1. **新しいURL** `https://ai-chat-qc0n2sh73-kous-projects-ba188115.vercel.app` でアプリを開く
+2. **⚙️ 設定** → **UI設定** をクリック  
+3. **画像生成エンジン** を **`Runware`** に変更
+4. **保存** をクリック
+
+### **ステップ2: 画像生成をテスト**
+チャットで画像生成機能をテストしてください。Runwareは即座に動作します。
+
+## 🔧 **技術的解説**
+
+### **なぜStable Diffusionが動かないのか**
+
+**アーキテクチャ上の制約**:
+```
+ユーザーのPC          Vercelサーバー
+┌─────────────┐    ┌──────────────┐
+│ localhost:7860 │    │ 画像生成API    │
+│ SD WebUI      │    │              │
+└─────────────┘    └──────────────┘
+        ↑                   ↓
+    アクセス不可        localhost:7860
+                      にアクセス試行
+                         ❌ 失敗
+```
+
+**Vercelの制約**:
+- Vercelのサーバーレス関数は外部の `localhost` にアクセスできない
+- ユーザーのローカルマシンとVercelサーバーは完全に分離されている
+
+### **解決方法 2: 外部公開Stable Diffusion（上級者向け）**
+
+もしStable Diffusionを使いたい場合：
+
+1. **ngrok等でローカルSDを外部公開**:
+   ```bash
+   # ngrokを使用してローカルSDを外部公開
+   ngrok http 7860
+   # → https://xxxxx.ngrok.io のようなURLが生成される
+   ```
+
+2. **Vercel環境変数を外部URLに変更**:
+   ```bash
+   vercel env add LOCAL_SD_URL
+   # 値: https://xxxxx.ngrok.io
+   ```
+
+**ただし、セキュリティリスクがあるため推奨しません。**
+
+## 🎯 **推奨アクション**
+
+**Runwareに切り替えるのが最良の選択**です：
+
+✅ **メリット**:
+- 即座に動作
+- 高品質な画像生成
+- サーバーレス環境に最適
+- 安定した性能
+
+❌ **Stable Diffusionのデメリット**:
+- Vercel環境では複雑な設定が必要
+- ローカルサーバーの維持が必要
+- ネットワーク公開のセキュリティリスク
+
+**結論**: アプリの設定で **Runware** に切り替えてください！
+
+---
+
+_**User**_
+
+それですが残念です。というか、ペルソナのデフォルト設定どこでしたっけ？
+
+---
+
+_**Assistant**_
+
+
 
 ---
 

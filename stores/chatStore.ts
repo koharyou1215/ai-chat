@@ -84,7 +84,7 @@ const defaultSettings: AppSettings = {
   usedModel: 'google/gemini-2.5-pro',
   enableImageGeneration: true,
   chatCompletionSound: true,
-  imageEngine: 'runware',
+  imageEngine: 'runware', // Runwareを強制デフォルト
   bubbleBlur: true,
   openRouterApiKey: '',
   candidateCount: 1,
