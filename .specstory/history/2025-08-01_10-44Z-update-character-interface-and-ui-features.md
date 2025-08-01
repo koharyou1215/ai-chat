@@ -1149,3 +1149,57 @@ _**Assistant**_
 
 ---
 
+```bash
+git add src/app/page.tsx .specstory/history/2025-08-01_10-44Z-update-character-interface-and-ui-features.md
+```
+
+```
+PS C:\script\ai-chat> git add src/app/page.tsx .specstory/history/2025-08-01_10-44Z-update-character-
+interface-and-ui-feat git add src/app/page.tsx .specstory/history/2025-08-01_10-44Z-update-character-
+interface-and-ui-features.md
+warning: in the working copy of '.specstory/history/2025-08-01_10-44Z-update-character-interface-and-
+ui-features.md', LF will be replaced by CRLF the next time Git touches it
+PS C:\script\ai-chat>
+```
+
+---
+
+```bash
+git commit -m "fix: resolve eslint build errors in page.tsx"
+```
+
+```
+PS C:\script\ai-chat> git commit -m "fix: resolve eslint build errors in page.tsx"
+[main ecf2147] fix: resolve eslint build errors in page.tsx
+PS C:\script\ai-chat>
+```
+
+---
+
+```bash
+git push origin main
+```
+
+```
+Enumerating objects: 9, done.
+Counting objects: 100% (9/9), done.
+Delta compression using up to 16 threads
+Total 5 (delta 3), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/koharyou1215/ai-chat.git
+   501c2dd..ecf2147  main -> main
+PS C:\script\ai-chat> git push origin main
+Everything up-to-date
+PS C:\script\ai-chat>
+```
+
+---
+
+✅ Git の赤字（modified）は「ステージされていない変更」を示します。  
+先ほどファイルを `git add` でステージし、`git commit` → `git push` まで完了しました。  
+リモート `origin/main` に反映済みなので、Vercel などの自動デプロイも新コミットで走るはずです。  
+
+もし CI/ビルドが再度失敗したら、ログの最後のエラーメッセージをご共有ください。
+
+---
+
