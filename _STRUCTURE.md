@@ -1,207 +1,195 @@
-# AI Chat プロジェクト - ディレクトリ構造
+# AI Chat プロジェクト構造 - 最新版
 
-## 📁 プロジェクト全体構造
+## 📁 ディレクトリ構造
 
 ```
 ai-chat/
-├── 📁 src/                           # メインソースコード
-│   ├── 📁 app/                       # Next.js App Router
-│   │   ├── 📁 api/                   # API Routes (バックエンド)
-│   │   │   ├── 📁 simple-chat/       # メインチャット API
-│   │   │   ├── 📁 enhance-text/      # 文章強化 API
-│   │   │   ├── 📁 generate-image/    # 画像生成 API
-│   │   │   ├── 📁 user-inspiration/  # 応答候補 API
-│   │   │   └── 📁 [その他API]/       # 各種機能API
-│   │   ├── 📄 page.tsx               # メインチャット画面
-│   │   ├── 📄 layout.tsx             # アプリケーションレイアウト
-│   │   ├── 📄 globals.css            # グローバルスタイル
-│   │   └── 📁 [pages]/               # 各種ページ
-│   ├── 📁 components/                # 共有コンポーネント（重複）
-│   ├── 📁 config/                    # 設定ファイル
-│   └── 📁 stores/                    # 状態管理（重複）
+├── components/                    # Reactコンポーネント
+│   ├── settings/                  # 設定関連コンポーネント
+│   │   ├── ApiSettings.tsx       # API設定（LoRA設定統合済み）
+│   │   ├── ChatSettings.tsx      # チャット設定
+│   │   ├── ModelSettings.tsx     # モデル設定
+│   │   ├── PromptSettings.tsx    # プロンプト設定
+│   │   ├── UISettings.tsx        # UI設定
+│   │   └── VoiceSettings.tsx     # 音声設定
+│   ├── CharacterModal.tsx        # キャラクター編集（フラット構造対応）
+│   ├── CharacterGallery.tsx      # キャラクター一覧
+│   ├── CharacterSelector.tsx     # キャラクター選択
+│   ├── CharacterTracker.tsx      # トラッカー表示（4型対応）
+│   ├── LoRASettings.tsx          # LoRA個別重み設定UI
+│   ├── TrackerEditor.tsx         # トラッカー編集UI
+│   ├── SettingsModal.tsx         # 設定モーダル
+│   └── [その他UIコンポーネント]
 │
-├── 📁 components/                    # React コンポーネント（メイン）
-│   ├── 📁 settings/                  # 設定関連コンポーネント
-│   │   ├── 📄 ApiSettings.tsx        # API設定
-│   │   ├── 📄 ChatSettings.tsx       # チャット設定
-│   │   ├── 📄 ModelSettings.tsx      # モデル設定
-│   │   ├── 📄 VoiceSettings.tsx      # 音声設定
-│   │   └── 📄 UISettings.tsx         # UI設定
-│   ├── 📄 CharacterModal.tsx         # キャラクター編集
-│   ├── 📄 CharacterSelector.tsx      # キャラクター選択
-│   ├── 📄 SettingsModal.tsx          # 設定モーダル
-│   ├── 📄 MessageEditorModal.tsx     # メッセージ編集
-│   └── 📄 [その他コンポーネント].tsx
+├── src/app/                       # Next.js App Router
+│   ├── api/                       # API Routes
+│   │   ├── simple-chat/route.ts  # メインチャットAPI
+│   │   ├── generate-image/route.ts # 画像生成（LoRA個別重み対応）
+│   │   ├── enhance-text/route.ts  # 文章強化
+│   │   ├── save-background/route.ts # 背景保存（Vercel対応）
+│   │   └── [その他API]
+│   ├── page.tsx                   # メインチャット画面
+│   ├── characters/page.tsx       # キャラクター管理画面
+│   ├── settings/page.tsx         # 設定画面
+│   └── history/page.tsx          # 履歴画面
 │
-├── 📁 lib/                          # ユーティリティライブラリ
-│   ├── 📄 openRouter.ts             # OpenRouter API連携
-│   ├── 📄 runwareApi.ts             # Runware画像生成API
-│   ├── 📄 stableDiffusionApi.ts     # Stable Diffusion API
-│   ├── 📄 imagePromptGenerator.ts   # 画像プロンプト生成
-│   ├── 📄 voiceManager.ts           # 音声管理
-│   ├── 📄 historyManager.ts         # 履歴管理
-│   ├── 📄 characterLoader.ts        # キャラクター読み込み
-│   ├── 📄 settingsCloudSync.ts      # 設定クラウド同期
-│   └── 📄 [その他ライブラリ].ts
+├── lib/                          # ユーティリティライブラリ
+│   ├── characterLoader.ts        # キャラクター管理（フラット構造）
+│   ├── backgroundManager.ts      # 背景管理（ローカルストレージ）
+│   ├── runwareApi.ts            # Runware API（個別LoRA対応）
+│   ├── openRouter.ts            # OpenRouter API
+│   ├── voiceManager.ts          # 音声管理
+│   └── [その他ライブラリ]
 │
-├── 📁 types/                        # TypeScript型定義
-│   ├── 📄 app.ts                    # アプリケーション設定型
-│   ├── 📄 character.ts              # キャラクター型定義
-│   └── 📄 replicate.d.ts            # 外部API型定義
+├── stores/                       # 状態管理
+│   └── chatStore.ts             # Zustand（永続化、トラッカー管理）
 │
-├── 📁 stores/                       # 状態管理（Zustand）
-│   └── 📄 chatStore.ts              # メインストア
+├── types/                        # TypeScript型定義
+│   ├── character.ts             # Character型（フラット構造）
+│   │                            # CharacterTracker, TrackerValue型
+│   └── app.ts                   # AppSettings, LoRASetting型
 │
-├── 📁 public/                       # 静的ファイル
-│   ├── 📁 characters/               # デフォルトキャラクター
-│   │   ├── 📄 nami.json            # サンプルキャラクター
-│   │   └── 📄 [その他キャラ].json
-│   ├── 📁 personas/                 # ペルソナ設定
-│   ├── 📄 manifest.json            # PWA設定
-│   └── 📄 [アイコン・画像ファイル]
+├── public/characters/            # キャラクターデータ
+│   ├── nami.json               # デフォルトナミ（最新フォーマット）
+│   └── [その他キャラクター].json
 │
-├── 📁 data/                         # データファイル
-│   └── 📁 backgrounds/              # 背景画像設定
-│
-├── 📄 package.json                  # 依存関係
-├── 📄 tsconfig.json                 # TypeScript設定
-├── 📄 tailwind.config.mjs           # Tailwind CSS設定
-├── 📄 next.config.ts                # Next.js設定
-├── 📄 vercel.json                   # Vercel設定
-│
-├── 📁 [バッチファイル]/             # 自動化スクリプト
-│   ├── 📄 ai-chat_dev.bat          # 開発サーバー起動
-│   ├── 📄 deploy_ai-chat.bat       # デプロイ自動化
-│   ├── 📄 fetch_logs.bat           # ログ取得
-│   ├── 📄 status_ai-chat.bat       # 状況確認
-│   └── 📄 stop_ai-chat.bat         # 緊急停止
-│
-└── 📁 [ドキュメント]/               # プロジェクト文書
-    ├── 📄 PROJECT_REFERENCE.md     # プロジェクト概要
-    ├── 📄 PROJECT_RULES.md         # 開発ルール
-    ├── 📄 PROJECT_FEEDBACK.md      # 開発ログ
-    ├── 📄 PROJECT_LESSONS_LEARNED.md # 学習記録
-    ├── 📄 README.md                # セットアップガイド
-    ├── 📄 CHANGELOG.md             # 変更履歴
-    ├── 📄 BEGINNER_GUIDE.md        # 初心者ガイド
-    ├── 📄 _INSTRUCTION.md          # 引き継ぎ命令書
-    ├── 📄 _DEVELOPMENT_LOG.md      # 開発ログ
-    └── 📄 _STRUCTURE.md            # この構造ファイル
+└── [設定ファイル等]
 ```
 
-## 🔍 重要ファイルの詳細
+## 🔧 主要コンポーネント詳細
 
-### 核となる設定・型定義
-| ファイル | 役割 | 重要度 |
-|---------|------|--------|
-| `types/character.ts` | キャラクター型定義 | ⭐⭐⭐ |
-| `types/app.ts` | アプリケーション設定型 | ⭐⭐⭐ |
-| `stores/chatStore.ts` | メイン状態管理 | ⭐⭐⭐ |
+### 📊 CharacterTracker.tsx
+**機能**: 4つのトラッカー型表示・操作
+- **numeric**: プログレスバー、増減ボタン
+- **state**: 状態表示、選択肢
+- **boolean**: はい/いいえ表示
+- **text**: テキスト表示
+- **永続化**: persistentフラグで制御
 
-### APIエンドポイント
-| ファイル | 機能 | 重要度 |
-|---------|------|--------|
-| `src/app/api/simple-chat/route.ts` | メインチャット | ⭐⭐⭐ |
-| `src/app/api/enhance-text/route.ts` | 文章強化（キラキラ） | ⭐⭐ |
-| `src/app/api/generate-image/route.ts` | 画像生成 | ⭐⭐ |
-| `src/app/api/user-inspiration/route.ts` | 応答候補（💡） | ⭐⭐ |
+### 🎛️ LoRASettings.tsx  
+**機能**: 個別LoRA重み設定
+- ID・名前・重み・有効無効の管理
+- 重みスライダー（0.0〜2.0）
+- バリデーション機能
+- リアルタイム有効無効切り替え
 
-### UIコンポーネント
-| ファイル | 機能 | 重要度 |
-|---------|------|--------|
-| `src/app/page.tsx` | メインチャット画面 | ⭐⭐⭐ |
-| `components/CharacterModal.tsx` | キャラクター編集 | ⭐⭐⭐ |
-| `components/SettingsModal.tsx` | 設定画面 | ⭐⭐ |
-| `components/settings/ApiSettings.tsx` | API設定 | ⭐⭐ |
+### 📝 CharacterModal.tsx
+**機能**: キャラクター編集（フラット構造完全対応）
+- 全フィールド直接編集可能
+- トラッカー定義・編集
+- 新旧フォーマット対応
 
-### ライブラリ・ユーティリティ
-| ファイル | 機能 | 重要度 |
-|---------|------|--------|
-| `lib/openRouter.ts` | OpenRouter API連携 | ⭐⭐⭐ |
-| `lib/imagePromptGenerator.ts` | 画像プロンプト生成 | ⭐⭐ |
-| `lib/runwareApi.ts` | Runware画像生成 | ⭐⭐ |
-| `lib/stableDiffusionApi.ts` | Stable Diffusion | ⭐⭐ |
+## 💾 データ構造
 
-## 🗂️ データフロー
-
-### 1. キャラクター管理
-```
-public/characters/*.json
-    ↓ (読み込み)
-lib/characterLoader.ts
-    ↓ (型変換)
-types/character.ts (Character interface)
-    ↓ (状態管理)
-stores/chatStore.ts
-    ↓ (UI表示)
-components/CharacterModal.tsx
-```
-
-### 2. チャット処理
-```
-src/app/page.tsx (ユーザー入力)
-    ↓ (API呼び出し)
-src/app/api/simple-chat/route.ts
-    ↓ (LLM連携)
-lib/openRouter.ts
-    ↓ (レスポンス)
-stores/chatStore.ts (履歴保存)
-    ↓ (UI更新)
-src/app/page.tsx (メッセージ表示)
+### Character型（最新フラット構造）
+```typescript
+interface Character {
+  // 基本情報
+  name: string;
+  age?: string;
+  occupation?: string;
+  tags: string[];
+  hobbies: string[];
+  likes: string[];
+  dislikes: string[];
+  
+  // キャラクター詳細（フラット）
+  personality?: string;
+  appearance?: string;
+  speaking_style?: string;
+  scenario?: string;
+  background?: string;
+  nsfw_profile?: string;
+  
+  // 新機能
+  systemPrompt?: string;
+  appearancePrompt?: string;
+  appearanceNegativePrompt?: string;
+  
+  // 拡張機能
+  trackers?: CharacterTracker[];
+  first_message: string[];
+}
 ```
 
-### 3. 画像生成
-```
-src/app/page.tsx (生成リクエスト)
-    ↓ (プロンプト生成)
-lib/imagePromptGenerator.ts
-    ↓ (API呼び出し)
-src/app/api/generate-image/route.ts
-    ↓ (画像生成)
-lib/runwareApi.ts | lib/stableDiffusionApi.ts
-    ↓ (結果表示)
-src/app/page.tsx
+### TrackerValue型
+```typescript
+interface TrackerValue {
+  type: 'numeric' | 'state' | 'boolean' | 'text';
+  value: number | string | boolean;
+  lastUpdate?: number;
+}
 ```
 
-### 4. 設定管理
+### LoRASetting型
+```typescript
+interface LoRASetting {
+  id: string;
+  name: string;
+  weight: number;
+  enabled: boolean;
+}
 ```
-components/settings/*.tsx (設定UI)
-    ↓ (状態更新)
-stores/chatStore.ts
-    ↓ (永続化)
-localStorage + lib/settingsCloudSync.ts
-    ↓ (API連携)
-各種APIファイル
-```
 
-## 🔧 設定・環境ファイル
+## 🔄 データフロー
 
-### 必須設定ファイル
-- `.env.local` - 環境変数（APIキー等）
-- `vercel.json` - Vercel設定
-- `next.config.ts` - Next.js設定
-- `tsconfig.json` - TypeScript設定
-- `tailwind.config.mjs` - Tailwind CSS設定
+### キャラクター選択フロー
+1. `CharacterSelector.tsx` → キャラクター選択
+2. `src/app/page.tsx:onSelectCharacter` → 初期化処理
+3. `initializeTrackersForSession()` → トラッカー初期化
+4. 初回メッセージランダム選択（1726-1729行）
 
-### 自動化ファイル
-- `*.bat` - Windows PowerShellスクリプト
-- `package.json` - npm scripts
+### トラッカー更新フロー  
+1. `CharacterTracker.tsx` → 値変更
+2. `updateTrackerValue()` → Zustand更新
+3. `analyzeMessageForTrackerUpdates()` → AI応答で自動更新
+4. 永続化: persistent=trueなら永続保存
 
-## 📊 ファイル統計
+### LoRA設定フロー
+1. `LoRASettings.tsx` → 設定変更
+2. `runwareLoraSettings` → Zustand保存
+3. `generate-image/route.ts` → API呼び出し時に適用
 
-### 種類別ファイル数
-- **TypeScript/JavaScript**: 100+ ファイル
-- **JSON設定**: 40+ キャラクター + 設定ファイル
-- **ドキュメント**: 10+ Markdownファイル
-- **設定ファイル**: 10+ 設定・環境ファイル
+## 🗃️ 永続化システム
 
-### 重要度別分類
-- **🔴 Critical (変更に注意)**: `types/`, `stores/`, メインAPI
-- **🟡 Important (動作に影響)**: UI コンポーネント、ライブラリ
-- **🟢 Normal (個別機能)**: 個別設定、ドキュメント
+### Zustand Persist
+**保存対象**:
+- `settings`: 全設定（LoRA設定含む）
+- `trackerValues`: セッション用トラッカー値
+- `persistentTrackerValues`: 永続トラッカー値
+- `sessions`: チャット履歴
+- `memos`: メモデータ
+
+### ローカルストレージ
+**BackgroundManager**:
+- キャラクター別背景設定
+- Vercel読み取り専用対応
+
+## ⚙️ API構造
+
+### `/api/simple-chat`
+- メインチャット処理
+- systemPrompt自動適用
+- トラッカー分析統合
+
+### `/api/generate-image`  
+- 画像生成API
+- appearancePrompt自動使用
+- 個別LoRA重み適用
+- Runware/StableDiffusion対応
+
+### `/api/save-background`
+- 背景保存API
+- Vercel対応（ログ目的のみ）
+
+## 🔍 重要な実装済み機能
+
+1. **エラー解決**: React Error #31完全修正
+2. **フォーマット統一**: フラット構造で編集画面完全対応
+3. **永続化**: Vercel環境対応
+4. **拡張トラッカー**: 4つの型完全サポート
+5. **個別LoRA**: 重み付け独立制御
+6. **ランダム選択**: 初回メッセージ正常動作
 
 ---
-
-**最終更新**: 2025年8月1日  
-**バージョン**: 2.0  
-**記録者**: AI Assistant
+**更新**: 2025年1月 | **対応フォーマット**: フラット構造v2.0

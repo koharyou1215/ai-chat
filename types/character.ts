@@ -111,14 +111,12 @@ export interface Character {
   appearancePrompt?: string;
   /** 英文ネガティブプロンプト（任意） */
   appearanceNegativePrompt?: string;
-  avatar_url?: string;
   imageSeed?: number; // 画像生成用のデフォルトシード（未設定はランダム）
   imageWidth?: number;
   imageHeight?: number;
   imageSteps?: number;
   imageCfgScale?: number;
   imageSampler?: string;
-  backgroundImageUrl?: string; // 背景画像URLを追加
 }
 
 export interface UserPersona {

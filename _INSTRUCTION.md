@@ -1,241 +1,125 @@
-# AI Chat プロジェクト - 引き継ぎ命令書
+# AI Chat プロジェクト - 次フェーズ開発指示書
 
-## 🎯 現在の作業状況と進捗
+## 🎯 現在の状況（完了済み）
 
-### 完了済み作業
-1. **キャラクター専用システムプロンプト機能** ✅
-   - `Character` インターフェースに `systemPrompt` フィールド追加
-   - API ルート（`/api/simple-chat`）でキャラクター専用プロンプトを最優先適用
-   - UI（`CharacterModal.tsx`）に入力フィールド追加
+### ✅ 前フェーズで完了した重要な改善
+1. **React Error #31修正**: TrackerValueオブジェクトのレンダリング問題解決
+2. **キャラクターフォーマット最適化**: フラット構造に変更、編集画面と完全一致
+3. **Vercel対応**: 背景保存をローカルストレージベース、LoRA設定をZustand永続化
+4. **拡張トラッカーシステム**: 4つの型（numeric/state/boolean/text）完全対応
+5. **LoRA個別重み付け**: 各LoRAに独立した重み設定機能
+6. **初回メッセージランダム選択**: 3パターンから1つをランダム選択に修正済み
+7. **デフォルトナミ最新化**: lib/characterLoader.tsとpublic/characters/nami.json更新
 
-2. **画像生成機能強化** ✅
-   - `appearancePrompt` と `appearanceNegativePrompt` フィールド追加
-   - 英文プロンプト対応による画像品質向上
-   - 設定オプション（感情検出、シナリオ検出、品質タグ）追加
+### 📊 確認済みの動作状況
+- **トラッカー表示**: 4つの型すべて正常動作
+- **編集画面**: 全フィールド（personality, appearance, hobbies等）完全対応
+- **永続化**: LoRA設定、トラッカー値、背景すべて保存動作
+- **画像生成**: appearancePrompt自動使用、個別LoRA重み付け対応
+- **初回メッセージ**: ランダム選択正常動作（1726-1729行で実装済み）
 
-3. **UI問題修正** ✅
-   - ヘッダータップでキャラ追加が開く問題を修正（`pointer-events-none`適用）
-   - チャット入力フィールドの視認性向上（透明度調整、フォント色改善）
+## 🚀 次に実行すべき作業（優先順）
 
-4. **API並列処理改善** ✅
-   - `Promise.allSettled` を使用した並列リクエスト処理
-   - 単一リクエスト失敗が全体をブロックしない仕組み
+### 1. 候補生成数>1エラー修正 🔧
+**問題**: `/api/simple-chat`で並列リクエスト処理エラー
+**場所**: `src/app/api/simple-chat/route.ts`
+**対応**: 並列処理ロジックの見直し、エラーハンドリング強化
 
-5. **トラッカーシステム** ✅
-   - `CharacterTracker` インターフェース定義
-   - 好感度、信頼度、機嫌などのパラメータ追加
+### 2. UI改善 🎨
+**a) ハンバーガーメニュー背景オーバーレイ**
+- サイドバー開時に背景オーバーレイ追加
+- タップでサイドバー閉じる機能
 
-6. **エラー修正** ✅
-   - 重複import除去（`StableDiffusionService`）
-   - 文字列リテラル未終了エラー修正
-   - ESLintエラー対応
+**b) ヘッダータップ問題修正**
+- ヘッダータップ時のonAddCharacter()発火を防止
+- `pointer-events-none`の適用範囲調整
 
-### 最新コミット状況
-- 最後のコミット: "fix: remove duplicate import"
-- 現在の変更: `.specstory` ファイルの更新と一時ファイル存在
+### 3. タイプライター速度設定 ⚙️
+**場所**: Settings画面
+**実装**: 速度調整スライダーをUI設定セクションに追加
 
-## 🚨 次に実行すべき作業（優先順）
+### 4. Supabaseクラウド同期 ☁️
+**対象データ**:
+- 設定（AppSettings）
+- キャラクター（Character[]）
+- チャット履歴（SessionSummary[]）
+- メモ（ChatMemo[]）
+- 背景設定（CharacterBackground[]）
 
-### 1. 即座に実行すべき作業
-```bash
-# 不要な一時ファイルを削除
-git clean -fd stores/
-# 変更をステージング
-git add .
-# コミット
-git commit -m "docs: update project documentation"
-# デプロイ
-git push origin main
-```
+## 📁 重要ファイル参照
 
-### 2. 確認・テストが必要な項目
-1. **画像生成テスト**
-   - Stable Diffusion設定の確認（URL: `https://your-sd.example.com:7860` が正しいか）
-   - Runware APIでの画像生成動作確認
-   - キャラクター専用 `appearancePrompt` の適用確認
-
-2. **キラキラ機能（文章強化）テスト**
-   - `enhancementPrompt` の動作確認
-   - API応答の正常性確認
-
-3. **トラッカーパラメータの動作確認**
-   - 好感度・信頼度・機嫌の表示/更新確認
-
-## 📋 キャラクターの最終フォーマット
-
-### 基本構造（`types/character.ts`）
-```typescript
-export interface Character {
-  "file-name"?: string;
-  name: string;
-  tags: string[];
-  first_message: string[];
-  character_definition?: CharacterDefinition;
-  trackers?: CharacterTracker[];
-  example_dialogue?: ExampleDialogue[];
-  
-  // 簡易フィールド
-  personality?: string;
-  appearance?: string;
-  speaking_style?: string;
-  scenario?: string;
-  nsfw_profile?: string;
-  age?: string;
-  occupation?: string;
-  hobbies: string[];
-  likes: string[];
-  dislikes: string[];
-  background?: string;
-  
-  // 新機能フィールド
-  systemPrompt?: string;              // キャラクター専用システムプロンプト
-  appearancePrompt?: string;          // 英文画像生成プロンプト
-  appearanceNegativePrompt?: string;  // 英文ネガティブプロンプト
-  
-  // 画像設定
-  avatar_url?: string;
-  imageSeed?: number;
-  imageWidth?: number;
-  imageHeight?: number;
-  imageSteps?: number;
-  imageCfgScale?: number;
-  imageSampler?: string;
-  backgroundImageUrl?: string;
-}
-```
-
-### トラッカー構造
-```typescript
-export interface CharacterTracker {
-  name: string;           // 内部識別名（例: "affection"）
-  display_name: string;   // 表示名（例: "好感度"）
-  initial_value: number;  // 初期値
-  max_value?: number;     // 最大値（デフォルト100）
-}
-```
-
-### 実装例（nami.json より）
+### 最新キャラクターフォーマット（確定版）
 ```json
 {
-  "systemPrompt": "あなたはナミとして行動してください。関西弁混じりの親しみやすい口調で話し、お金や宝に関する話題では特に興味を示してください。",
-  "appearancePrompt": "1girl, slender build, athletic figure, tanned skin, vibrant orange long hair, sometimes ponytail, large brown expressive eyes, blue bikini top, short skirt, confident pose, beautiful detailed face",
-  "appearanceNegativePrompt": "overweight, pale skin, short hair, small eyes, formal clothing, multiple people, bad anatomy, blurry, low quality",
+  "name": "（キャラクター名）",
+  "age": "（年齢）",
+  "occupation": "（職業/役割）",
+  "tags": ["（タグ1）", "（タグ2）"],
+  "hobbies": ["（趣味1）", "（趣味2）"],
+  "likes": ["（好きなもの1）", "（好きなもの2）"],
+  "dislikes": ["（嫌いなもの1）", "（嫌いなもの2）"],
+  "background": "（背景・過去の経歴）",
+  "personality": "（性格特性）",
+  "appearance": "（外見の特徴）",
+  "speaking_style": "（口調、一人称、二人称）",
+  "scenario": "（世界観、初期状況、関係性発展）",
+  "nsfw_profile": "（任意：NSFW設定）",
+  "first_message": [
+    "（パターン1）", "（パターン2）", "（パターン3）"
+  ],
+  "systemPrompt": "（AIへの指示）",
+  "appearancePrompt": "（英文画像生成プロンプト）",
+  "appearanceNegativePrompt": "（英文ネガティブプロンプト）",
   "trackers": [
     {
-      "name": "affection",
+      "name": "affection_level",
       "display_name": "好感度",
+      "type": "numeric",
       "initial_value": 50,
-      "max_value": 100
-    },
-    {
-      "name": "trust",
-      "display_name": "信頼度", 
-      "initial_value": 30,
-      "max_value": 100
-    },
-    {
-      "name": "mood",
-      "display_name": "機嫌",
-      "initial_value": 70,
-      "max_value": 100
+      "max_value": 100,
+      "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": "キャラクターからの好意度"
     }
   ]
 }
 ```
 
-## 🔧 重要なファイルとその役割
+### トラッカー型サンプル
+**数値型**: `{"type": "numeric", "initial_value": 50, "max_value": 100}`
+**状態型**: `{"type": "state", "initial_state": "初対面", "possible_states": ["初対面", "友人", "恋人"]}`
+**ブール型**: `{"type": "boolean", "initial_boolean": false}`
+**テキスト型**: `{"type": "text", "initial_text": ""}`
 
-### 核となる設定ファイル
-- `types/character.ts` - キャラクター型定義（最重要）
-- `stores/chatStore.ts` - アプリケーション設定とデフォルト値
-- `src/app/api/simple-chat/route.ts` - メインチャットロジック
+## 🔑 重要な実装済み機能
 
-### UI コンポーネント
-- `components/CharacterModal.tsx` - キャラクター編集画面
-- `components/settings/ApiSettings.tsx` - API設定画面
-- `src/app/page.tsx` - メインチャット画面
+### CharacterTracker.tsx
+- 4つのトラッカー型完全対応
+- 数値型以外でもプログレスバー/ボタン適切に制御
+- TrackerValue型でレンダリング問題解決済み
 
-### APIエンドポイント
-- `/api/simple-chat` - メインチャット
-- `/api/enhance-text` - 文章強化（キラキラ）
-- `/api/generate-image` - 画像生成
-- `/api/user-inspiration` - 応答候補（💡）
+### LoRASettings.tsx
+- 個別LoRAの重み設定UI
+- 有効/無効切り替え
+- バリデーション機能完備
 
-## 🚨 既知の問題と注意点
+### 初回メッセージ選択
+- `src/app/page.tsx:1726-1729`でランダム選択実装済み
+- 3パターンから1つを選択（結合なし）
 
-### 環境変数関連
-- ローカル環境とVercel環境での環境変数の差異
-- Stable Diffusion URLの設定確認が必要
+## ⚠️ 注意事項
 
-### 画像生成関連
-- `contextPromptWeight` などの新しい設定項目の動作確認
-- キャラクター専用プロンプトの優先順位確認
+1. **avatar_url, backgroundImageUrl削除済み**: これらのフィールドは型定義から除去済み
+2. **フラット構造**: character_definition入れ子は廃止、すべてルートレベル
+3. **永続化**: Zustand persist使用、Vercel読み取り専用対応済み
+4. **トラッカー**: persistentフラグでセッション/永続化制御
 
-### トラッカー関連
-- UI表示機能の実装が未完了
-- 値の更新ロジックの実装が必要
+## 📝 次の作業手順
 
-## 📚 必要なコードブロック
+1. **simple-chat APIエラー修正**: 並列処理見直し
+2. **UI改善**: オーバーレイとヘッダー修正
+3. **タイプライター速度**: Settings画面に追加
+4. **Supabase同期**: 段階的実装
 
-### キャラクタートラッカーUI実装（未実装）
-```typescript
-// components/CharacterTracker.tsx (要作成)
-interface TrackerDisplayProps {
-  trackers: CharacterTracker[];
-  currentValues: Record<string, number>;
-  onChange: (name: string, value: number) => void;
-}
-```
-
-### 画像生成設定の完全な型定義
-```typescript
-// types/app.ts の AppSettings に含まれる
-imageGenerationEnabled: boolean;
-contextPromptWeight: number;        // 0-1
-emotionDetectionSensitivity: number; // 0-1
-scenarioDetectionEnabled: boolean;
-customQualityTags: string;
-```
-
-## 🎯 優先度付きタスクリスト
-
-### 高優先度（即座に対応）
-1. [ ] 一時ファイル削除とコミット
-2. [ ] デプロイ実行
-3. [ ] 画像生成機能のテスト
-4. [ ] 文章強化機能のテスト
-
-### 中優先度（今後の開発）
-1. [ ] トラッカーUI表示機能の実装
-2. [ ] トラッカー値更新ロジックの実装
-3. [ ] クラウド同期機能の拡張
-4. [ ] バッチファイルの改善
-
-### 低優先度（将来的な改善）
-1. [ ] Live2Dアバター連携
-2. [ ] 音声合成機能の拡張
-3. [ ] モバイル対応の改善
-
-## 📝 開発時の注意事項
-
-1. **プロジェクト理解の必須チェック**
-   - `PROJECT_REFERENCE.md` を必ず最初に確認
-   - 既存機能との重複を避ける
-
-2. **型安全性の確保**
-   - `types/app.ts` と `types/character.ts` の整合性維持
-   - TypeScriptエラーの解消
-
-3. **エラーハンドリング**
-   - API呼び出し時の適切なエラーハンドリング
-   - ユーザーへの分かりやすいエラーメッセージ
-
-4. **テスト実行**
-   - 機能追加後は必ずローカルテスト
-   - デプロイ前のビルドテスト実行
-
----
-
-**最終更新**: 2025年8月1日  
-**作業状況**: 基本機能実装完了、テスト・デバッグフェーズ  
-**次の作業者へ**: 上記の優先度付きタスクから開始してください
+各作業完了後は必ずローカルテスト→ビルド確認→デプロイの順で進めること。

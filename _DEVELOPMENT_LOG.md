@@ -1,161 +1,131 @@
-# AI Chat プロジェクト - 開発ログ
+# AI Chat プロジェクト開発ログ
 
-## 📋 開発履歴記録
+## 📅 2025年1月 - Phase 3: エラー修正とフォーマット最適化
 
-### 2025年8月1日 - キャラクター機能大幅拡張と問題修正
+### 🎯 実施内容
 
-#### 実装済み機能
-**1. キャラクター専用システムプロンプト**
-- `Character` インターフェースに `systemPrompt` フィールド追加
-- `/api/simple-chat` でキャラクター専用プロンプトを最優先適用
-- `CharacterModal.tsx` に編集UI追加
-- デフォルトキャラクター（nami.json等）に実装例追加
+#### ✅ React Error #31修正 (2025-01-XX)
+**問題**: TrackerValueオブジェクトが直接レンダリングされてReactエラー発生
+**解決**: 
+- `components/CharacterTracker.tsx`を`TrackerValue`型に完全対応
+- 4つのトラッカー型（numeric/state/boolean/text）すべて対応
+- オブジェクト直接レンダリング問題を文字列変換で解決
 
-**2. 画像生成機能強化**
-- `appearancePrompt` / `appearanceNegativePrompt` フィールド追加
-- 英文プロンプト対応による画像品質向上
-- 新設定項目追加:
-  - `imageGenerationEnabled` - 画像生成有効/無効
-  - `contextPromptWeight` - 文脈プロンプト重み (0-1)
-  - `emotionDetectionSensitivity` - 感情検出感度 (0-1) 
-  - `scenarioDetectionEnabled` - シナリオ検出有効/無効
-  - `customQualityTags` - カスタム品質タグ
+**技術詳細**:
+```typescript
+// 修正前: TrackerValueオブジェクトを直接表示
+<span>{trackerValue}</span> // Error #31
 
-**3. トラッカーシステム基盤**
-- `CharacterTracker` インターフェース定義
-- 好感度・信頼度・機嫌パラメータのサンプル実装
-- JSON形式での設定例（nami.json）
+// 修正後: 型に応じた文字列変換
+const displayValue = tracker.type === 'boolean' 
+  ? (trackerValue.value ? 'はい' : 'いいえ')
+  : String(trackerValue.value);
+```
 
-**4. UI/UX改善**
-- ヘッダータップでキャラ追加が開く問題修正（`pointer-events-none`）
-- チャット入力フィールドの視認性向上
-  - 閉じている時: `bg-gradient-to-r from-white/70 to-white/60 backdrop-blur-sm`
-  - 開いている時: `bg-white/95 dark:bg-gray-800/95 backdrop-blur-md`
-- フォント色の改善: `text-gray-900 dark:text-white`
+#### ✅ Vercel読み取り専用ファイルシステム対応 (2025-01-XX)
+**問題**: 背景保存でERROF: read-only file systemエラー
+**解決**:
+- `src/app/api/save-background/route.ts`: ローカルストレージベースに変更
+- `lib/backgroundManager.ts`: サーバー保存をログ目的のみに変更
+- LoRA設定: Zustandの永続化ストレージで自動保存
 
-**5. API並列処理改善**
-- `Promise.allSettled` による並列リクエスト処理
-- 単一リクエスト失敗が全体をブロックしない仕組み
+#### ✅ キャラクターフォーマット最適化 (2025-01-XX)
+**問題**: 編集画面の項目と実際のデータ構造が不一致
+**解決**: 入れ子構造を廃止してフラット構造に統一
 
-#### 修正済みエラー
-**1. ビルドエラー**
-- 重複import除去（`StableDiffusionService` in `/api/generate-image`）
-- 文字列リテラル未終了エラー修正（`stores/chatStore.ts`）
-- ESLintエラー対応（未使用変数、const推奨など）
+**変更内容**:
+```json
+// 修正前: 入れ子構造
+{
+  "character_definition": {
+    "personality": { "summary": "..." },
+    "appearance": { "description": "..." }
+  }
+}
 
-**2. 機能エラー**
-- 文章強化（キラキラ）機能で「情報が足りません」エラー
-  - `enhancementPrompt` の参照方法修正
-  - 元テキストの適切な渡し方修正
-- 画像生成エンジン選択ロジック修正
-  - `settings?.imageEngine` の優先適用
-  - Stable Diffusion URL検証強化
+// 修正後: フラット構造
+{
+  "personality": "詳細説明テキスト",
+  "appearance": "詳細説明テキスト"
+}
+```
 
-**3. パフォーマンス**
-- `VoiceSettings.tsx` の無限ループ修正（useEffect依存配列最適化）
+**更新ファイル**:
+- `types/character.ts`: Character型定義を編集画面と完全一致
+- `lib/characterLoader.ts`: デフォルトナミをフラット構造に更新
+- `public/characters/nami.json`: 最新フォーマットに対応
 
-#### 技術的改善
-**1. 型安全性向上**
-- `Character` インターフェースの拡張
-- `AppSettings` への新設定項目追加
-- トラッカー関連の型定義追加
+#### ✅ LoRA個別重み付けシステム (2025-01-XX)
+**機能**: 各LoRAに独立した重み設定
+**実装**:
+- `types/app.ts`: LoRASetting型定義追加
+- `components/LoRASettings.tsx`: 個別重み設定UI作成
+- `lib/runwareApi.ts`: 個別LoRA対応API修正
+- `src/app/api/generate-image/route.ts`: 個別重み適用
 
-**2. プロンプト管理改善**
-- キャラクター専用プロンプトの優先順位確立
-- 画像生成プロンプトの英文対応
-- ネガティブプロンプトの分離管理
+**新機能詳細**:
+```json
+"runwareLoraSettings": [
+  {
+    "id": "civitai:12345@1",
+    "name": "AnimeStyle V2", 
+    "weight": 1.2,
+    "enabled": true
+  }
+]
+```
 
-**3. 設定管理拡張**
-- API設定画面に画像生成オプション追加
-- 設定の永続化と同期
+#### ✅ 拡張トラッカーシステム (2025-01-XX)
+**機能**: 4つの型をサポートする柔軟なパラメータシステム
+**対応型**:
+1. **numeric**: 数値範囲（好感度、信頼度等）
+2. **state**: 状態遷移（関係性、現在の行動等）
+3. **boolean**: フラグ（秘密の共有、条件等）
+4. **text**: 自由記述（特別な記憶等）
 
-#### 現在の状況
-**完了済み**
-- 基本機能の実装と動作確認
-- 主要エラーの修正
-- UIの改善
+**永続化制御**:
+- `persistent: true`: セッション終了後も保持
+- `persistent: false`: セッション終了時にリセット
 
-**テスト待ち**
-- 画像生成機能（Stable Diffusion設定確認）
-- 文章強化機能の動作確認
-- トラッカーパラメータの表示/更新
+#### ✅ 初回メッセージランダム選択修正 (2025-01-XX)
+**問題**: 3パターンすべてが結合されて表示
+**解決**: `src/app/page.tsx:1726-1729`でランダム選択実装
+```typescript
+const firstMessage = Array.isArray(character.first_message) && character.first_message.length > 0
+  ? character.first_message[Math.floor(Math.random() * character.first_message.length)]
+  : (character.first_message as string || 'こんにちは！');
+```
 
-**未実装**
-- トラッカーUI表示機能
-- トラッカー値更新ロジック
-- クラウド同期の拡張
+### 🗑️ 不要フィールド削除 (2025-01-XX)
+**削除対象**: `avatar_url`, `backgroundImageUrl`
+**理由**: 
+- URLでの画像登録は使用率0%
+- ファイルアップロード時にbackgroundと混同してデータ破損
+- 編集画面の項目と不一致
 
-#### 次回作業予定
-1. 不要ファイル削除とコミット
-2. デプロイ実行
-3. 画像生成・文章強化機能のテスト
-4. トラッカーUI実装の検討
+### 📊 最終確定フォーマット
+すべての編集画面項目に対応した統一フォーマット確立:
+- 基本情報: name, age, occupation, tags, hobbies, likes, dislikes
+- キャラクター詳細: personality, appearance, speaking_style, scenario, background
+- 新機能: systemPrompt, appearancePrompt, appearanceNegativePrompt
+- 拡張機能: trackers配列（4つの型対応）
 
----
+### 🔧 技術的改善
+1. **エラーハンドリング**: React Error #31完全解決
+2. **永続化**: Zustand persist活用、Vercel対応
+3. **型安全性**: TrackerValue型でランタイムエラー防止
+4. **UI整合性**: 編集画面とデータ構造の完全一致
 
-### 2025年7月24日 - プロジェクト基盤構築
+### 📈 開発効率向上
+- キャラクター作成: フラット構造で直感的編集
+- デバッグ: 型エラーとレンダリングエラー解消
+- 保存: 自動永続化でデータ損失なし
 
-#### 初期設定
-- Next.js + TypeScript + Tailwind CSS環境構築
-- OpenRouter API連携実装
-- 基本的なチャット機能実装
-- キャラクター選択機能実装
-
-#### API実装
-- `/api/simple-chat` - メインチャット機能
-- `/api/enhance-text` - 文章強化機能
-- `/api/generate-image` - 画像生成機能
-- `/api/user-inspiration` - 応答候補機能
-
-#### 基本UI実装
-- チャット画面
-- 設定モーダル
-- キャラクター選択/編集画面
-- テーマ切り替え機能
-
-#### 初期問題と解決
-- OpenRouter API認証エラー → APIキー設定方法修正
-- 環境変数管理 → `.env.local` 設定確立
-- デプロイ設定 → Vercel環境変数設定
-
----
-
-## 🔧 技術スタック
-
-### フロントエンド
-- **Next.js 14** - Reactフレームワーク
-- **TypeScript** - 型安全性
-- **Tailwind CSS** - スタイリング
-- **Zustand** - 状態管理
-
-### バックエンド
-- **Next.js API Routes** - サーバー機能
-- **OpenRouter API** - LLM連携
-- **Runware API** - 画像生成
-- **Stable Diffusion** - ローカル画像生成
-
-### 開発・デプロイ
-- **Vercel** - ホスティング
-- **Git** - バージョン管理
-- **ESLint** - コード品質
-- **PowerShell** - 自動化スクリプト
-
-## 📊 プロジェクト統計
-
-### ファイル構成
-- **コンポーネント**: 30+ React コンポーネント
-- **API ルート**: 8 エンドポイント
-- **型定義**: 3 主要インターフェースファイル
-- **ライブラリ**: 15+ ユーティリティモジュール
-
-### 機能数
-- **チャット機能**: メイン・応答候補・文章強化
-- **キャラクター**: 40+ デフォルトキャラクター
-- **画像生成**: 2 エンジン対応
-- **設定項目**: 50+ 設定オプション
+## 🎯 次フェーズ予定
+1. 候補生成数>1エラー修正
+2. UI改善（オーバーレイ、ヘッダー）
+3. タイプライター速度設定
+4. Supabaseクラウド同期
 
 ---
-
-**最終更新**: 2025年8月1日  
-**記録者**: AI Assistant  
-**プロジェクト状況**: 基本機能実装完了、拡張機能開発中
+**更新**: 2025年1月 | **ステータス**: フェーズ3完了、フェーズ4準備完了
