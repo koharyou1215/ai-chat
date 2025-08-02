@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CharacterTracker } from '../types/character';
+import { CharacterTracker, TrackerValue } from '../types/character';
 import { Heart, Shield, Smile, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface CharacterTrackerDisplayProps {
   trackers: CharacterTracker[];
-  currentValues: Record<string, number>;
-  onChange: (name: string, value: number) => void;
+  currentValues: Record<string, TrackerValue>;
+  onChange: (name: string, value: number | string | boolean) => void;
   readOnly?: boolean;
   compact?: boolean;
 }
@@ -82,11 +82,14 @@ export default function CharacterTrackerDisplay({
     if (readOnly) return;
     
     const tracker = trackers.find(t => t.name === trackerName);
-    if (!tracker) return;
+    if (!tracker || tracker.type !== 'numeric') return;
 
-    const currentValue = currentValues[trackerName] || tracker.initial_value;
+    const currentTrackerValue = currentValues[trackerName];
+    const currentValue = (currentTrackerValue?.type === 'numeric' && typeof currentTrackerValue.value === 'number') 
+      ? currentTrackerValue.value 
+      : tracker.initial_value || 0;
     const maxValue = tracker.max_value || 100;
-    const newValue = Math.max(0, Math.min(maxValue, currentValue + delta));
+    const newValue = Math.max(tracker.min_value || 0, Math.min(maxValue, currentValue + delta));
     
     onChange(trackerName, newValue);
   };
@@ -95,20 +98,51 @@ export default function CharacterTrackerDisplay({
     return (
       <div className="flex flex-wrap gap-2">
         {trackers.map(tracker => {
-          const currentValue = currentValues[tracker.name] || tracker.initial_value;
+          const trackerValue = currentValues[tracker.name];
+          
+          // 表示値を取得
+          let displayValue: string;
+          let numericValue = 0;
+          
+          if (!trackerValue) {
+            // 初期値を使用
+            if (tracker.type === 'numeric') {
+              displayValue = String(tracker.initial_value || 0);
+              numericValue = tracker.initial_value || 0;
+            } else if (tracker.type === 'state') {
+              displayValue = tracker.initial_state || '不明';
+            } else if (tracker.type === 'boolean') {
+              displayValue = tracker.initial_boolean ? 'はい' : 'いいえ';
+            } else {
+              displayValue = tracker.initial_text || '';
+            }
+          } else {
+            if (tracker.type === 'numeric' && typeof trackerValue.value === 'number') {
+              displayValue = String(trackerValue.value);
+              numericValue = trackerValue.value;
+            } else if (tracker.type === 'state' && typeof trackerValue.value === 'string') {
+              displayValue = trackerValue.value;
+            } else if (tracker.type === 'boolean' && typeof trackerValue.value === 'boolean') {
+              displayValue = trackerValue.value ? 'はい' : 'いいえ';
+            } else {
+              displayValue = String(trackerValue.value);
+            }
+          }
+          
           const maxValue = tracker.max_value || 100;
-          const percentage = (currentValue / maxValue) * 100;
           
           return (
             <div
               key={tracker.name}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getValueColor(currentValue, maxValue)} ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                tracker.type === 'numeric' ? getValueColor(numericValue, maxValue) : 'text-blue-600 bg-blue-100'
+              } ${
                 animatingTrackers.has(tracker.name) ? 'animate-pulse' : ''
               }`}
             >
               {getTrackerIcon(tracker.name)}
               <span>{tracker.display_name}</span>
-              <span className="font-bold">{currentValue}</span>
+              <span className="font-bold">{displayValue}</span>
             </div>
           );
         })}
@@ -125,15 +159,47 @@ export default function CharacterTrackerDisplay({
       
       <div className="space-y-3">
         {trackers.map(tracker => {
-          const currentValue = currentValues[tracker.name] || tracker.initial_value;
-          const maxValue = tracker.max_value || 100;
-          const percentage = (currentValue / maxValue) * 100;
+          const trackerValue = currentValues[tracker.name];
+          
+          // 表示値を取得
+          let displayValue: string;
+          let numericValue = 0;
+          let maxValue = tracker.max_value || 100;
+          
+          if (!trackerValue) {
+            // 初期値を使用
+            if (tracker.type === 'numeric') {
+              displayValue = `${tracker.initial_value || 0} / ${maxValue}`;
+              numericValue = tracker.initial_value || 0;
+            } else if (tracker.type === 'state') {
+              displayValue = tracker.initial_state || '不明';
+            } else if (tracker.type === 'boolean') {
+              displayValue = tracker.initial_boolean ? 'はい' : 'いいえ';
+            } else {
+              displayValue = tracker.initial_text || '';
+            }
+          } else {
+            if (tracker.type === 'numeric' && typeof trackerValue.value === 'number') {
+              displayValue = `${trackerValue.value} / ${maxValue}`;
+              numericValue = trackerValue.value;
+            } else if (tracker.type === 'state' && typeof trackerValue.value === 'string') {
+              displayValue = trackerValue.value;
+            } else if (tracker.type === 'boolean' && typeof trackerValue.value === 'boolean') {
+              displayValue = trackerValue.value ? 'はい' : 'いいえ';
+            } else {
+              displayValue = String(trackerValue.value);
+            }
+          }
+          
+          const percentage = tracker.type === 'numeric' ? (numericValue / maxValue) * 100 : 0;
           
           return (
             <div key={tracker.name} className="group">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                  <span className={`p-1 rounded ${getValueColor(currentValue, maxValue)}`}>
+                  <span className={`p-1 rounded ${
+                    tracker.type === 'numeric' ? getValueColor(numericValue, maxValue) : 'text-blue-600 bg-blue-100'
+                  }`}>
                     {getTrackerIcon(tracker.name)}
                   </span>
                   <span className="text-sm font-medium text-gray-700">
@@ -142,13 +208,15 @@ export default function CharacterTrackerDisplay({
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold px-2 py-1 rounded ${getValueColor(currentValue, maxValue)} ${
+                  <span className={`text-sm font-bold px-2 py-1 rounded ${
+                    tracker.type === 'numeric' ? getValueColor(numericValue, maxValue) : 'text-blue-600 bg-blue-100'
+                  } ${
                     animatingTrackers.has(tracker.name) ? 'animate-bounce' : ''
                   }`}>
-                    {currentValue} / {maxValue}
+                    {displayValue}
                   </span>
                   
-                  {!readOnly && (
+                  {!readOnly && tracker.type === 'numeric' && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleValueChange(tracker.name, -5)}
@@ -183,15 +251,17 @@ export default function CharacterTrackerDisplay({
                 </div>
               </div>
               
-              {/* プログレスバー */}
-              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 ease-out ${getProgressColor(currentValue, maxValue)} ${
-                    animatingTrackers.has(tracker.name) ? 'animate-pulse' : ''
-                  }`}
-                  style={{ width: `${Math.max(2, percentage)}%` }}
-                />
-              </div>
+              {/* プログレスバー (数値型のみ) */}
+              {tracker.type === 'numeric' && (
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 ease-out ${getProgressColor(numericValue, maxValue)} ${
+                      animatingTrackers.has(tracker.name) ? 'animate-pulse' : ''
+                    }`}
+                    style={{ width: `${Math.max(2, percentage)}%` }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

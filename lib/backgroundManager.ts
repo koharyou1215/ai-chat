@@ -31,8 +31,10 @@ export class BackgroundManager {
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(backgrounds));
 
-      // サーバーにも保存（永続化のため）
-      await this.saveToServer(backgroundData);
+      // サーバーに通知（ログ目的のみ、Vercelでは永続化されない）
+      await this.saveToServer(backgroundData).catch(err => {
+        console.log('💡 サーバー保存はVercelでは利用できません（ローカルストレージで管理）:', err.message);
+      });
       
       console.log(`🎨 キャラクター背景設定を保存: ${characterName}`);
     } catch (error) {

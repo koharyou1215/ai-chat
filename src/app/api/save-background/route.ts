@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 interface CharacterBackground {
   characterName: string;
@@ -12,39 +10,20 @@ export async function POST(request: NextRequest) {
   try {
     const backgroundData: CharacterBackground = await request.json();
     
-    // 背景設定ファイルのパス
-    const backgroundsDir = path.join(process.cwd(), 'data', 'backgrounds');
-    const backgroundsFile = path.join(backgroundsDir, 'character-backgrounds.json');
+    console.log(`📝 キャラクター背景設定受信: ${backgroundData.characterName}`);
     
-    // ディレクトリが存在しない場合は作成
-    if (!fs.existsSync(backgroundsDir)) {
-      fs.mkdirSync(backgroundsDir, { recursive: true });
-    }
+    // Vercelでは読み取り専用ファイルシステムのため、
+    // 背景設定はクライアント側のローカルストレージで管理します
+    // このAPIは成功レスポンスのみ返します
     
-    // 既存の背景設定を読み込み
-    let backgrounds: CharacterBackground[] = [];
-    if (fs.existsSync(backgroundsFile)) {
-      const fileContent = fs.readFileSync(backgroundsFile, 'utf-8');
-      backgrounds = JSON.parse(fileContent);
-    }
-    
-    // 同じキャラクターの設定を更新または追加
-    const existingIndex = backgrounds.findIndex(bg => bg.characterName === backgroundData.characterName);
-    if (existingIndex >= 0) {
-      backgrounds[existingIndex] = backgroundData;
-    } else {
-      backgrounds.push(backgroundData);
-    }
-    
-    // ファイルに保存
-    fs.writeFileSync(backgroundsFile, JSON.stringify(backgrounds, null, 2));
-    
-    console.log(`✅ キャラクター背景設定を保存: ${backgroundData.characterName}`);
+    console.log(`✅ キャラクター背景設定処理完了: ${backgroundData.characterName}`);
+    console.log(`💡 背景設定はブラウザのローカルストレージに保存されます`);
     
     return NextResponse.json({ 
       success: true, 
-      message: '背景設定を保存しました',
-      characterName: backgroundData.characterName 
+      message: '背景設定を受信しました（ローカルストレージで管理）',
+      characterName: backgroundData.characterName,
+      note: 'Vercel環境では背景設定はクライアント側で永続化されます' 
     });
     
   } catch (error) {
