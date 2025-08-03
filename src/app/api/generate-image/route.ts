@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
     const requestBodyJson = await request.json(); // ここで await を使ってJSONをパース
     const {
       prompt,
+      character, // キャラクター情報
+      negativePrompt, // ネガティブプロンプト
       modelId = process.env.RUNWARE_MODEL_ID || "your_runware_model_id_here",
       aspectRatio = "square",
       safetyChecker = "off",
@@ -42,7 +44,32 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
+    // キャラクター固有のappearancePromptを追加
+    if (character?.appearancePrompt) {
+      processedPrompt = `${character.appearancePrompt}, ${processedPrompt}`;
+      console.log("✅ キャラクター固有のappearancePromptを追加:", character.appearancePrompt);
+    }
+    
+    // ネガティブプロンプトの処理
+    let processedNegativePrompt = '';
+    if (negativePrompt && typeof negativePrompt === 'string') {
+      processedNegativePrompt = negativePrompt.trim();
+    } else if (settings?.negativePrompt) {
+      processedNegativePrompt = settings.negativePrompt.trim();
+    }
+    
+    // キャラクター固有のappearanceNegativePromptを追加
+    if (character?.appearanceNegativePrompt) {
+      if (processedNegativePrompt) {
+        processedNegativePrompt = `${character.appearanceNegativePrompt}, ${processedNegativePrompt}`;
+      } else {
+        processedNegativePrompt = character.appearanceNegativePrompt;
+      }
+      console.log("✅ キャラクター固有のappearanceNegativePromptを追加:", character.appearanceNegativePrompt);
+    }
+    
     console.log("Received prompt for image generation:", processedPrompt);
+    console.log("Processed negative prompt:", processedNegativePrompt);
     console.log("Using model ID:", modelId);
     console.log("Aspect ratio:", aspectRatio);
     console.log("Safety checker:", safetyChecker);
@@ -101,6 +128,7 @@ export async function POST(request: NextRequest) {
 
         const result = await runwareService.generateImage({
           positivePrompt: processedPrompt,
+          negativePrompt: processedNegativePrompt || undefined,
           model: runwareModelId,
           width: settings?.imageWidth || 512,
           height: settings?.imageHeight || 512,
@@ -147,6 +175,7 @@ export async function POST(request: NextRequest) {
         
         const result = await stableDiffusionService.generateImage({
           prompt: processedPrompt,
+          negative_prompt: processedNegativePrompt || undefined,
           width: settings?.imageWidth || 512,
           height: settings?.imageHeight || 512,
           cfg_scale: settings?.guidanceScale || 7,

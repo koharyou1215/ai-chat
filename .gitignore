@@ -20,6 +20,10 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Cursor artifacts (contains sensitive data)
+.specstory/
+**/.specstory/
+
 # Next.js build output
 .next/
 ai-chat-standalone/.next/

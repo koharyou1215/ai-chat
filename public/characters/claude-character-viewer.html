@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude生成キャラクター一覧</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Meiryo', sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #ff7f50 0%, #ff6347 100%);
+      color: white;
+      border-radius: 10px;
+    }
+    
+    .controls {
+      position: sticky;
+      top: 0;
+      background-color: #f5f5f5;
+      padding: 15px 0;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      z-index: 100;
+      border-bottom: 2px solid #ddd;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 10px 20px;
+      background-color: #ff6347;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #e5533d;
+    }
+    
+    #search {
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      flex-grow: 1;
+      max-width: 300px;
+      font-size: 14px;
+    }
+    
+    #counter {
+      background-color: #ff6347;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    
+    details {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #ff6347;
+    }
+    
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+      padding: 10px;
+      background-color: #fff5f5;
+      border-radius: 6px;
+      margin: -5px;
+      margin-bottom: 10px;
+      transition: background-color 0.3s;
+    }
+    
+    summary:hover {
+      background-color: #ffe5e5;
+    }
+    
+    .character-info {
+      margin-top: 15px;
+    }
+    
+    .info-section {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #fafafa;
+      border-radius: 4px;
+      border-left: 3px solid #ff6347;
+    }
+    
+    .info-label {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .info-content {
+      color: #555;
+      line-height: 1.6;
+    }
+    
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    
+    .tag {
+      background-color: #ff6347;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    
+    .first-messages {
+      background-color: #fff8e1;
+      border-left: 3px solid #ffc107;
+    }
+    
+    .trackers {
+      background-color: #e8f5e8;
+      border-left: 3px solid #4caf50;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 50px;
+      font-size: 18px;
+      color: #666;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 50px;
+      color: #d32f2f;
+      background-color: #ffebee;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔥 Claude生成キャラクター一覧</h1>
+    <p>AIバリエーション管理システム対応</p>
+  </div>
+
+  <div class="controls">
+    <button id="openAll">✅ 全て開く</button>
+    <button id="closeAll">❌ 全て閉じる</button>
+    <input type="text" id="search" placeholder="🔍 キャラクター名、タグで検索...">
+    <span id="counter">0/0件表示</span>
+  </div>
+
+  <div id="characters" class="loading">
+    📚 キャラクターデータを読み込み中...
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // キャラクターデータを読み込む
+        const response = await fetch('Claud_utput_character.md');
+        const text = await response.text();
+        
+        // JSONブロックを抽出
+        const characters = parseCharacterData(text);
+        
+        // キャラクターHTMLを生成
+        const charactersHtml = characters.map(char => createCharacterHtml(char)).join('');
+        
+        // HTMLに挿入
+        document.getElementById('characters').innerHTML = charactersHtml;
+        
+        // イベントリスナーを設定
+        setupEventListeners();
+        
+        // 初期カウンター更新
+        updateCounter();
+        
+      } catch (error) {
+        console.error('キャラクターデータの読み込みに失敗しました:', error);
+        document.getElementById('characters').innerHTML = 
+          '<div class="error">❌ データの読み込みに失敗しました。<br>Claud_utput_character.mdファイルが存在することを確認してください。</div>';
+      }
+    });
+    
+    // キャラクターデータを解析
+    function parseCharacterData(text) {
+      const characters = [];
+      const blocks = text.split('\n\n').filter(block => block.trim());
+      
+      for (const block of blocks) {
+        const trimmed = block.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+          try {
+            const character = JSON.parse(trimmed);
+            characters.push(character);
+          } catch (e) {
+            console.warn('JSONブロックの解析に失敗:', e);
+          }
+        }
+      }
+      
+      return characters;
+    }
+    
+    // キャラクター用HTMLを生成
+    function createCharacterHtml(character) {
+      const tags = character.tags ? character.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('') : '';
+      
+      const firstMessages = character.first_message ? 
+        character.first_message.map(msg => `<li>${escapeHtml(msg)}</li>`).join('') : '';
+      
+      const trackers = character.trackers ? 
+        character.trackers.map(tracker => 
+          `<li><strong>${escapeHtml(tracker.display_name || tracker.name)}</strong>: ${escapeHtml(tracker.description || '')}</li>`
+        ).join('') : '';
+      
+      return `
+        <details>
+          <summary>🔥 ${escapeHtml(character.name)} (${escapeHtml(character.age || '年齢不明')})</summary>
+          <div class="character-info">
+            <div class="info-section">
+              <div class="info-label">👤 基本情報</div>
+              <div class="info-content">
+                <strong>職業:</strong> ${escapeHtml(character.occupation || '不明')}<br>
+                <strong>年齢:</strong> ${escapeHtml(character.age || '不明')}
+              </div>
+              <div class="tags">${tags}</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-label">🎭 性格</div>
+              <div class="info-content">${escapeHtml(character.personality || 'データなし')}</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-label">👗 外見</div>
+              <div class="info-content">${escapeHtml(character.appearance || 'データなし')}</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-label">📚 背景</div>
+              <div class="info-content">${escapeHtml(character.background || 'データなし')}</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-label">💬 話し方</div>
+              <div class="info-content">${escapeHtml(character.speaking_style || 'データなし')}</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-label">🎬 シナリオ</div>
+              <div class="info-content">${escapeHtml(character.scenario || 'データなし')}</div>
+            </div>
+            
+            ${firstMessages ? `
+            <div class="info-section first-messages">
+              <div class="info-label">💬 初期メッセージ</div>
+              <div class="info-content">
+                <ol>${firstMessages}</ol>
+              </div>
+            </div>
+            ` : ''}
+            
+            ${trackers ? `
+            <div class="info-section trackers">
+              <div class="info-label">📊 トラッカー</div>
+              <div class="info-content">
+                <ul>${trackers}</ul>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+        </details>
+      `;
+    }
+    
+    // HTMLエスケープ
+    function escapeHtml(text) {
+      if (typeof text !== 'string') return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // イベントリスナーを設定
+    function setupEventListeners() {
+      // 検索機能
+      document.getElementById('search').addEventListener('input', filterCharacters);
+      
+      // 全て開く
+      document.getElementById('openAll').addEventListener('click', () => {
+        document.querySelectorAll('details').forEach(detail => {
+          detail.open = true;
+        });
+      });
+      
+      // 全て閉じる
+      document.getElementById('closeAll').addEventListener('click', () => {
+        document.querySelectorAll('details').forEach(detail => {
+          detail.open = false;
+        });
+      });
+    }
+    
+    // キャラクター検索機能
+    function filterCharacters() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const details = document.querySelectorAll('details');
+      
+      details.forEach(detail => {
+        const summaryText = detail.querySelector('summary').textContent.toLowerCase();
+        const contentText = detail.textContent.toLowerCase();
+        
+        if (summaryText.includes(searchTerm) || contentText.includes(searchTerm)) {
+          detail.classList.remove('hidden');
+        } else {
+          detail.classList.add('hidden');
+        }
+      });
+      
+      updateCounter();
+    }
+    
+    // 表示件数更新
+    function updateCounter() {
+      const total = document.querySelectorAll('details').length;
+      const visible = document.querySelectorAll('details:not(.hidden)').length;
+      document.getElementById('counter').textContent = `${visible}/${total}件表示`;
+    }
+  </script>
+</body>
+</html>

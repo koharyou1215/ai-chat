@@ -17,8 +17,13 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
     const newTracker: CharacterTracker = {
       name: '',
       display_name: '',
+      type: 'numeric',
       initial_value: 50,
       max_value: 100,
+      min_value: 0,
+      category: 'status',
+      persistent: true,
+      description: ''
     };
     setTempTracker(newTracker);
     setEditingIndex(trackers.length);
@@ -162,32 +167,180 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     />
                   </div>
                 </div>
+                
+                {/* Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    トラッカー種類
+                  </label>
+                  <select
+                    value={tempTracker?.type || 'numeric'}
+                    onChange={(e) => {
+                      const newType = e.target.value as 'numeric' | 'state' | 'boolean' | 'text';
+                      if (!tempTracker) return;
+                      
+                      const updatedTracker: CharacterTracker = {
+                        ...tempTracker,
+                        type: newType,
+                        // Reset type-specific fields
+                        initial_value: newType === 'numeric' ? 50 : undefined,
+                        max_value: newType === 'numeric' ? 100 : undefined,
+                        min_value: newType === 'numeric' ? 0 : undefined,
+                        initial_state: newType === 'state' ? '初期状態' : undefined,
+                        possible_states: newType === 'state' ? ['初期状態', '状態1', '状態2'] : undefined,
+                        initial_boolean: newType === 'boolean' ? false : undefined,
+                        initial_text: newType === 'text' ? '' : undefined,
+                      };
+                      setTempTracker(updatedTracker);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="numeric">数値型</option>
+                    <option value="state">状態型</option>
+                    <option value="boolean">ブール型</option>
+                    <option value="text">テキスト型</option>
+                  </select>
+                </div>
+
+                {/* Type-specific fields */}
+                {tempTracker?.type === 'numeric' && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        初期値
+                      </label>
+                      <input
+                        type="number"
+                        value={tempTracker?.initial_value || 0}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_value: parseInt(e.target.value) || 0} : null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        最小値
+                      </label>
+                      <input
+                        type="number"
+                        value={tempTracker?.min_value || 0}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, min_value: parseInt(e.target.value) || 0} : null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        最大値
+                      </label>
+                      <input
+                        type="number"
+                        value={tempTracker?.max_value || 100}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, max_value: parseInt(e.target.value) || 100} : null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {tempTracker?.type === 'state' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        初期状態
+                      </label>
+                      <input
+                        type="text"
+                        value={tempTracker?.initial_state || ''}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_state: e.target.value} : null)}
+                        placeholder="例: 初対面"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        可能な状態（カンマ区切り）
+                      </label>
+                      <input
+                        type="text"
+                        value={tempTracker?.possible_states?.join(', ') || ''}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, possible_states: e.target.value.split(',').map(s => s.trim()).filter(s => s)} : null)}
+                        placeholder="例: 初対面, 知り合い, 友人, 親友, 恋人"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {tempTracker?.type === 'boolean' && (
+                  <div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={tempTracker?.initial_boolean || false}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_boolean: e.target.checked} : null)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">初期値（有効/無効）</span>
+                    </label>
+                  </div>
+                )}
+
+                {tempTracker?.type === 'text' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      初期テキスト
+                    </label>
+                    <input
+                      type="text"
+                      value={tempTracker?.initial_text || ''}
+                      onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_text: e.target.value} : null)}
+                      placeholder="例: 初期メモ"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                )}
+
+                {/* Common fields */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      初期値
+                      カテゴリ
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={tempTracker?.max_value || 100}
-                      value={tempTracker?.initial_value || 0}
-                      onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_value: parseInt(e.target.value) || 0} : null)}
+                    <select
+                      value={tempTracker?.category || 'status'}
+                      onChange={(e) => setTempTracker(prev => prev ? {...prev, category: e.target.value} : null)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    >
+                      <option value="status">ステータス</option>
+                      <option value="relationship">関係性</option>
+                      <option value="condition">状態</option>
+                      <option value="memory">記憶</option>
+                      <option value="other">その他</option>
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      最大値
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={tempTracker?.persistent || true}
+                        onChange={(e) => setTempTracker(prev => prev ? {...prev, persistent: e.target.checked} : null)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">永続化</span>
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={tempTracker?.max_value || 100}
-                      onChange={(e) => setTempTracker(prev => prev ? {...prev, max_value: parseInt(e.target.value) || 100} : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    説明
+                  </label>
+                  <textarea
+                    value={tempTracker?.description || ''}
+                    onChange={(e) => setTempTracker(prev => prev ? {...prev, description: e.target.value} : null)}
+                    placeholder="トラッカーの説明を入力してください"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -215,7 +368,21 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     <span className="text-sm text-gray-500">({tracker.name})</span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    初期値: {tracker.initial_value} / 最大値: {tracker.max_value || 100}
+                    {tracker.type === 'numeric' && (
+                      <>初期値: {tracker.initial_value} / 範囲: {tracker.min_value || 0} - {tracker.max_value || 100}</>
+                    )}
+                    {tracker.type === 'state' && (
+                      <>初期状態: {tracker.initial_state} / 状態: [{tracker.possible_states?.join(', ') || ''}]</>
+                    )}
+                    {tracker.type === 'boolean' && (
+                      <>初期値: {tracker.initial_boolean ? '有効' : '無効'}</>
+                    )}
+                    {tracker.type === 'text' && (
+                      <>初期テキスト: {tracker.initial_text || '(空)'}</>
+                    )}
+                    {tracker.category && (
+                      <> | カテゴリ: {tracker.category}</>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">

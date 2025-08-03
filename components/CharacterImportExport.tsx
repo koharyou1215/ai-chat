@@ -129,9 +129,9 @@ export default function CharacterImportExport({
         'file-name': getString(data['file-name']) || fileName,
         name: getString(data.name),
         tags: getStringArray(data.tags),
-        first_message: Array.isArray(data.first_message) 
-          ? data.first_message 
-          : [getString(data.first_mes) || getString(data.greeting) || ''],
+        first_message: Array.isArray(data.first_message)
+? (data.first_message[0] || '') 
+          : getString(data.first_mes) || getString(data.greeting) || '',
         
         // 基本フィールド
         personality: getString(data.personality) || getString(data.description),

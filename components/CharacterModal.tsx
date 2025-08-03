@@ -20,7 +20,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     appearance: '',
     speaking_style: '',
     scenario: '',
-    first_message: [''],
+    first_message: '',
     nsfw_profile: '',
     tags: [],
     age: '',
@@ -33,7 +33,8 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     systemPrompt: '',
     appearancePrompt: '',
     appearanceNegativePrompt: '',
-    avatar_url: ''
+    avatar_url: '',
+    chatBackgroundUrl: ''
   });
 
   const [newTag, setNewTag] = useState('');
@@ -51,7 +52,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         hobbies: Array.isArray(character.hobbies) ? character.hobbies : [],
         likes: Array.isArray(character.likes) ? character.likes : [],
         dislikes: Array.isArray(character.dislikes) ? character.dislikes : [],
-        first_message: Array.isArray(character.first_message) ? character.first_message : [''],
+        first_message: Array.isArray(character.first_message) 
+          ? character.first_message[0] || '' 
+          : character.first_message || '',
         personality: character.personality || '',
         appearance: character.appearance || '',
         speaking_style: character.speaking_style || '',
@@ -64,6 +67,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         appearancePrompt: character.appearancePrompt || '',
         appearanceNegativePrompt: character.appearanceNegativePrompt || '',
         avatar_url: character.avatar_url || '',
+        chatBackgroundUrl: character.chatBackgroundUrl || '',
         trackers: Array.isArray(character.trackers) ? character.trackers : []
       });
     } else {
@@ -74,7 +78,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         appearance: '',
         speaking_style: '',
         scenario: '',
-        first_message: [''],
+        first_message: '',
         nsfw_profile: '',
         tags: [],
         age: '',
@@ -87,6 +91,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         appearancePrompt: '',
         appearanceNegativePrompt: '',
         avatar_url: '',
+        chatBackgroundUrl: '',
         trackers: []
       });
     }
@@ -114,7 +119,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     const characterData: Character = {
       ...formData,
       avatar_url: finalAvatarUrl,
-      first_message: (formData.first_message || ['']).filter(msg => msg.trim() !== '')
+      first_message: formData.first_message?.trim() || ''
     };
     
     onSave(characterData);
@@ -147,78 +152,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     }));
   };
 
-  const addFirstMessage = () => {
-    setFormData(prev => ({
-      ...prev,
-      first_message: [...(prev.first_message || []), '']
-    }));
-  };
 
-  const updateFirstMessage = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      first_message: (prev.first_message || ['']).map((msg, i) => i === index ? value : msg)
-    }));
-  };
 
-  const removeFirstMessage = (index: number) => {
-    const messages = formData.first_message || [''];
-    if (messages.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        first_message: (prev.first_message || []).filter((_, i) => i !== index)
-      }));
-    }
-  };
 
-  // 背景ファイルアップロード処理
-  const handleBackgroundFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // ファイルサイズチェック（10MB制限）
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      alert('ファイルサイズが大きすぎます。10MB以下のファイルを選択してください。');
-      return;
-    }
-
-    // ファイル形式チェック
-    const allowedTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-      'video/mp4', 'video/webm', 'video/ogg'
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      alert('対応していないファイル形式です。画像（JPG、PNG、GIF、WebP）または動画（MP4、WebM、OGG）ファイルを選択してください。');
-      return;
-    }
-
-    try {
-      // 画像ファイルの場合は圧縮
-      if (file.type.startsWith('image/')) {
-        const compressedResult = await ImageCompressor.compressImage(file, {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          quality: 0.8
-        });
-        setFormData(prev => ({ ...prev, background: compressedResult.dataUrl }));
-        console.log('✅ 画像ファイルを圧縮して背景に設定:', file.name);
-      } else {
-        // 動画ファイルの場合はそのままBase64変換
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          setFormData(prev => ({ ...prev, background: result }));
-          console.log('✅ 動画ファイルを背景に設定:', file.name);
-        };
-        reader.readAsDataURL(file);
-      }
-    } catch (error) {
-      console.error('ファイル処理エラー:', error);
-      alert('ファイルの処理中にエラーが発生しました。');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -674,32 +610,14 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                 <MessageSquare size={20} />
                 初回メッセージ
               </h3>
-              <div className="space-y-3">
-                {(formData.first_message || ['']).map((message, index) => (
-                  <div key={index} className="flex gap-2">
-                    <textarea
-                      value={message}
-                      onChange={(e) => updateFirstMessage(index, e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                      rows={3}
-                      placeholder={`初回メッセージ ${index + 1}`}
-                    />
-                    {(formData.first_message || []).length > 1 && (
-                      <button
-                        onClick={() => removeFirstMessage(index)}
-                        className="px-3 py-2 text-red-500 hover:text-red-700"
-                      >
-                        <X size={20} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  onClick={addFirstMessage}
-                  className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-500 rounded-lg transition-colors"
-                >
-                  + メッセージを追加
-                </button>
+              <div>
+                <textarea
+                  value={formData.first_message || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, first_message: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                  rows={4}
+                  placeholder="キャラクターの初回メッセージを入力してください"
+                />
               </div>
             </section>
 
@@ -723,84 +641,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
               </div>
             </section>
 
-            {/* 背景設定 */}
-            <section>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">背景設定</h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  チャット背景画像/動画
-                </label>
-                
-                {/* URL入力 */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    チャット背景画像/動画URL
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.background || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, background: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                    placeholder="画像URLまたは動画URLを入力してください"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    このキャラクター専用のチャット背景画像/動画を設定します
-                  </p>
-                </div>
 
-                {/* ファイルアップロード */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
-                    ファイルからアップロード
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={handleBackgroundFileUpload}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-800 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, background: '' }))}
-                      className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                    >
-                      クリア
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 画像（JPG、PNG、GIF）または動画（MP4、WebM）ファイルをアップロードできます（最大10MB）
-                  </p>
-                </div>
-
-                {/* プレビュー */}
-                {formData.background && (
-                  <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-                    <p className="text-xs text-gray-600 mb-2">背景プレビュー:</p>
-                    {formData.background.startsWith('data:') || formData.background.startsWith('blob:') ? (
-                      <div className="relative">
-                        {formData.background.match(/^data:video|^blob:.*video/) ? (
-                          <video
-                            src={formData.background}
-                            className="w-full h-32 object-cover rounded"
-                            controls
-                            muted
-                          />
-                        ) : (
-                          <img
-                            src={formData.background}
-                            alt="背景プレビュー"
-                            className="w-full h-32 object-cover rounded"
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-600">URL: {formData.background}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </section>
 
             {/* トラッカーパラメータ */}
             <section>

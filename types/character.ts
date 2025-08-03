@@ -89,7 +89,7 @@ export interface Character {
   "file-name"?: string;
   name: string;
   tags: string[];
-  first_message: string[];
+  first_message: string;
   // AIバリエーション管理
   aiModel?: 'gemini' | 'claude' | 'grok' | 'original'; // 生成元AI
   baseCharacterName?: string; // 元のキャラクター名（バリエーション時のみ）
@@ -108,7 +108,9 @@ export interface Character {
   hobbies: string[];
   likes: string[];
   dislikes: string[];
-  background?: string;
+  background?: string; // キャラクターの生い立ち・背景設定
+  /** チャット背景画像/動画URL（キャラクター専用） */
+  chatBackgroundUrl?: string;
   /** キャラクター専用システムプロンプト（任意） */
   systemPrompt?: string;
   /** 英文画像生成プロンプト（任意） */

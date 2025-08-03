@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue } = requestBody;
+    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue, trackers } = requestBody;
     console.log('💬 User message:', message);
     console.log('👤 Character ID:', characterId);
     console.log('⚙️ Settings:', settings);
@@ -137,6 +137,47 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       basePrompt = `${character.systemPrompt}\n\n${basePrompt}`;
     }
 
+    // パラメータトラッカー情報を追加
+    if (trackers && Array.isArray(trackers) && trackers.length > 0) {
+      let trackerInfo = '\n\n## 📊 パラメータトラッカー\n';
+      trackerInfo += '以下のパラメータを参考にして、キャラクターの状態を反映した返答をしてください：\n\n';
+      
+      trackers.forEach(tracker => {
+        if (tracker && tracker.display_name) {
+          trackerInfo += `**${tracker.display_name}** (${tracker.name}): `;
+          
+          switch (tracker.type) {
+            case 'numeric':
+              const value = tracker.initial_value || 0;
+              const min = tracker.min_value || 0;
+              const max = tracker.max_value || 100;
+              trackerInfo += `${value}/${max} (${min}-${max})`;
+              break;
+            case 'state':
+              trackerInfo += `${tracker.initial_state || '不明'}`;
+              if (tracker.possible_states && tracker.possible_states.length > 0) {
+                trackerInfo += ` (可能な状態: ${tracker.possible_states.join(', ')})`;
+              }
+              break;
+            case 'boolean':
+              trackerInfo += `${tracker.initial_boolean ? '有効' : '無効'}`;
+              break;
+            case 'text':
+              trackerInfo += `${tracker.initial_text || '(空)'}`;
+              break;
+          }
+          
+          if (tracker.description) {
+            trackerInfo += ` - ${tracker.description}`;
+          }
+          
+          trackerInfo += '\n';
+        }
+      });
+      
+      basePrompt += trackerInfo;
+    }
+
     // 追加のユーザー設定プロンプト
     if (settings?.enableSystemPrompt && settings?.systemPrompt) {
       basePrompt = `${basePrompt}\n\n${settings.systemPrompt}`;
@@ -242,8 +283,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           VERCEL_URL: process.env.VERCEL_URL,
           OPENROUTER_API_KEY_EXISTS: !!process.env.OPENROUTER_API_KEY,
           OPENROUTER_API_KEY_LENGTH: process.env.OPENROUTER_API_KEY?.length || 0,
-          OPENROUTER_API_KEY_START: process.env.OPENROUTER_API_KEY?.substring(0, 10) || 'none',
-          OPENROUTER_API_KEY_FULL: process.env.OPENROUTER_API_KEY || 'none' // 完全なAPIキーを表示（デバッグ用）
+          OPENROUTER_API_KEY_FORMAT: process.env.OPENROUTER_API_KEY?.startsWith('sk-or-v1-') ? 'valid_format' : 'invalid_format'
         });
         
         console.log('OpenRouter API Key check:', {
