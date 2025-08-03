@@ -4,6 +4,7 @@ import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter';
+import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
 
 // NOTE: セキュリティのため API キーはハードコードしない
@@ -348,27 +349,33 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           }
         }
 
-        // OpenRouterで複数候補を生成（順次リクエスト - レート制限対策）
+        // Gemini API優先でOpenRouterフォールバック（複数候補生成）
         const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
-        console.log(`🔄 OpenRouter API呼び出し開始（${candidateCount}個の候補を順次生成）`);
+        console.log(`🔄 AI API呼び出し開始（Gemini優先、${candidateCount}個の候補を順次生成）`);
         
-        const openRouterTexts: string[] = [];
+        const generatedTexts: string[] = [];
         
         try {
           for (let i = 0; i < candidateCount; i++) {
             console.log(`📋 候補${i + 1}/${candidateCount}を生成中...`);
             
             try {
-              const candidateText = await callOpenRouter({
-                apiKey: openRouterApiKey as string,
-                model: openRouterModel,
-                messages: messagesForOpenRouter,
-                temperature: modelConfig.generationConfig.temperature,
-                maxTokens: modelConfig.generationConfig.maxOutputTokens,
-              });
+              // Gemini API優先システムを使用
+              const response = await GeminiApiManager.generateWithPriority(
+                openRouterModel,
+                messagesForOpenRouter,
+                {
+                  maxTokens: modelConfig.generationConfig.maxOutputTokens,
+                  temperature: modelConfig.generationConfig.temperature,
+                }
+              );
               
-              openRouterTexts.push(candidateText);
-              console.log(`✅ 候補${i + 1}生成完了: ${candidateText.substring(0, 50)}...`);
+              if (response.success && response.content) {
+                generatedTexts.push(response.content);
+                console.log(`✅ 候補${i + 1}生成完了 (${response.provider}): ${response.content.substring(0, 50)}...`);
+              } else {
+                console.warn(`⚠️ 候補${i + 1}の生成に失敗: ${response.error}`);
+              }
               
               // レート制限対策として各リクエスト間に1秒の遅延
               if (i < candidateCount - 1) {
@@ -381,15 +388,15 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             }
           }
           
-          if (openRouterTexts.length === 0) {
-            throw new Error('All OpenRouter candidate requests failed');
+          if (generatedTexts.length === 0) {
+            throw new Error('All AI candidate requests failed (Gemini + OpenRouter)');
           }
           
-          console.log(`✅ OpenRouter API呼び出し完了（${openRouterTexts.length}/${candidateCount}個成功）`);
+          console.log(`✅ AI API呼び出し完了（${generatedTexts.length}/${candidateCount}個成功）`);
           
           const userName = persona?.name || 'あなた';
           
-          const candidates = openRouterTexts.map((text, index) => {
+          const candidates = generatedTexts.map((text, index) => {
             console.log(`📝 候補${index + 1}:`, text.substring(0, 100) + '...');
             return text.replace(/\{\{char}}/g, character.name).replace(/\{\{user}}/g, userName);
           });
@@ -403,7 +410,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             console.error('❌ 候補が生成されませんでした');
             return NextResponse.json({
               success: false,
-              error: 'OpenRouter 応答に content が含まれていません。モデルがビジー状態か、APIキーに問題がある可能性があります。'
+              error: 'AI API応答に content が含まれていません。モデルがビジー状態か、APIキーに問題がある可能性があります。'
             }, { status: 500 });
           }
 
@@ -411,11 +418,11 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             console.error('❌ 最初の候補が空です:', candidates[0]);
             return NextResponse.json({
               success: false,
-              error: 'OpenRouter 応答が空です。モデルがビジー状態か、APIキーに問題がある可能性があります。'
+              error: 'AI API応答が空です。モデルがビジー状態か、APIキーに問題がある可能性があります。'
             }, { status: 500 });
           }
 
-          console.log(`✅ OpenRouter: ${candidateCount}個の候補を生成しました`);
+          console.log(`✅ AI API: ${candidateCount}個の候補を生成しました`);
 
           return NextResponse.json({
             success: true,
@@ -427,19 +434,24 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           
           // フォールバック: 1つだけ生成（レート制限やその他のエラー対策）
           try {
-            console.log('🔄 単一候補生成開始（フォールバック）');
-            const openRouterText = await callOpenRouter({
-              apiKey: openRouterApiKey as string,
-              model: openRouterModel,
-              messages: messagesForOpenRouter,
-              temperature: modelConfig.generationConfig.temperature,
-              maxTokens: modelConfig.generationConfig.maxOutputTokens,
-            });
+            console.log('🔄 単一候補生成開始（Gemini優先フォールバック）');
+            const response = await GeminiApiManager.generateWithPriority(
+              openRouterModel,
+              messagesForOpenRouter,
+              {
+                maxTokens: modelConfig.generationConfig.maxOutputTokens,
+                temperature: modelConfig.generationConfig.temperature,
+              }
+            );
 
-            console.log('✅ 単一候補生成完了（フォールバック）:', openRouterText.substring(0, 100) + '...');
+            if (!response.success || !response.content) {
+              throw new Error(`AI生成失敗: ${response.error}`);
+            }
+
+            console.log(`✅ 単一候補生成完了（${response.provider}）:`, response.content.substring(0, 100) + '...');
 
             const userName = persona?.name || 'あなた';
-            const replaced = openRouterText
+            const replaced = response.content
               .replace(/\{\{char}}/g, character.name)
               .replace(/\{\{user}}/g, userName);
 
@@ -453,11 +465,11 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             throw singleRequestError;
           }
         }
-      } catch (openRouterError) {
-        console.error('OpenRouter error:', openRouterError);
+      } catch (aiApiError) {
+        console.error('AI API error:', aiApiError);
         return NextResponse.json({
           success: false,
-          error: openRouterError instanceof Error ? openRouterError.message : 'OpenRouter との通信に失敗しました'
+          error: aiApiError instanceof Error ? aiApiError.message : 'AI APIとの通信に失敗しました'
         }, { status: 500 });
       }
     }
