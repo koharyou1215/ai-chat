@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter'; // OpenRouterをインポート
+import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
 // const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? ''; // 削除
 
@@ -147,14 +148,24 @@ ${conversationContext}
 
 詳細な行動描写を含む強化されたテキスト:`;
 
-      // OpenRouter API呼び出し
-      const enhancedText = await callOpenRouter({
-        apiKey: openRouterApiKey,
-        model: modelToUse,
-        messages: [{ role: 'user', content: simplePrompt }],
-        temperature: 0.8,
-        maxTokens: variantCount === 1 ? 1500 : 2000, // thinking系モデル対応で増加
-      });
+      // Gemini API優先システムを使用
+      const response = await GeminiApiManager.generateWithPriority(
+        modelToUse,
+        [{ role: 'user', content: simplePrompt }],
+        {
+          maxTokens: variantCount === 1 ? 1500 : 2000,
+          temperature: 0.8,
+        }
+      );
+
+      if (!response.success || !response.content) {
+        throw new Error(`AI生成失敗: ${response.error}`);
+      }
+
+      const enhancedText = response.content;
+      console.log(`[enhance-text] ✅ テキスト強化完了 (${response.provider})`);
+      
+      // OpenRouter API呼び出し完了
       // --- 強化されたテキストの抽出（thinking系モデル対応） ---
       let finalText = enhancedText.trim();
       
@@ -252,14 +263,22 @@ ${text}
 
 JSON形式以外は出力しないでください。`;
 
-      const openRouterResponseText = await callOpenRouter({
-        apiKey: openRouterApiKey,
-        model: modelToUse,
-        messages: [{ role: 'user', content: detailedPrompt }],
-        temperature: 0.8,
-        maxTokens: variantCount === 1 ? 1500 : 2000, // thinking系モデル対応で増加
-      });
-      const responseText = openRouterResponseText; // OpenRouterからの応答を使用
+      // Gemini API優先システムを使用
+      const response = await GeminiApiManager.generateWithPriority(
+        modelToUse,
+        [{ role: 'user', content: detailedPrompt }],
+        {
+          maxTokens: variantCount === 1 ? 1500 : 2000,
+          temperature: 0.8,
+        }
+      );
+
+      if (!response.success || !response.content) {
+        throw new Error(`AI生成失敗: ${response.error}`);
+      }
+
+      console.log(`[enhance-text] ✅ 複数バリエーション生成完了 (${response.provider})`);
+      const responseText = response.content; // AI APIからの応答を使用
 
       try {
         const data = JSON.parse(responseText);

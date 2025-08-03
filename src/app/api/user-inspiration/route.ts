@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AppSettings } from '../../../../types/app';
 import { Character } from '../../../../types/character';
 import { chatCompletion } from '../../../../lib/openRouter';
+import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
 export async function POST(req: NextRequest) {
   console.log('[/api/user-inspiration] POSTリクエストを受信しました');
@@ -139,20 +140,21 @@ ${character ? `「${character.name}」との会話に適した返信を提案し
         console.log(`[/api/user-inspiration] 候補${i + 1}/${candidateCount}を生成中...`);
         
         try {
-          const response = await chatCompletion({
-            apiKey: openRouterApiKey,
-            model: model,
-            messages: [
-              { role: 'system', content: prompt },
-            ],
-            temperature: 0.7,
-            maxTokens: inspirationMaxTokens, // 専用のトークン数を使用
-          });
+          // Gemini API優先システムを使用
+          const response = await GeminiApiManager.generateWithPriority(
+            model,
+            [{ role: 'system', content: prompt }],
+            {
+              maxTokens: inspirationMaxTokens,
+              temperature: 0.7,
+            }
+          );
           
-          const content: string = response;
-          if (content && content.trim()) {
-            inspirationTexts.push(content.trim());
-            console.log(`[/api/user-inspiration] ✅ 候補${i + 1}生成完了: ${content.trim().substring(0, 50)}...`);
+          if (response.success && response.content && response.content.trim()) {
+            inspirationTexts.push(response.content.trim());
+            console.log(`[/api/user-inspiration] ✅ 候補${i + 1}生成完了 (${response.provider}): ${response.content.trim().substring(0, 50)}...`);
+          } else {
+            console.warn(`[/api/user-inspiration] ⚠️ 候補${i + 1}の生成に失敗: ${response.error}`);
           }
           
           // レート制限対策として各リクエスト間に1秒の遅延
