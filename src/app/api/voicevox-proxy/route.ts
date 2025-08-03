@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Vercel認証を無効化
-export const runtime = 'edge';
-export const preferredRegion = 'auto';
-
+// 認証なしのVOICEVOXプロキシAPI
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -16,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🎵 VOICEVOX API プロキシ開始:', { text: text.substring(0, 50), speaker });
+    console.log('🎵 VOICEVOX プロキシ（認証なし）開始:', { text: text.substring(0, 50), speaker });
 
     // 1. audio_queryを作成
     const audioQueryUrl = `${apiUrl}/audio_query?text=${encodeURIComponent(text)}&speaker=${speaker}`;
@@ -80,13 +77,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// VOICEVOX話者リスト取得用のGETエンドポイント
+// VOICEVOX話者リスト取得用のGETエンドポイント（認証なし）
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const apiUrl = searchParams.get('apiUrl') || 'https://deprecatedapis.tts.quest/v2/voicevox';
 
-    console.log('🎭 VOICEVOX話者リスト取得:', apiUrl);
+    console.log('🎭 VOICEVOX話者リスト取得（認証なし）:', apiUrl);
 
     const response = await fetch(`${apiUrl}/speakers`);
     

@@ -73,7 +73,7 @@ export class VOICEVOXManager {
   static async getAvailableSpeakers(apiUrl?: string): Promise<VOICEVOXSpeaker[]> {
     try {
       const url = apiUrl || this.defaultSettings.apiUrl;
-      const response = await fetch(`/api/voicevox?apiUrl=${encodeURIComponent(url)}`);
+      const response = await fetch(`/api/voicevox-proxy?apiUrl=${encodeURIComponent(url)}`);
       
       if (!response.ok) {
         throw new Error(`VOICEVOX プロキシAPI error: ${response.status} ${response.statusText}`);
@@ -181,7 +181,7 @@ export class VOICEVOXManager {
     const mergedSettings = { ...this.defaultSettings, ...settings };
 
     try {
-      const response = await fetch('/api/voicevox', {
+      const response = await fetch('/api/voicevox-proxy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

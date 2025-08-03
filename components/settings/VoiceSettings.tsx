@@ -85,8 +85,14 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
           };
           
           utterance.onerror = (event) => {
-            console.error('Web Speech APIテストエラー:', event.error);
-            alert(`Web Speech APIテストに失敗しました: ${event.error}`);
+            // "interrupted"は正常な停止なのでエラーとして扱わない
+            if (event.error === 'interrupted') {
+              console.log('🔇 Web Speech APIテストが中断されました（正常）');
+              alert('Web Speech APIテストが中断されました');
+            } else {
+              console.error('Web Speech APIテストエラー:', event.error);
+              alert(`Web Speech APIテストに失敗しました: ${event.error}`);
+            }
           };
           
           window.speechSynthesis.speak(utterance);
@@ -153,7 +159,7 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
             </label>
                         <select
               id="voiceProvider"
-              value={formSettings.voiceProvider || 'webspeech'}
+              value={formSettings.voiceProvider || 'voicevox'}
               onChange={(e) => {
                 console.log('🎵 音声エンジン変更:', e.target.value);
                 setFormSettings(prev => ({
@@ -163,8 +169,8 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
             >
-              <option value="webspeech" className="text-gray-800 bg-white">Web Speech API (推奨・無料・標準)</option>
-              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (認証エラー・一時停止中)</option>
+              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (推奨・無料・高品質)</option>
+              <option value="webspeech" className="text-gray-800 bg-white">Web Speech API (無料・標準・軽量)</option>
               <option value="elevenlabs" className="text-gray-800 bg-white">ElevenLabs (有料・多言語対応)</option>
             </select>
           </div>

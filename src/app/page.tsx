@@ -2050,6 +2050,52 @@ export default function ChatPage() {
             </div>
           </div>
 
+          {/* AI候補選択エリア */}
+          {showInspiration && inspirationCandidates.length > 0 && (
+            <div className="p-4 bg-blue-50/80 backdrop-blur-sm border-b border-blue-200">
+              <div className="max-w-4xl mx-auto space-y-3">
+                <div className="text-sm text-blue-700 font-medium flex items-center gap-2">
+                  <span>🤖</span>
+                  <span>AIが{inspirationCandidates.length}つの返答候補を生成しました。お選びください：</span>
+                </div>
+                <div className="space-y-2">
+                  {inspirationCandidates.map((candidate, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        // 選択された候補をメッセージに追加
+                        const aiResponse = {
+                          id: crypto.randomUUID(),
+                          role: 'assistant' as const,
+                          content: candidate,
+                          timestamp: Date.now()
+                        };
+                        setMessages(prev => [...prev, aiResponse]);
+                        setShowInspiration(false);
+                        setInspirationCandidates([]);
+                      }}
+                      className="w-full text-left p-3 bg-white/80 backdrop-blur-sm rounded-lg border border-blue-200 hover:bg-blue-100/80 transition-colors text-gray-700 text-sm leading-relaxed"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-blue-500 text-xs mt-1 font-medium">{index + 1}.</span>
+                        <span className="flex-1">{candidate}</span>
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setShowInspiration(false);
+                      setInspirationCandidates([]);
+                    }}
+                    className="w-full p-2 text-center text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    ✕ 候補を閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* チャットメッセージエリア - スクロール可能 */}
           <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pt-16 pb-20 md:pt-4 md:pb-4">
             {messages.map((msg) => (

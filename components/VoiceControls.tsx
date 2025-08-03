@@ -88,7 +88,12 @@ export default function VoiceControls({ text, settings, appSettings, className =
           };
           
           utterance.onerror = (event) => {
-            console.error('❌ Web Speech API音声再生エラー:', event.error);
+            // "interrupted"は正常な停止なのでエラーとして扱わない
+            if (event.error === 'interrupted') {
+              console.log('🔇 Web Speech API音声が中断されました（正常）');
+            } else {
+              console.error('❌ Web Speech API音声再生エラー:', event.error);
+            }
             setIsPlaying(false);
           };
           
