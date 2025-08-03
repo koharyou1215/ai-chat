@@ -87,6 +87,9 @@ const defaultSettings: AppSettings = {
   currentTheme: 'ocean-sunset',
   voiceEnabled: true, // デフォルトで音声を有効に変更
   voiceAutoPlay: false,
+  voiceProvider: 'voicevox', // デフォルトでVOICEVOXを使用
+  
+  // ElevenLabs設定
   voiceId: '8EkOjt4xTPGMclNlh1pk', // デフォルト音声IDを設定
   voiceStability: 0.5,
   voiceSimilarityBoost: 0.75,
@@ -94,6 +97,14 @@ const defaultSettings: AppSettings = {
   voiceUseSpeakerBoost: true,
   voiceSpeed: 1.0,
   voiceVolume: 0.8,
+  
+  // VOICEVOX設定
+  voicevoxSpeaker: 3, // ずんだもん（ノーマル）
+  voicevoxSpeed: 1.0,
+  voicevoxPitch: 0.0,
+  voicevoxIntonation: 1.0,
+  voicevoxVolume: 1.0,
+  voicevoxApiUrl: 'https://deprecatedapis.tts.quest/v2/voicevox',
   usedModel: 'google/gemini-2.5-pro',
   enableImageGeneration: true,
   chatCompletionSound: true,

@@ -2116,6 +2116,7 @@ export default function ChatPage() {
                              speed: settings.voiceSpeed ?? 1.0,
                              volume: settings.voiceVolume ?? 0.8,
                            }}
+                           appSettings={settings}
                            apiKey={settings.elevenLabsApiKey}
                          />
                          {/* デスクトップ用メモボタン */}

@@ -48,6 +48,9 @@ export interface AppSettings {
   // 音声設定
   voiceEnabled?: boolean;
   voiceAutoPlay?: boolean;
+  voiceProvider?: 'elevenlabs' | 'voicevox'; // 音声エンジン選択
+  
+  // ElevenLabs設定
   voiceId?: string;
   voiceStability?: number;
   voiceSimilarityBoost?: number;
@@ -55,6 +58,14 @@ export interface AppSettings {
   voiceUseSpeakerBoost?: boolean;
   voiceSpeed?: number;
   voiceVolume?: number;
+  
+  // VOICEVOX設定
+  voicevoxSpeaker?: number;
+  voicevoxSpeed?: number;
+  voicevoxPitch?: number;
+  voicevoxIntonation?: number;
+  voicevoxVolume?: number;
+  voicevoxApiUrl?: string;
   
   // モデル設定
   model?: string;

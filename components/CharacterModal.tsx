@@ -41,9 +41,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
   
-  // ファイルアップロード関連の状態
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
+
 
   useEffect(() => {
     if (character) {
@@ -96,36 +94,32 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         chatBackgroundUrl: '',
         trackers: []
       });
-      setAvatarFile(null);
-      setBackgroundFile(null);
     }
   }, [character, isOpen]);
 
-  // ファイルをBase64に変換する関数
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
+
 
   // アバター画像ファイルアップロード処理
   const handleAvatarFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        // 画像を圧縮
-        const compressedFile = await ImageCompressor.compress(file);
-        setAvatarFile(compressedFile);
+        // 画像を圧縮（ImageCompressor.compressImageメソッドを使用）
+        const compressionResult = await ImageCompressor.compressImage(file, {
+          maxWidth: 400,
+          maxHeight: 400,
+          quality: 0.8,
+          maxSizeKB: 500,
+          outputFormat: 'image/jpeg'
+        });
         
-        // Base64に変換してformDataに設定
-        const base64 = await fileToBase64(compressedFile);
-        setFormData(prev => ({ ...prev, avatar_url: base64 }));
+        // 圧縮された画像のBase64データを直接formDataに設定
+        setFormData(prev => ({ ...prev, avatar_url: compressionResult.dataUrl }));
+        
+        console.log(`アバター画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
       } catch (error) {
         console.error('アバター画像の処理に失敗しました:', error);
-        alert('画像の処理に失敗しました');
+        alert('画像の処理に失敗しました。別の画像を試してください。');
       }
     }
   };
@@ -135,16 +129,22 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     const file = event.target.files?.[0];
     if (file) {
       try {
-        // 画像を圧縮
-        const compressedFile = await ImageCompressor.compress(file);
-        setBackgroundFile(compressedFile);
+        // 画像を圧縮（背景画像用は少し大きめに設定）
+        const compressionResult = await ImageCompressor.compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.7,
+          maxSizeKB: 2000,
+          outputFormat: 'image/jpeg'
+        });
         
-        // Base64に変換してformDataに設定
-        const base64 = await fileToBase64(compressedFile);
-        setFormData(prev => ({ ...prev, chatBackgroundUrl: base64 }));
+        // 圧縮された画像のBase64データを直接formDataに設定
+        setFormData(prev => ({ ...prev, chatBackgroundUrl: compressionResult.dataUrl }));
+        
+        console.log(`背景画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
       } catch (error) {
         console.error('背景画像の処理に失敗しました:', error);
-        alert('画像の処理に失敗しました');
+        alert('画像の処理に失敗しました。別の画像を試してください。');
       }
     }
   };

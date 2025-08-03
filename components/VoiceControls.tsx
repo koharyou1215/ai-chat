@@ -3,27 +3,34 @@
 import { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Play, Square } from 'lucide-react';
 import { VoiceManager, VoiceSettings } from '../lib/voiceManager';
+import { VOICEVOXManager } from '../lib/voicevoxManager';
+import { AppSettings } from '../types/app';
 
 interface VoiceControlsProps {
   text: string;
   settings: VoiceSettings;
+  appSettings: AppSettings; // AppSettings全体を追加
   className?: string;
   apiKey?: string; // APIキーを追加
 }
 
-export default function VoiceControls({ text, settings, className = '', apiKey }: VoiceControlsProps) {
+export default function VoiceControls({ text, settings, appSettings, className = '', apiKey }: VoiceControlsProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    // 再生状態の監視
+    // 再生状態の監視（音声エンジンに関係なく）
     const checkPlayingState = () => {
-      setIsPlaying(VoiceManager.getPlayingState());
+      if (appSettings.voiceProvider === 'voicevox') {
+        setIsPlaying(VOICEVOXManager.getIsPlaying());
+      } else {
+        setIsPlaying(VoiceManager.getPlayingState());
+      }
     };
 
     const interval = setInterval(checkPlayingState, 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [appSettings.voiceProvider]);
 
   const handlePlay = async () => {
     if (!settings.enabled) {
@@ -31,21 +38,41 @@ export default function VoiceControls({ text, settings, className = '', apiKey }
       return;
     }
 
-    console.log('音声再生ボタンクリック:', { text: text.substring(0, 50), settings });
+    console.log('音声再生ボタンクリック:', { 
+      text: text.substring(0, 50), 
+      provider: appSettings.voiceProvider 
+    });
     setIsGenerating(true);
+    
     try {
-      // APIキーを含む設定を作成
-      const settingsWithApiKey = {
-        ...settings,
-        apiKey: apiKey
-      };
-      
-      const success = await VoiceManager.playAudio(text, settingsWithApiKey);
-      console.log('音声再生結果:', success);
-      if (success) {
+      if (appSettings.voiceProvider === 'voicevox') {
+        // VOICEVOX使用
+        await VOICEVOXManager.speak(text, {
+          enabled: settings.enabled,
+          autoPlay: settings.autoPlay,
+          speaker: appSettings.voicevoxSpeaker || 3,
+          speed: appSettings.voicevoxSpeed || 1.0,
+          pitch: appSettings.voicevoxPitch || 0.0,
+          intonation: appSettings.voicevoxIntonation || 1.0,
+          volume: appSettings.voicevoxVolume || 1.0,
+          apiUrl: appSettings.voicevoxApiUrl || 'https://deprecatedapis.tts.quest/v2/voicevox'
+        });
+        console.log('✅ VOICEVOX音声再生成功');
         setIsPlaying(true);
       } else {
-        console.warn('音声再生が失敗しました');
+        // ElevenLabs使用（既存の処理）
+        const settingsWithApiKey = {
+          ...settings,
+          apiKey: apiKey
+        };
+        
+        const success = await VoiceManager.playAudio(text, settingsWithApiKey);
+        console.log('ElevenLabs音声再生結果:', success);
+        if (success) {
+          setIsPlaying(true);
+        } else {
+          console.warn('ElevenLabs音声再生が失敗しました');
+        }
       }
     } catch (error) {
       console.error('音声再生エラー:', error);
@@ -55,7 +82,11 @@ export default function VoiceControls({ text, settings, className = '', apiKey }
   };
 
   const handleStop = () => {
-    VoiceManager.stopAudio();
+    if (appSettings.voiceProvider === 'voicevox') {
+      VOICEVOXManager.stopCurrentAudio();
+    } else {
+      VoiceManager.stopAudio();
+    }
     setIsPlaying(false);
   };
 
