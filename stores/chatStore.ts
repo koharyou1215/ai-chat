@@ -87,7 +87,7 @@ const defaultSettings: AppSettings = {
   currentTheme: 'ocean-sunset',
   voiceEnabled: true, // デフォルトで音声を有効に変更
   voiceAutoPlay: false,
-  voiceProvider: 'voicevox', // デフォルトでVOICEVOXを使用
+  voiceProvider: 'webspeech', // デフォルトでWeb Speech APIを使用（認証不要）
   
   // ElevenLabs設定
   voiceId: '8EkOjt4xTPGMclNlh1pk', // デフォルト音声IDを設定

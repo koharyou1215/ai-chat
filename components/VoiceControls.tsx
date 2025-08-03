@@ -23,6 +23,9 @@ export default function VoiceControls({ text, settings, appSettings, className =
     const checkPlayingState = () => {
       if (appSettings.voiceProvider === 'voicevox') {
         setIsPlaying(VOICEVOXManager.getIsPlaying());
+      } else if (appSettings.voiceProvider === 'webspeech') {
+        // Web Speech APIの場合、speechSynthesisで再生状態をチェック
+        setIsPlaying(window.speechSynthesis?.speaking || false);
       } else {
         setIsPlaying(VoiceManager.getPlayingState());
       }
@@ -59,6 +62,41 @@ export default function VoiceControls({ text, settings, appSettings, className =
         });
         console.log('✅ VOICEVOX音声再生成功');
         setIsPlaying(true);
+      } else if (appSettings.voiceProvider === 'webspeech') {
+        // Web Speech API使用
+        if ('speechSynthesis' in window) {
+          // 既存の音声を停止
+          window.speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance(text);
+          
+          // 日本語設定
+          utterance.lang = 'ja-JP';
+          utterance.rate = appSettings.voiceSpeed || 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = appSettings.voiceVolume || 0.8;
+          
+          // イベントリスナー設定
+          utterance.onstart = () => {
+            console.log('✅ Web Speech API音声再生開始');
+            setIsPlaying(true);
+          };
+          
+          utterance.onend = () => {
+            console.log('✅ Web Speech API音声再生終了');
+            setIsPlaying(false);
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('❌ Web Speech API音声再生エラー:', event.error);
+            setIsPlaying(false);
+          };
+          
+          // 音声再生
+          window.speechSynthesis.speak(utterance);
+        } else {
+          console.warn('Web Speech APIはこのブラウザでサポートされていません');
+        }
       } else {
         // ElevenLabs使用（既存の処理）
         const settingsWithApiKey = {
@@ -84,6 +122,12 @@ export default function VoiceControls({ text, settings, appSettings, className =
   const handleStop = () => {
     if (appSettings.voiceProvider === 'voicevox') {
       VOICEVOXManager.stopCurrentAudio();
+    } else if (appSettings.voiceProvider === 'webspeech') {
+      // Web Speech API停止
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        console.log('Web Speech API音声停止');
+      }
     } else {
       VoiceManager.stopAudio();
     }

@@ -68,6 +68,33 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
           volume: formSettings.voicevoxVolume || 1.0,
           apiUrl: formSettings.voicevoxApiUrl || 'https://deprecatedapis.tts.quest/v2/voicevox'
         });
+      } else if (formSettings.voiceProvider === 'webspeech') {
+        // Web Speech APIテスト
+        if ('speechSynthesis' in window) {
+          // 既存の音声を停止
+          window.speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance('Web Speech APIの音声テストです。こんにちは！');
+          utterance.lang = 'ja-JP';
+          utterance.rate = formSettings.voiceSpeed || 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = formSettings.voiceVolume || 0.8;
+          
+          utterance.onend = () => {
+            alert('Web Speech API音声テスト成功！');
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('Web Speech APIテストエラー:', event.error);
+            alert(`Web Speech APIテストに失敗しました: ${event.error}`);
+          };
+          
+          window.speechSynthesis.speak(utterance);
+          return; // Web Speech APIの場合は非同期処理なのでここで終了
+        } else {
+          alert('Web Speech APIはこのブラウザでサポートされていません。');
+          return;
+        }
       } else {
         // ElevenLabsのテスト (既存の処理)
         await VoiceManager.testVoice(formSettings.voiceId || '', {
@@ -124,19 +151,20 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
             <label htmlFor="voiceProvider" className="block text-sm font-medium text-gray-700 mb-2">
               音声エンジン
             </label>
-            <select
+                        <select
               id="voiceProvider"
-              value={formSettings.voiceProvider || 'voicevox'}
+              value={formSettings.voiceProvider || 'webspeech'}
               onChange={(e) => {
                 console.log('🎵 音声エンジン変更:', e.target.value);
-                setFormSettings(prev => ({ 
-                  ...prev, 
-                  voiceProvider: e.target.value as 'elevenlabs' | 'voicevox'
+                setFormSettings(prev => ({
+                  ...prev,
+                  voiceProvider: e.target.value as 'elevenlabs' | 'voicevox' | 'webspeech'
                 }));
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
             >
-              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (推奨・無料・高品質)</option>
+              <option value="webspeech" className="text-gray-800 bg-white">Web Speech API (推奨・無料・標準)</option>
+              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (認証エラー・一時停止中)</option>
               <option value="elevenlabs" className="text-gray-800 bg-white">ElevenLabs (有料・多言語対応)</option>
             </select>
           </div>
@@ -154,8 +182,57 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
           </div>
         )}
 
+        {/* Web Speech API設定 */}
+        {formSettings.voiceEnabled && formSettings.voiceProvider === 'webspeech' && (
+          <>
+            <div>
+              <label htmlFor="webspeechSpeed" className="block text-sm font-medium text-gray-700 mb-2">
+                音声速度
+              </label>
+              <input
+                type="range"
+                id="webspeechSpeed"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={formSettings.voiceSpeed || 1.0}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSpeed: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <div className="text-sm text-gray-500 mt-1">
+                現在の値: {formSettings.voiceSpeed || 1.0}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="webspeechVolume" className="block text-sm font-medium text-gray-700 mb-2">
+                音量
+              </label>
+              <input
+                type="range"
+                id="webspeechVolume"
+                min="0.0"
+                max="1.0"
+                step="0.1"
+                value={formSettings.voiceVolume || 0.8}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceVolume: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <div className="text-sm text-gray-500 mt-1">
+                現在の値: {formSettings.voiceVolume || 0.8}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <p className="text-sm text-blue-700">
+                📢 Web Speech APIはブラウザ標準機能です。インターネット接続なしでも動作し、認証も不要です。
+              </p>
+            </div>
+          </>
+        )}
+
         {/* VOICEVOX設定 */}
-        {formSettings.voiceEnabled && (formSettings.voiceProvider === 'voicevox' || !formSettings.voiceProvider) && (
+        {formSettings.voiceEnabled && formSettings.voiceProvider === 'voicevox' && (
           <>
             {/* API URL設定 */}
             <div>

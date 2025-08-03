@@ -48,7 +48,7 @@ export interface AppSettings {
   // 音声設定
   voiceEnabled?: boolean;
   voiceAutoPlay?: boolean;
-  voiceProvider?: 'elevenlabs' | 'voicevox'; // 音声エンジン選択
+  voiceProvider?: 'elevenlabs' | 'voicevox' | 'webspeech'; // 音声エンジン選択
   
   // ElevenLabs設定
   voiceId?: string;
