@@ -90,6 +90,10 @@ export interface Character {
   name: string;
   tags: string[];
   first_message: string[];
+  // AIバリエーション管理
+  aiModel?: 'gemini' | 'claude' | 'grok' | 'original'; // 生成元AI
+  baseCharacterName?: string; // 元のキャラクター名（バリエーション時のみ）
+  isVariation?: boolean; // バリエーションかどうか
   character_definition?: CharacterDefinition;
   trackers?: CharacterTracker[];
   example_dialogue?: ExampleDialogue[];

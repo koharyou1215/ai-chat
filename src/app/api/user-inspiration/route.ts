@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const model = settings?.model || 'openai/gpt-4o-mini';
     
     // インスピレーション用の専用トークン数設定（デフォルト500）
-    const inspirationMaxTokens = settings?.inspirationMaxTokens || 500;
+    const inspirationMaxTokens = settings?.inspirationMaxTokens || 1500; // thinking系モデル対応で増加
 
     console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`);
     console.log(`[/api/user-inspiration] インスピレーション用トークン数: ${inspirationMaxTokens}`);
@@ -75,11 +75,50 @@ ${character.scenario ? `シナリオ: ${character.scenario}` : ''}
       customPromptLength: customPrompt?.length || 0,
       customPromptPreview: customPrompt?.substring(0, 100) + '...'
     });
-    const basePrompt = customPrompt || `あなたは創作的で自然なユーザー返信を提案する専門AIです。
-ユーザーとの会話の流れを理解し、ユーザーが送信できる適切で魅力的な返信候補を生成してください。
-会話の文脈を考慮し、ユーザーの興味を引くような返信を作成してください。
-返信は自然で親しみやすく、会話を続けるのに適した内容にしてください。
-ユーザーが実際に送信できるような返信を提案してください。`;
+    const basePrompt = customPrompt || `# ユーザー返信生成AI
+
+あなたは自然で魅力的なユーザー返信を生成する専門AIです。与えられた情報を基に、ユーザーが実際に返しそうなリアルな返信を1つ作成してください。
+
+## 入力情報
+
+### キャラクター情報
+- **名前**: {{char}}
+- **性格・特徴**: {character.character_definition || character.description || '不明'}
+
+### ユーザー情報
+- **名前**: {persona.name}
+- **性格**: {persona.description}
+- **好み**: {persona.likes?.join(', ') || 'なし'}
+- **苦手**: {persona.dislikes?.join(', ') || 'なし'}
+- **口調・特徴**: {persona.other_settings || 'なし'}
+
+### 会話データ
+- **キャラクターの最新発言**: 「{lastCharacterMessage}」
+- **直近の会話流れ**: {recentConversation}
+
+## 生成要件
+
+### 必須条件
+1. **文字数**: 100～150文字（句読点含む）
+2. **口調**: ユーザーの設定された口調・性格を忠実に反映
+3. **会話継続**: 自然に会話が発展する内容
+4. **関係性**: {{char}}との親しみ度に適した表現
+5. **自然性**: 実際の人間が返しそうなリアルな反応
+
+### 避けるべき表現
+- 「そうなんですね」「なるほど」
+- 「詳しく聞かせて」「教えて」
+- 「{{char}}さんらしい」「さすが」
+- その他の定型的・機械的な相槌
+
+### 推奨する要素
+- ユーザーの個性が表れる独特な反応
+- 感情や驚き、興味を自然に表現
+- 会話に新しい要素や視点を加える
+- キャラクターの発言への具体的な反応や感想
+
+## 出力要件
+**返信候補のみを1つ出力してください。説明や解説は不要です。**`;
 
     const prompt = `${characterPrompt}${basePrompt}
 

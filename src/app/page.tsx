@@ -28,6 +28,7 @@ import { TouchGestureManager } from '../../lib/touchGestures';
 import dynamic from 'next/dynamic';
 import { BackgroundManager } from '../../lib/backgroundManager';
 import CharacterTrackerDisplay from '../../components/CharacterTracker';
+import Typewriter from '../../components/Typewriter';
 
 // 画像圧縮関数
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -191,6 +192,11 @@ export default function ChatPage() {
 
   // ユーザー文章強化機能
   const [isEnhancingUserText, setIsEnhancingUserText] = useState(false);
+  
+  // ボタンアニメーション
+  const [sendButtonClicked, setSendButtonClicked] = useState(false);
+  const [bulbButtonClicked, setBulbButtonClicked] = useState(false);
+  const [sparkleButtonClicked, setSparkleButtonClicked] = useState(false);
   
   // タブ管理
   const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'history' | 'settings'>('characters');
@@ -669,6 +675,10 @@ export default function ChatPage() {
   }, [messages, currentCharacter, currentSessionId]);
 
   const handleSend = async () => {
+    // ボタンアニメーション実行
+    setSendButtonClicked(true);
+    setTimeout(() => setSendButtonClicked(false), 200);
+    
     console.log('📤 送信ボタンがクリックされました', { 
       message: message.trim(), 
       messageLength: message.trim().length, 
@@ -944,6 +954,10 @@ export default function ChatPage() {
   const handleUserInspiration = async () => {
     if (!currentCharacter || isLoadingUserInspiration) return;
     
+    // ボタンアニメーション実行
+    setBulbButtonClicked(true);
+    setTimeout(() => setBulbButtonClicked(false), 200);
+    
     console.log('電球ボタンが押されました');
     setIsLoadingUserInspiration(true);
     try {
@@ -993,6 +1007,10 @@ export default function ChatPage() {
     if (!message.trim() || !currentCharacter) return;
     const targetText = pendingSelection || message;
     setPendingSelection('');
+    
+    // ボタンアニメーション実行
+    setSparkleButtonClicked(true);
+    setTimeout(() => setSparkleButtonClicked(false), 200);
     
     setIsEnhancingUserText(true);
     
@@ -1624,11 +1642,12 @@ export default function ChatPage() {
             backgroundRepeat: 'no-repeat'
           }}
         />
-        {/* モバイル用オーバーレイ */}
+        {/* 背景オーバーレイ（サイドバー開時） */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40"
             onClick={() => setIsSidebarOpen(false)}
+            title="タップしてサイドバーを閉じる"
           />
         )}
         
@@ -1962,7 +1981,7 @@ export default function ChatPage() {
         {/* メインチャットエリア */}
         <div className="flex-1 flex flex-col w-full md:w-auto h-full">
           {/* ヘッダー - 固定 */}
-          <div className="pointer-events-none bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
+          <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky pointer-events-none">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
@@ -1995,7 +2014,7 @@ export default function ChatPage() {
                       setIsCharacterModalOpen(true);
                     }
                   }}
-                  className="pointer-events-auto text-left w-full"
+                  className="pointer-events-auto text-left inline-block max-w-fit"
                 >
                   <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors text-sm md:text-base">
                     {currentCharacter?.name || 'キャラクター'}
@@ -2019,14 +2038,14 @@ export default function ChatPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setIsSettingsOpen(true)}
-                  className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
+                  className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
                   title="設定"
                 >
                   <Settings size={16} />
                 </button>
                 <button
                   onClick={() => setIsThemeModalOpen(true)}
-                  className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
+                  className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
                   title="テーマ"
                 >
                   <Palette size={16} />
@@ -2077,7 +2096,15 @@ export default function ChatPage() {
                          onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
                          style={{ userSelect: 'text' }}
                        >
-                         <FormattedText md={msg.content} />
+                         {/* 最新のAIメッセージのみタイプライター効果を適用 */}
+                         {msg.role === 'assistant' && messages[messages.length - 1]?.id === msg.id ? (
+                           <Typewriter 
+                             text={msg.content} 
+                             speed={settings.typewriterSpeed || 30}
+                           />
+                         ) : (
+                           <FormattedText md={msg.content} />
+                         )}
                        </div>
                        <div className="flex justify-end mt-2 gap-1 flex-wrap">
                          <VoiceControls
@@ -2270,7 +2297,7 @@ export default function ChatPage() {
                   <button
                     onClick={handleUserInspiration}
                     disabled={isLoadingUserInspiration}
-                    className="touch-target text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-colors disabled:opacity-50"
+                    className={`touch-target text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''}`}
                     title="返信を提案"
                   >
                     {isLoadingUserInspiration ? <Loader className="animate-spin" size={16} /> : '💡'}
@@ -2288,7 +2315,7 @@ export default function ChatPage() {
                   }}
                   onClick={handleUserTextEnhancement}
                     disabled={isEnhancingUserText}
-                    className="touch-target text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-colors disabled:opacity-50"
+                    className={`touch-target text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''}`}
                     title="文章を強化"
                   >
                     {isEnhancingUserText ? <Loader className="animate-spin" size={16} /> : '✨'}
@@ -2296,7 +2323,7 @@ export default function ChatPage() {
                   <button
                     onClick={handleSend}
                     disabled={isLoading}
-                    className="touch-target bg-blue-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center"
+                    className={`touch-target bg-blue-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${sendButtonClicked ? 'scale-95 bg-blue-600' : ''}`}
                     title="送信 (Ctrl+Enter)"
                   >
                     {isLoading ? <Loader className="animate-spin" size={16} /> : <Send size={16} />}

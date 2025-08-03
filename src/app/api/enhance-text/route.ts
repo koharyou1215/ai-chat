@@ -47,18 +47,43 @@ export async function POST(request: NextRequest) {
       customPromptLength: customPrompt?.length || 0,
       customPromptPreview: customPrompt?.substring(0, 100) + '...'
     });
-    const basePrompt = customPrompt || `以下のテキストをより魅力的で自然な表現に改善してください。
+    const basePrompt = customPrompt || `# 文章強化プロンプト
+
+あなたは文章表現強化の専門家です。与えられたテキストを、読者が鮮明に情景を想像できる詳細な描写に変換してください。
+
+## 入力情報
+- 会話の文脈：{conversationContext}
+- 強化対象テキスト：{text}
+
+## 強化指針
+1. **内容の保持**：元テキストの意図・場面進行を完全に維持
+2. **描写の焦点**：「どのように」という動作の詳細に重点を置く
+3. **表現の深化**：五感に訴える具体的で臨場感のある描写を追加
+4. **文字数**：100～150文字程度に調整
+
+## 創作設定
+- ジャンル：創作フィクション（ファンタジー要素含む）
+- 表現レベル：R-18対応
+
+## 出力形式
+- 強化されたテキストのみを出力
+- 説明文、解説、JSON形式は一切使用しない
+- {{char}}の台詞や行動は絶対に追加しない
+- {{user}}視点の動作描写のみに集中
+
+以下のテキストを具体的で詳細な行動描写を含む魅力的な表現に改善してください。
 
 【改善のポイント】
-- より自然で読みやすい文章にする
-- 感情や意図をより明確に表現する
-- 会話の流れに合った表現にする
-- 魅力的で印象的な表現にする
+- 具体的な動作や仕草を詳しく描写する
+- 表情、視線、身体の動きを含める
+- 感情や心理状態を行動で表現する
+- 臨場感のある描写にする
+- 会話に合わせた自然な行動を追加する
 
 【入力テキスト】
 ${text}
 
-【改善されたテキスト】`;
+【詳細な行動描写を含む改善されたテキスト】`;
 
     // enhancementPrompt を定義
     const enhancementPrompt = settings?.enhancementPrompt || basePrompt;
@@ -97,25 +122,30 @@ ${conversationContext}
 
 【重要な指示】
 **役割設定**
-あなたは文章表現の専門家として、簡潔なテキストを詳細で臨場感あふれる描写に変換する役割を担います。  **タスク内容**
-提供されたテキストを、読者が情景を鮮明に想像できる詳細な文章に拡張してください。  **入力情報**
-- 会話の文脈: {conversationContext}
-- 変換対象のテキスト: {text}
-- 対象キャラクター: {{user}}  
-**具体的な変換指示** 
- 1. **動作の詳細化**  - 身体の動き、表情、仕草を具体的に描写  - 「どのように」行動するかを重点的に表現  - 五感に訴える要素（音、触感、視覚的詳細）を追加  
-2. **情景描写の強化**  - 周囲の環境や雰囲気を織り交ぜる  - 心理状態が伝わる身体的反応を含める  - 時間の流れや動作の順序を明確に  
-**必須の制約事項**
-- 元のテキストの意図と内容を完全に保持する
-- 場面を先に進めすぎない（現在の状況内で詳細化）
-- {{user}}キャラクターの台詞と行動のみを出力する
-- 他のキャラクターの反応や行動は一切含めない
-- JSON形式や構造化された形式は使用しない
-- 強化されたテキストのみをそのまま出力する  
-**出力形式**
-変換されたテキストを、追加の説明や注釈なしで直接出力してください。 
+あなたは行動描写の専門家として、簡潔なテキストを詳細で具体的な行動描写に変換する役割を担います。
 
-強化されたテキスト:`;
+**変換指示**
+1. **具体的な動作描写**
+   - 身体の動き、表情、仕草を詳しく描写
+   - 「どのように」行動するかを重点的に表現
+   - 手の動き、視線、姿勢の変化を含める
+
+2. **感情の行動表現**
+   - 心理状態を身体的な反応で表現
+   - 表情、声のトーン、身体の緊張を描写
+   - 感情に応じた自然な動作を追加
+
+3. **臨場感のある描写**
+   - 五感に訴える要素を追加（音、触感、視覚的詳細）
+   - 周囲の環境との相互作用を含める
+   - 時間の流れや動作の順序を明確に
+
+**制約事項**
+- 元のテキストの意図と内容を完全に保持
+- 場面を先に進めすぎない
+- 追加の説明や注釈なしで直接出力
+
+詳細な行動描写を含む強化されたテキスト:`;
 
       // OpenRouter API呼び出し
       const enhancedText = await callOpenRouter({
@@ -123,13 +153,43 @@ ${conversationContext}
         model: modelToUse,
         messages: [{ role: 'user', content: simplePrompt }],
         temperature: 0.8,
-        maxTokens: variantCount === 1 ? 500 : 1000,
+        maxTokens: variantCount === 1 ? 1500 : 2000, // thinking系モデル対応で増加
       });
-      // --- 余計なヘッダー行を除去 ---
-      const delimiter = '強化されたテキスト:';
-      const finalText = enhancedText.includes(delimiter)
-        ? enhancedText.split(delimiter).pop()?.trim() || enhancedText.trim()
-        : enhancedText.trim();
+      // --- 強化されたテキストの抽出（thinking系モデル対応） ---
+      let finalText = enhancedText.trim();
+      
+      // 1. 明確な区切り文字で分割
+      const delimiters = ['強化されたテキスト:', '詳細な行動描写を含む改善されたテキスト:', '改善されたテキスト:', '強化版:'];
+      for (const delimiter of delimiters) {
+        if (finalText.includes(delimiter)) {
+          const parts = finalText.split(delimiter);
+          if (parts.length > 1) {
+            finalText = parts[parts.length - 1].trim();
+            break;
+          }
+        }
+      }
+      
+      // 2. thinking系モデルの余計な説明を除去
+      const lines = finalText.split('\n');
+      const cleanLines = lines.filter(line => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 && 
+               !trimmed.includes('thinking') && 
+               !trimmed.includes('analysis') && 
+               !trimmed.includes('reasoning') &&
+               !trimmed.startsWith('Based on') &&
+               !trimmed.startsWith('Looking at') &&
+               !trimmed.startsWith('The user') &&
+               !/^\([0-9]+\)/.test(trimmed);
+      });
+      
+      if (cleanLines.length > 0) {
+        finalText = cleanLines.join('\n').trim();
+      }
+      
+      // 3. 残っている数字パターンを除去
+      finalText = finalText.replace(/\([0-9]+\)/g, '').trim();
 
       return NextResponse.json({
         success: true,
@@ -197,7 +257,7 @@ JSON形式以外は出力しないでください。`;
         model: modelToUse,
         messages: [{ role: 'user', content: detailedPrompt }],
         temperature: 0.8,
-        maxTokens: variantCount === 1 ? 500 : 1000,
+        maxTokens: variantCount === 1 ? 1500 : 2000, // thinking系モデル対応で増加
       });
       const responseText = openRouterResponseText; // OpenRouterからの応答を使用
 

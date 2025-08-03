@@ -308,27 +308,44 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           }
         }
 
-        // OpenRouterで複数候補を生成（並列リクエスト）
+        // OpenRouterで複数候補を生成（順次リクエスト - レート制限対策）
         const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
-        const candidatePromises = Array.from({ length: candidateCount }, () =>
-          callOpenRouter({
-            apiKey: openRouterApiKey as string, // 型アサーションを追加
-            model: openRouterModel,
-            messages: messagesForOpenRouter,
-            temperature: modelConfig.generationConfig.temperature,
-            maxTokens: modelConfig.generationConfig.maxOutputTokens,
-          })
-        );
-
+        console.log(`🔄 OpenRouter API呼び出し開始（${candidateCount}個の候補を順次生成）`);
+        
+        const openRouterTexts: string[] = [];
+        
         try {
-          console.log('🔄 OpenRouter API呼び出し開始（複数候補）');
-          const settledResults = await Promise.allSettled(candidatePromises);
-          const fulfilled = settledResults.filter(r => r.status === 'fulfilled') as PromiseFulfilledResult<string>[];
-          if (fulfilled.length === 0) {
+          for (let i = 0; i < candidateCount; i++) {
+            console.log(`📋 候補${i + 1}/${candidateCount}を生成中...`);
+            
+            try {
+              const candidateText = await callOpenRouter({
+                apiKey: openRouterApiKey as string,
+                model: openRouterModel,
+                messages: messagesForOpenRouter,
+                temperature: modelConfig.generationConfig.temperature,
+                maxTokens: modelConfig.generationConfig.maxOutputTokens,
+              });
+              
+              openRouterTexts.push(candidateText);
+              console.log(`✅ 候補${i + 1}生成完了: ${candidateText.substring(0, 50)}...`);
+              
+              // レート制限対策として各リクエスト間に1秒の遅延
+              if (i < candidateCount - 1) {
+                console.log('⏱️ レート制限対策として1秒待機中...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            } catch (candidateError) {
+              console.warn(`⚠️ 候補${i + 1}の生成に失敗:`, candidateError);
+              // 1つでも成功していれば継続、全て失敗の場合は下でエラーハンドリング
+            }
+          }
+          
+          if (openRouterTexts.length === 0) {
             throw new Error('All OpenRouter candidate requests failed');
           }
-          const openRouterTexts = fulfilled.map(r => r.value);
-          console.log('✅ OpenRouter API呼び出し完了（複数候補）:', openRouterTexts.length);
+          
+          console.log(`✅ OpenRouter API呼び出し完了（${openRouterTexts.length}/${candidateCount}個成功）`);
           
           const userName = persona?.name || 'あなた';
           
@@ -366,13 +383,13 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             candidates: candidates
           });
         } catch (multipleRequestError) {
-          console.warn('❌ 複数候補生成に失敗、単一候補で再試行:', multipleRequestError);
+          console.warn('❌ 順次候補生成に失敗、単一候補で再試行:', multipleRequestError);
           
-          // フォールバック: 1つだけ生成
+          // フォールバック: 1つだけ生成（レート制限やその他のエラー対策）
           try {
             console.log('🔄 単一候補生成開始（フォールバック）');
             const openRouterText = await callOpenRouter({
-              apiKey: openRouterApiKey as string, // 型アサーションを追加
+              apiKey: openRouterApiKey as string,
               model: openRouterModel,
               messages: messagesForOpenRouter,
               temperature: modelConfig.generationConfig.temperature,

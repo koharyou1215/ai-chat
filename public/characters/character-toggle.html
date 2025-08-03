@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャラクター一覧</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Meiryo', sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .controls {
+      position: sticky;
+      top: 0;
+      background-color: #f5f5f5;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    button {
+      padding: 8px 15px;
+      background-color: #4a6fa5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    button:hover {
+      background-color: #3a5985;
+    }
+    
+    #search {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      flex-grow: 1;
+      max-width: 300px;
+    }
+    
+    details {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    summary {
+      cursor: pointer;
+      font-weight: bold;
+      padding: 5px;
+    }
+    
+    summary:hover {
+      background-color: #f0f0f0;
+    }
+    
+    pre {
+      white-space: pre-wrap;
+      overflow-x: auto;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button id="openAll">全て開く</button>
+    <button id="closeAll">全て閉じる</button>
+    <input type="text" id="search" placeholder="キャラクター名で検索...">
+    <span id="counter"></span>
+  </div>
+
+  <div id="characters">
+    <!-- ここにキャラクターのdetailsタグが入ります -->
+    <!-- JavaScriptでgemini_output_character.mdから読み込みます -->
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // キャラクターデータを読み込む
+      try {
+        const response = await fetch('gemini_output_character.md');
+        const text = await response.text();
+        
+        // コンテンツをHTMLに挿入
+        document.getElementById('characters').innerHTML = text;
+        
+        // 検索機能
+        const searchInput = document.getElementById('search');
+        searchInput.addEventListener('input', filterCharacters);
+        
+        // 件数表示の更新
+        updateCounter();
+        
+        // 全て開く
+        document.getElementById('openAll').addEventListener('click', () => {
+          document.querySelectorAll('details').forEach(detail => {
+            detail.open = true;
+          });
+        });
+        
+        // 全て閉じる
+        document.getElementById('closeAll').addEventListener('click', () => {
+          document.querySelectorAll('details').forEach(detail => {
+            detail.open = false;
+          });
+        });
+      } catch (error) {
+        console.error('キャラクターデータの読み込みに失敗しました:', error);
+        document.getElementById('characters').innerHTML = '<p>データの読み込みに失敗しました。</p>';
+      }
+    });
+    
+    // キャラクター検索機能
+    function filterCharacters() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const details = document.querySelectorAll('details');
+      
+      details.forEach(detail => {
+        const summaryText = detail.querySelector('summary').textContent.toLowerCase();
+        if (summaryText.includes(searchTerm)) {
+          detail.classList.remove('hidden');
+        } else {
+          detail.classList.add('hidden');
+        }
+      });
+      
+      updateCounter();
+    }
+    
+    // 表示件数更新
+    function updateCounter() {
+      const total = document.querySelectorAll('details').length;
+      const visible = document.querySelectorAll('details:not(.hidden)').length;
+      document.getElementById('counter').textContent = `${visible}/${total}件表示`;
+    }
+  </script>
+</body>
+</html>

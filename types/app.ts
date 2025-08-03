@@ -68,6 +68,7 @@ export interface AppSettings {
   candidateCount?: number;
   bubbleDesign?: 'default' | 'rounded' | 'sharp';
   jailbreakPromptEnabled?: boolean;
+  typewriterSpeed?: number;
 
   // 画像生成設定
   imageSeed?: number;

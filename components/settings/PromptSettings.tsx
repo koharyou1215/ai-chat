@@ -58,10 +58,10 @@ export default function PromptSettings({ formSettings, setFormSettings }: Prompt
 - ユーザーの個性が表れる独特な反応
 - 感情や驚き、興味を自然に表現
 - 会話に新しい要素や視点を加える
-- キャラクターとの関係性を深める内容
+- キャラクターの発言への具体的な反応や感想
 
-## 出力形式
-返信文のみを出力してください。説明や前置きは不要です。`}
+## 出力要件
+**返信候補のみを1つ出力してください。説明や解説は不要です。**`}
             onChange={(e) => {
               console.log('電球プロンプト更新:', e.target.value.substring(0, 100) + '...');
               setFormSettings(prev => ({ ...prev, inspirationPrompt: e.target.value }));

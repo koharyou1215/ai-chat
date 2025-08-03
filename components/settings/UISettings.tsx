@@ -46,6 +46,29 @@ export default function UISettings({ formSettings, setFormSettings }: UISettings
           />
         </div>
 
+        {/* タイプライター速度 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            タイプライター速度: {formSettings.typewriterSpeed || 30}ms
+          </label>
+          <input
+            type="range"
+            min="10"
+            max="200"
+            step="10"
+            value={formSettings.typewriterSpeed || 30}
+            onChange={(e) => setFormSettings(prev => ({ ...prev, typewriterSpeed: parseInt(e.target.value) }))}
+            className="w-full slider"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>高速 (10ms)</span>
+            <span>低速 (200ms)</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            文字が1文字ずつ表示される間隔を調整できます。数値が小さいほど高速になります。
+          </p>
+        </div>
+
         {/* LORA設定 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

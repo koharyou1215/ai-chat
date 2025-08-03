@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List, RefreshCw } from 'lucide-react';
+import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List, RefreshCw, Layers, Bot } from 'lucide-react';
 import { Character } from '../types/character';
 
 interface CharacterGalleryProps {
@@ -31,12 +31,32 @@ export default function CharacterGallery({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular'>('name');
+  const [showVariations, setShowVariations] = useState(false);
+  const [selectedBaseCharacter, setSelectedBaseCharacter] = useState<string | null>(null);
 
   // 全タグを取得（安全な処理）
   const allTags = Array.from(new Set((characters || []).flatMap(c => c.tags || [])));
 
+  // バリエーション管理のヘルパー関数
+  const getDisplayCharacters = () => {
+    if (showVariations) {
+      return characters || [];
+    } else {
+      // バリエーションでないキャラクターのみ表示
+      return (characters || []).filter(character => !character.isVariation);
+    }
+  };
+
+  // 特定のベースキャラクターのバリエーションを取得
+  const getVariationsForCharacter = (baseName: string) => {
+    return (characters || []).filter(character => 
+      character.baseCharacterName === baseName || 
+      (character.name === baseName && !character.isVariation)
+    );
+  };
+
   // フィルタリングとソート（安全な処理）
-  const filteredCharacters = (characters || [])
+  const filteredCharacters = getDisplayCharacters()
     .filter(character => {
       const matchesSearch = character.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            character.personality?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -171,22 +191,37 @@ export default function CharacterGallery({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* バリエーション表示切り替え */}
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                onClick={() => setShowVariations(!showVariations)}
+                className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                  showVariations ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'
                 }`}
+                title={showVariations ? 'AIバリエーションを非表示' : 'AIバリエーションを表示'}
               >
-                <Grid size={20} />
+                <Layers size={16} />
+                <Bot size={14} />
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
-              >
-                <List size={20} />
-              </button>
+              
+              {/* ビューモード切り替え */}
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  <Grid size={20} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  <List size={20} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -301,6 +336,18 @@ function CharacterCard({
             選択中
           </div>
         )}
+
+        {/* AIモデルバッジ */}
+        {character.aiModel && (
+          <div className={`absolute bottom-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${
+            character.aiModel === 'gemini' ? 'bg-blue-500 text-white' :
+            character.aiModel === 'claude' ? 'bg-orange-500 text-white' :
+            character.aiModel === 'grok' ? 'bg-green-500 text-white' :
+            'bg-gray-500 text-white'
+          }`}>
+            {character.aiModel.toUpperCase()}
+          </div>
+        )}
       </div>
 
       {/* 情報 */}
@@ -326,7 +373,7 @@ function CharacterCard({
         </div>
 
         {/* 性格の一部 */}
-        {character.personality && (
+        {character.personality && typeof character.personality === 'string' && (
           <p className="text-gray-500 text-xs mt-2 line-clamp-2">
             {character.personality}
           </p>
@@ -380,6 +427,17 @@ function CharacterListItem({
                 選択中
               </span>
             )}
+            {/* AIモデルバッジ */}
+            {character.aiModel && (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                character.aiModel === 'gemini' ? 'bg-blue-500 text-white' :
+                character.aiModel === 'claude' ? 'bg-orange-500 text-white' :
+                character.aiModel === 'grok' ? 'bg-green-500 text-white' :
+                'bg-gray-500 text-white'
+              }`}>
+                {character.aiModel.toUpperCase()}
+              </span>
+            )}
           </div>
           <p className="text-gray-600 text-sm mb-2">
             {character.occupation || character.tags?.[0] || 'キャラクター'}
@@ -398,7 +456,7 @@ function CharacterListItem({
           </div>
 
           {/* 性格の一部 */}
-          {character.personality && (
+          {character.personality && typeof character.personality === 'string' && (
             <p className="text-gray-500 text-sm mt-2 line-clamp-1">
               {character.personality}
             </p>
