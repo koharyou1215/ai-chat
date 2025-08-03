@@ -633,6 +633,22 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  // キャラクター変更時の背景読み込み
+  useEffect(() => {
+    if (currentCharacter) {
+      console.log('🎨 キャラクター変更により背景読み込み:', currentCharacter.name);
+      loadCharacterBackground(currentCharacter.name);
+    } else {
+      // キャラクターがない場合は白背景
+      const bgElement = document.getElementById('dynamic-background');
+      if (bgElement) {
+        bgElement.innerHTML = '';
+        bgElement.style.background = '#ffffff';
+        console.log('⚪ キャラクターなし - 白背景適用');
+      }
+    }
+  }, [currentCharacter]);
+
   // 自動保存機能
   useEffect(() => {
     const saveCurrentSession = async () => {
@@ -1361,14 +1377,23 @@ export default function ChatPage() {
   // キャラクター背景設定を読み込む関数
   const loadCharacterBackground = (characterName: string) => {
     try {
+      console.log('🔍 背景読み込み開始:', characterName);
+      
       // キャラクター固有の背景設定を確認
       const characterBackground = BackgroundManager.getCharacterBackground(characterName);
+      console.log('📁 BackgroundManager背景:', characterBackground);
+      
+      // キャラクターデータのchatBackgroundUrlも確認
+      const characterBgUrl = currentCharacter?.chatBackgroundUrl;
+      console.log('👤 キャラクターchatBackgroundUrl:', characterBgUrl);
       
       // グローバル背景設定も確認
       const globalBackground = localStorage.getItem('customBackground');
+      console.log('🌍 グローバル背景:', globalBackground);
       
-      // 優先順位: キャラクター固有 > グローバル > デフォルト
-      const background = characterBackground || globalBackground;
+      // 優先順位: キャラクターchatBackgroundUrl > BackgroundManager > グローバル > デフォルト
+      const background = characterBgUrl || characterBackground || globalBackground;
+      console.log('✅ 最終背景:', background ? '設定あり' : '設定なし');
       
       const bgElement = document.getElementById('dynamic-background');
       if (bgElement) {
@@ -1636,8 +1661,7 @@ export default function ChatPage() {
           id="dynamic-background"
           className="fixed inset-0 w-full h-full z-0"
           style={{
-            background: '#ffffff',
-            backgroundSize: 'auto',
+            backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
           }}
@@ -1967,6 +1991,25 @@ export default function ChatPage() {
                   >
                     🖼️
                     画像生成テスト
+                  </button>
+                  <button 
+                    onClick={() => {
+                      // テスト用: 直接背景を設定
+                      const testBg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM2MzY2ZjE7c3RvcC1vcGFjaXR5OjEiIC8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojOWZiMGY0O3N0b3Atb3BhY2l0eToxIiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JhZCkiIC8+PC9zdmc+';
+                      console.log('🧪 背景テスト開始');
+                      const bgElement = document.getElementById('dynamic-background');
+                      if (bgElement) {
+                        bgElement.style.background = `url(${testBg})`;
+                        bgElement.style.backgroundSize = 'cover';
+                        console.log('✅ テスト背景適用完了');
+                      } else {
+                        console.error('❌ 背景要素が見つかりません');
+                      }
+                    }}
+                    className="w-full bg-blue-500/20 backdrop-blur-sm text-blue-200 py-3 px-4 rounded-lg hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                  >
+                    🧪
+                    背景テスト
                   </button>
                 </div>
               )}
