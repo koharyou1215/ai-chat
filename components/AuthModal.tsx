@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
-import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser } from '../lib/supabase'
+import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser, supabase } from '../lib/supabase'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { syncAllData, SyncData } from '../lib/cloudSyncManager'
 
@@ -120,6 +120,76 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
   }, [user])
 
   if (!isOpen) return null
+
+  // Supabase未設定の場合
+  if (!supabase) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Cloud className="w-5 h-5" />
+                クラウド同期
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-yellow-800 mb-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-medium">Supabase未設定</span>
+                </div>
+                <p className="text-yellow-700 text-sm mb-3">
+                  クラウド同期機能を利用するには、Supabaseの設定が必要です。
+                </p>
+                <div className="text-yellow-700 text-sm space-y-2">
+                  <p><strong>📋 必要な手順：</strong></p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>プロジェクトルートの <code className="bg-yellow-100 px-1 rounded">SUPABASE_SETUP_GUIDE.md</code> を確認</li>
+                    <li>Supabaseプロジェクトを作成</li>
+                    <li>環境変数を <code className="bg-yellow-100 px-1 rounded">.env.local</code> に追加</li>
+                    <li>開発サーバーを再起動</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-800 mb-2">🔧 環境変数例</h3>
+                <div className="bg-gray-800 text-green-400 p-3 rounded text-sm font-mono">
+                  <div>NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co</div>
+                  <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...</div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="font-medium text-gray-800 mb-2">✨ 設定後の機能</h3>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  <li>• 設定・キャラクター・履歴のクラウド同期</li>
+                  <li>• 複数デバイス間でのデータ共有</li>
+                  <li>• 自動バックアップ・データ消失防止</li>
+                  <li>• メールアドレスでの簡単ログイン</li>
+                </ul>
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-medium text-green-800 mb-2">💰 料金情報</h3>
+                <p className="text-green-700 text-sm">
+                  Supabaseの無料枠（500MB・50,000リクエスト/月）で十分利用可能です。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
