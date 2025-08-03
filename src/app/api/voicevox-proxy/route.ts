@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 認証なしのVOICEVOXプロキシAPI
+// Vercel認証を完全に無効化
+export const runtime = 'edge';
+export const preferredRegion = 'auto';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// 認証なしのVOICEVOXプロキシAPI - 完全パブリックアクセス
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

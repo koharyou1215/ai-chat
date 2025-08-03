@@ -332,6 +332,13 @@ export class VoiceManager {
       };
       
       utterance.onerror = (event) => {
+        // "interrupted"は正常な停止なのでエラーとして扱わない
+        if (event.error === 'interrupted') {
+          console.log('🔇 Web Speech API音声が中断されました（正常）');
+          this.isPlaying = false;
+          return;
+        }
+        
         console.error('Web Speech APIエラー:', event);
         console.error('エラー詳細:', {
           error: event.error,

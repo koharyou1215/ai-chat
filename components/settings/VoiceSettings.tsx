@@ -159,7 +159,7 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
             </label>
                         <select
               id="voiceProvider"
-              value={formSettings.voiceProvider || 'voicevox'}
+              value={formSettings.voiceProvider || 'webspeech'}
               onChange={(e) => {
                 console.log('🎵 音声エンジン変更:', e.target.value);
                 setFormSettings(prev => ({
@@ -169,8 +169,8 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
             >
-              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (推奨・無料・高品質)</option>
-              <option value="webspeech" className="text-gray-800 bg-white">Web Speech API (無料・標準・軽量)</option>
+              <option value="webspeech" className="text-gray-800 bg-white">Web Speech API (推奨・無料・認証不要)</option>
+              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (無料・高品質・認証問題対応中)</option>
               <option value="elevenlabs" className="text-gray-800 bg-white">ElevenLabs (有料・多言語対応)</option>
             </select>
           </div>

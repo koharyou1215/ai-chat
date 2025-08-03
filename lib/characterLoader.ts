@@ -221,14 +221,8 @@ export class CharacterLoader {
         try {
           console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
 
-          // まず旧パス( /characters/character/ ) を試行
-          let charResponse = await fetch(`/characters/character/${filename}`);
-
-          // 旧パスが404なら新パス( /characters/ ) を試行
-          if (!charResponse.ok) {
-            console.warn(`⚠️ 旧パスで取得失敗 (${charResponse.status}). 新パスを試行します`);
-            charResponse = await fetch(`/characters/${filename}`);
-          }
+          // 正しいパス( /characters/ ) を直接使用
+          const charResponse = await fetch(`/characters/${filename}`);
 
           if (charResponse.ok) {
             const characterData = await charResponse.json();
