@@ -133,8 +133,16 @@ export class CharacterLoader {
     const allCharacters = [...this.characters, ...this.publicCharacters];
     const existingIndex = allCharacters.findIndex(char => char['file-name'] === character['file-name']);
     
+    const now = Date.now();
+    
     if (existingIndex >= 0) {
       console.log('🔄 既存キャラクター更新:', character.name);
+      
+      // 更新日時を設定
+      character.updatedAt = now;
+      if (!character.createdAt) {
+        character.createdAt = now; // 作成日時がない場合は現在時刻を設定
+      }
       
       // カスタムキャラクターかpublicキャラクターかを判定
       const isCustomCharacter = this.characters.findIndex(char => char['file-name'] === character['file-name']) >= 0;
@@ -148,6 +156,15 @@ export class CharacterLoader {
       }
     } else {
       console.log('➕ 新規キャラクター追加:', character.name);
+      
+      // 新規作成時は作成日時と更新日時を設定
+      if (!character.createdAt) {
+        character.createdAt = now;
+      }
+      if (!character.updatedAt) {
+        character.updatedAt = now;
+      }
+      
       this.characters.push(character);
     }
     

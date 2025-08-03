@@ -30,7 +30,7 @@ export default function CharacterGallery({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular' | 'created' | 'updated'>('name');
   const [showVariations, setShowVariations] = useState(false);
   const [selectedBaseCharacter, setSelectedBaseCharacter] = useState<string | null>(null);
 
@@ -77,6 +77,16 @@ export default function CharacterGallery({
         case 'popular':
           // 人気順（仮実装）
           return 0;
+        case 'created':
+          // 登録順（新しい順）
+          const aCreated = a.createdAt || 0;
+          const bCreated = b.createdAt || 0;
+          return bCreated - aCreated;
+        case 'updated':
+          // 更新順（新しい順）
+          const aUpdated = a.updatedAt || a.createdAt || 0;
+          const bUpdated = b.updatedAt || b.createdAt || 0;
+          return bUpdated - aUpdated;
         default:
           return 0;
       }
@@ -183,10 +193,12 @@ export default function CharacterGallery({
             <div className="flex items-center gap-2 md:gap-4">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular')}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
                 className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
               >
                 <option value="name">名前順</option>
+                <option value="created">登録順</option>
+                <option value="updated">更新順</option>
                 <option value="recent">最近使用</option>
                 <option value="popular">人気順</option>
               </select>

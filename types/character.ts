@@ -123,6 +123,9 @@ export interface Character {
   imageSteps?: number;
   imageCfgScale?: number;
   imageSampler?: string;
+  // 日時フィールド
+  createdAt?: number; // 作成日時のタイムスタンプ
+  updatedAt?: number; // 更新日時のタイムスタンプ
 }
 
 export interface UserPersona {
