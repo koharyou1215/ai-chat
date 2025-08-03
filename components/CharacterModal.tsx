@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Save, User, Heart, Tag, MessageSquare, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Save, User, Heart, Tag, MessageSquare, TrendingUp, Upload, Image as ImageIcon } from 'lucide-react';
 import { Character } from '../types/character';
 import { ImageCompressor } from '../lib/imageCompressor';
 import TrackerEditor from './TrackerEditor';
@@ -40,6 +40,17 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
   const [newHobby, setNewHobby] = useState('');
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
+  
+  // ファイルアップロード関連の状態
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<{
+    originalSize: string;
+    compressedSize: string;
+    compressionRatio: number;
+  } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
 
   useEffect(() => {
     if (character) {
@@ -108,6 +119,70 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     onClose();
   };
 
+  // ファイルアップロード関連の関数
+  const handleFileUpload = async (file: File) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('画像ファイルを選択してください');
+      return;
+    }
+
+    setIsCompressing(true);
+    setCompressionInfo(null);
+
+    try {
+      // 最適な形式を自動選択
+      const optimalFormat = ImageCompressor.getOptimalFormat(file);
+      
+      // 自動圧縮実行
+      const result = await ImageCompressor.compressImage(file, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.8,
+        maxSizeKB: 3000, // 3MB
+        outputFormat: optimalFormat
+      });
+
+      // 圧縮結果を設定
+      setFormData(prev => ({ ...prev, chatBackgroundUrl: result.dataUrl }));
+      
+      // 圧縮情報を表示
+      setCompressionInfo({
+        originalSize: ImageCompressor.formatFileSize(result.originalSize),
+        compressedSize: ImageCompressor.formatFileSize(result.compressedSize),
+        compressionRatio: result.compressionRatio
+      });
+
+    } catch (error) {
+      console.error('画像圧縮エラー:', error);
+      alert('画像の処理中にエラーが発生しました。別の画像をお試しください。');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const clearBackground = () => {
+    setFormData(prev => ({ ...prev, chatBackgroundUrl: '' }));
+    setCompressionInfo(null);
+  };
 
 
   const addArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes', value: string, setValue: (val: string) => void) => {
@@ -505,6 +580,103 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     避けたい要素を指定。空欄の場合はデフォルトが使用されます。
+                  </p>
+                </div>
+
+                {/* チャット背景画像 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <ImageIcon size={16} />
+                    チャット背景画像
+                  </label>
+                  
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragging 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                  >
+                    {isCompressing ? (
+                      <div className="space-y-2">
+                        <div className="text-blue-600">画像を圧縮中...</div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+                        </div>
+                      </div>
+                    ) : formData.chatBackgroundUrl ? (
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <img
+                            src={formData.chatBackgroundUrl}
+                            alt="背景プレビュー"
+                            className="max-w-full max-h-48 mx-auto rounded-lg shadow-md"
+                          />
+                          <button
+                            onClick={clearBackground}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-1"
+                          >
+                            <Upload size={14} />
+                            変更
+                          </button>
+                        </div>
+                        
+                        {compressionInfo && (
+                          <div className="text-xs text-gray-500 bg-green-50 p-2 rounded">
+                            <div>元サイズ: {compressionInfo.originalSize}</div>
+                            <div>圧縮後: {compressionInfo.compressedSize}</div>
+                            <div>圧縮率: {compressionInfo.compressionRatio}%</div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <Upload className="mx-auto text-gray-400" size={48} />
+                        <div>
+                          <p className="text-lg text-gray-600 mb-2">
+                            画像をドラッグ&ドロップ または
+                          </p>
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                          >
+                            ファイルを選択
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          JPG, PNG, GIF形式をサポート（自動圧縮機能付き）
+                          <br />
+                          どんなサイズでもOK！自動で最適化されます
+                        </p>
+                      </div>
+                    )}
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-1">
+                    このキャラクターとのチャット時に表示される背景画像です
                   </p>
                 </div>
               </div>
