@@ -109,6 +109,8 @@ export interface Character {
   likes: string[];
   dislikes: string[];
   background?: string; // キャラクターの生い立ち・背景設定
+  /** アバター画像URL */
+  avatar_url?: string;
   /** チャット背景画像/動画URL（キャラクター専用） */
   chatBackgroundUrl?: string;
   /** キャラクター専用システムプロンプト（任意） */

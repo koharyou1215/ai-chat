@@ -40,6 +40,10 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
   const [newHobby, setNewHobby] = useState('');
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
+  
+  // ファイルアップロード関連の状態
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (character) {
@@ -61,6 +65,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         age: character.age || '',
         occupation: character.occupation || '',
         background: character.background || '',
+        avatar_url: character.avatar_url || '',
         systemPrompt: character.systemPrompt || '',
         appearancePrompt: character.appearancePrompt || '',
         appearanceNegativePrompt: character.appearanceNegativePrompt || '',
@@ -84,14 +89,65 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         likes: [],
         dislikes: [],
         background: '',
+        avatar_url: '',
         systemPrompt: '',
         appearancePrompt: '',
         appearanceNegativePrompt: '',
         chatBackgroundUrl: '',
         trackers: []
       });
+      setAvatarFile(null);
+      setBackgroundFile(null);
     }
   }, [character, isOpen]);
+
+  // ファイルをBase64に変換する関数
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // アバター画像ファイルアップロード処理
+  const handleAvatarFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        // 画像を圧縮
+        const compressedFile = await ImageCompressor.compress(file);
+        setAvatarFile(compressedFile);
+        
+        // Base64に変換してformDataに設定
+        const base64 = await fileToBase64(compressedFile);
+        setFormData(prev => ({ ...prev, avatar_url: base64 }));
+      } catch (error) {
+        console.error('アバター画像の処理に失敗しました:', error);
+        alert('画像の処理に失敗しました');
+      }
+    }
+  };
+
+  // チャット背景画像ファイルアップロード処理
+  const handleBackgroundFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        // 画像を圧縮
+        const compressedFile = await ImageCompressor.compress(file);
+        setBackgroundFile(compressedFile);
+        
+        // Base64に変換してformDataに設定
+        const base64 = await fileToBase64(compressedFile);
+        setFormData(prev => ({ ...prev, chatBackgroundUrl: base64 }));
+      } catch (error) {
+        console.error('背景画像の処理に失敗しました:', error);
+        alert('画像の処理に失敗しました');
+      }
+    }
+  };
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
@@ -199,6 +255,54 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
                       placeholder="例: 航海士"
                     />
+                  </div>
+
+                  {/* アバター画像 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      アバター画像
+                    </label>
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarFileUpload}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {formData.avatar_url && (
+                        <div className="mt-2">
+                          <img
+                            src={formData.avatar_url}
+                            alt="アバタープレビュー"
+                            className="w-20 h-20 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* チャット背景画像 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      チャット背景画像
+                    </label>
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleBackgroundFileUpload}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      />
+                      {formData.chatBackgroundUrl && (
+                        <div className="mt-2">
+                          <img
+                            src={formData.chatBackgroundUrl}
+                            alt="背景プレビュー"
+                            className="w-32 h-20 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                 </div>
