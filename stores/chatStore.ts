@@ -104,7 +104,7 @@ const defaultSettings: AppSettings = {
   voicevoxPitch: 0.0,
   voicevoxIntonation: 1.0,
   voicevoxVolume: 1.0,
-  voicevoxApiUrl: 'https://deprecatedapis.tts.quest/v2/voicevox',
+  voicevoxApiUrl: 'http://localhost:50021', // ローカルVOICEVOX API（推奨）
   usedModel: 'google/gemini-2.5-pro',
   enableImageGeneration: true,
   chatCompletionSound: true,

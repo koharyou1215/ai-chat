@@ -240,6 +240,24 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
         {/* VOICEVOX設定 */}
         {formSettings.voiceEnabled && formSettings.voiceProvider === 'voicevox' && (
           <>
+            {/* ローカルVOICEVOX推奨案内 */}
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
+              <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                <span className="mr-2">🎤</span>
+                ローカルVOICEVOX推奨（認証問題なし）
+              </h3>
+              <div className="text-sm text-green-700 space-y-2">
+                <p><strong>Vercel認証エラーを完全回避する方法：</strong></p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li><a href="https://voicevox.hiroshiba.jp/" target="_blank" className="underline text-blue-600 hover:text-blue-800">VOICEVOX公式サイト</a>からダウンロード・インストール</li>
+                  <li>VOICEVOXアプリを起動（APIサーバー自動開始）</li>
+                  <li>下記URLを <code className="bg-white px-1 py-0.5 rounded border">http://localhost:50021</code> に設定</li>
+                  <li>高品質日本語音声を無料・無制限で利用</li>
+                </ol>
+                <p className="text-xs italic">※ローカル版なら認証エラー・制限なし・完全無料</p>
+              </div>
+            </div>
+
             {/* API URL設定 */}
             <div>
               <label htmlFor="voicevoxApiUrl" className="block text-sm font-medium text-gray-700 mb-2">
@@ -248,14 +266,19 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
               <input
                 type="text"
                 id="voicevoxApiUrl"
-                value={formSettings.voicevoxApiUrl || 'https://deprecatedapis.tts.quest/v2/voicevox'}
+                value={formSettings.voicevoxApiUrl || 'http://localhost:50021'}
                 onChange={(e) => setFormSettings(prev => ({ ...prev, voicevoxApiUrl: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
-                placeholder="https://deprecatedapis.tts.quest/v2/voicevox"
+                placeholder="http://localhost:50021"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                デフォルトは無料の公開API。ローカルのVOICEVOXエンジンを使用する場合は http://localhost:50021 を指定
-              </p>
+              <div className="flex flex-col gap-1 mt-2">
+                <div className="text-xs text-gray-600">
+                  <strong>ローカル（推奨）:</strong> <code className="bg-gray-100 px-1 rounded">http://localhost:50021</code>
+                </div>
+                <div className="text-xs text-gray-600">
+                  <strong>外部API:</strong> <code className="bg-gray-100 px-1 rounded">https://deprecatedapis.tts.quest/v2/voicevox</code>
+                </div>
+              </div>
             </div>
 
             {/* 話者選択 */}
