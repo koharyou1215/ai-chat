@@ -127,15 +127,25 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
             <select
               id="voiceProvider"
               value={formSettings.voiceProvider || 'voicevox'}
-              onChange={(e) => setFormSettings(prev => ({ 
-                ...prev, 
-                voiceProvider: e.target.value as 'elevenlabs' | 'voicevox'
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) => {
+                console.log('🎵 音声エンジン変更:', e.target.value);
+                setFormSettings(prev => ({ 
+                  ...prev, 
+                  voiceProvider: e.target.value as 'elevenlabs' | 'voicevox'
+                }));
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
             >
-              <option value="voicevox">VOICEVOX (推奨・無料・高品質)</option>
-              <option value="elevenlabs">ElevenLabs (有料・多言語対応)</option>
+              <option value="voicevox" className="text-gray-800 bg-white">VOICEVOX (推奨・無料・高品質)</option>
+              <option value="elevenlabs" className="text-gray-800 bg-white">ElevenLabs (有料・多言語対応)</option>
             </select>
+          </div>
+        )}
+
+        {/* デバッグ情報表示 */}
+        {formSettings.voiceEnabled && (
+          <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+            🔍 デバッグ: voiceEnabled={String(formSettings.voiceEnabled)}, voiceProvider="{formSettings.voiceProvider}"
           </div>
         )}
 
@@ -152,7 +162,7 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
                 id="voicevoxApiUrl"
                 value={formSettings.voicevoxApiUrl || 'https://deprecatedapis.tts.quest/v2/voicevox'}
                 onChange={(e) => setFormSettings(prev => ({ ...prev, voicevoxApiUrl: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
                 placeholder="https://deprecatedapis.tts.quest/v2/voicevox"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -170,25 +180,25 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
                 id="voicevoxSpeaker"
                 value={formSettings.voicevoxSpeaker || 3}
                 onChange={(e) => setFormSettings(prev => ({ ...prev, voicevoxSpeaker: parseInt(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
                 disabled={voicevoxLoading}
               >
                 {voicevoxSpeakers.length > 0 ? (
                   voicevoxSpeakers.map(speaker => 
                     speaker.styles.map(style => (
-                      <option key={style.id} value={style.id}>
+                      <option key={style.id} value={style.id} className="text-gray-800 bg-white">
                         {speaker.name} ({style.name})
                       </option>
                     ))
                   )
                 ) : (
                   <>
-                    <option value={0}>四国めたん (ノーマル)</option>
-                    <option value={3}>ずんだもん (ノーマル)</option>
-                    <option value={1}>ずんだもん (あまあま)</option>
-                    <option value={8}>春日部つむぎ (ノーマル)</option>
-                    <option value={10}>雨晴はう (ノーマル)</option>
-                    <option value={9}>波音リツ (ノーマル)</option>
+                    <option value={0} className="text-gray-800 bg-white">四国めたん (ノーマル)</option>
+                    <option value={3} className="text-gray-800 bg-white">ずんだもん (ノーマル)</option>
+                    <option value={1} className="text-gray-800 bg-white">ずんだもん (あまあま)</option>
+                    <option value={8} className="text-gray-800 bg-white">春日部つむぎ (ノーマル)</option>
+                    <option value={10} className="text-gray-800 bg-white">雨晴はう (ノーマル)</option>
+                    <option value={9} className="text-gray-800 bg-white">波音リツ (ノーマル)</option>
                   </>
                 )}
               </select>
@@ -284,11 +294,11 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
               id="voiceId"
               value={formSettings.voiceId || ''}
               onChange={(e) => setFormSettings(prev => ({ ...prev, voiceId: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
             >
-              {voiceList.length === 0 && <option value="">Loading voices...</option>}
+              {voiceList.length === 0 && <option value="" className="text-gray-800 bg-white">Loading voices...</option>}
               {voiceList.map((voice) => (
-                <option key={voice.voice_id} value={voice.voice_id}>
+                <option key={voice.voice_id} value={voice.voice_id} className="text-gray-800 bg-white">
                   {voice.name} {voice.category === 'generated' && '(AI生成)'}
                 </option>
               ))}
