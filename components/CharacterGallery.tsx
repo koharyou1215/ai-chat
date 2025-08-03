@@ -83,10 +83,10 @@ export default function CharacterGallery({
     });
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4">
+      <div className="bg-white/95 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-2xl w-full max-w-6xl h-[95vh] md:h-[90vh] flex flex-col">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-3 md:p-6 border-b border-gray-200">
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}
@@ -94,11 +94,12 @@ export default function CharacterGallery({
             >
               <ArrowLeft size={24} />
             </button>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-              <User size={28} />
-              キャラクターギャラリー
+            <h2 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center gap-2 md:gap-3">
+              <User size={20} className="md:w-7 md:h-7" />
+              <span className="hidden sm:inline">キャラクターギャラリー</span>
+              <span className="sm:hidden">ギャラリー</span>
             </h2>
-            <span className="text-gray-500">({(filteredCharacters || []).length} / {(characters || []).length})</span>
+            <span className="text-gray-500 text-sm md:text-base">({(filteredCharacters || []).length} / {(characters || []).length})</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -122,33 +123,34 @@ export default function CharacterGallery({
             )}
             <button
               onClick={onAddCharacter}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-2 md:px-4 py-2 rounded-lg transition-colors flex items-center gap-1 md:gap-2"
             >
-              <Plus size={20} />
-              新規作成
+              <Plus size={16} className="md:w-5 md:h-5" />
+              <span className="hidden sm:inline">新規作成</span>
+              <span className="sm:hidden">作成</span>
             </button>
           </div>
         </div>
 
         {/* 検索・フィルター */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="p-3 md:p-6 border-b border-gray-200">
+          <div className="flex flex-col gap-2 md:gap-4">
             {/* 検索 */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
-                  placeholder="キャラクター名、性格、職業で検索..."
+                  placeholder="検索..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 pr-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base"
                 />
               </div>
             </div>
 
-            {/* タグフィルター */}
-            <div className="flex flex-wrap gap-2">
+            {/* タグフィルター（モバイルでは表示数を制限） */}
+            <div className="hidden md:flex flex-wrap gap-2">
               {allTags.slice(0, 8).map(tag => (
                 <button
                   key={tag}
@@ -177,12 +179,12 @@ export default function CharacterGallery({
           </div>
 
           {/* ソート・ビュー */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mt-2 md:mt-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular')}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
               >
                 <option value="name">名前順</option>
                 <option value="recent">最近使用</option>
@@ -190,36 +192,36 @@ export default function CharacterGallery({
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               {/* バリエーション表示切り替え */}
               <button
                 onClick={() => setShowVariations(!showVariations)}
-                className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
                   showVariations ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'
                 }`}
                 title={showVariations ? 'AIバリエーションを非表示' : 'AIバリエーションを表示'}
               >
-                <Layers size={16} />
-                <Bot size={14} />
+                <Layers size={14} className="md:w-4 md:h-4" />
+                <Bot size={12} className="md:w-3.5 md:h-3.5" />
               </button>
               
               {/* ビューモード切り替え */}
-              <div className="flex items-center gap-1 ml-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                     viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  <Grid size={20} />
+                  <Grid size={16} className="md:w-5 md:h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                     viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  <List size={20} />
+                  <List size={16} className="md:w-5 md:h-5" />
                 </button>
               </div>
             </div>
@@ -227,7 +229,7 @@ export default function CharacterGallery({
         </div>
 
         {/* キャラクター一覧 */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-0">
+        <div className="flex-1 overflow-y-auto p-3 md:p-6 min-h-0">
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
               {filteredCharacters.map((character, idx) => (

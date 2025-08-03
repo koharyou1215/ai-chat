@@ -14,15 +14,17 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     "file-name": filename,
     name: data.name || 'Unknown',
     tags: data.tags || [],
-    first_message: Array.isArray(data.first_message) ? data.first_message : [data.first_message || ''],
+    first_message: Array.isArray(data.first_message) 
+      ? (data.first_message[0] || '') 
+      : (data.first_message || ''),
     age: data.age,
     occupation: data.occupation,
     hobbies: data.hobbies || [],
     likes: data.likes || [],
     dislikes: data.dislikes || [],
     avatar_url: data.avatar_url || '',
-    // 背景メディアはURL/パス/データURIらしい文字列のみ採用（物語的な背景文を除外）
-    background: (typeof data.background === 'string' && /^(https?:\/\/|\/|data:|blob:)/.test(data.background)) ? data.background : undefined,
+    // 生い立ち・背景設定（物語的な背景も含む）
+    background: data.background || '',
     
     // 簡易フィールドをそのまま保持
     personality: data.personality,
@@ -30,6 +32,13 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     speaking_style: data.speaking_style,
     scenario: data.scenario,
     nsfw_profile: data.nsfw_profile,
+    
+    // 新フィールドを保持
+    systemPrompt: data.systemPrompt,
+    appearancePrompt: data.appearancePrompt,
+    appearanceNegativePrompt: data.appearanceNegativePrompt,
+    chatBackgroundUrl: data.chatBackgroundUrl,
+    trackers: data.trackers || [],
     
     // 完全形式のcharacter_definitionを構築
     character_definition: {

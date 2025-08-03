@@ -2293,25 +2293,35 @@ export default function ChatPage() {
                   <button
                     onClick={handleUserInspiration}
                     disabled={isLoadingUserInspiration}
-                    className={`touch-target text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''}`}
+                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''}`}
                     title="返信を提案"
                   >
                     {isLoadingUserInspiration ? <Loader className="animate-spin" size={16} /> : '💡'}
                   </button>
                   <button
-                    onMouseDown={() => {
-                    if (inputRef.current) {
-                      const { selectionStart, selectionEnd, value } = inputRef.current;
-                      if (selectionEnd > selectionStart) {
-                        setPendingSelection(value.substring(selectionStart, selectionEnd));
-                      } else {
-                        setPendingSelection('');
+                    onTouchStart={() => {
+                      if (inputRef.current) {
+                        const { selectionStart, selectionEnd, value } = inputRef.current;
+                        if (selectionEnd > selectionStart) {
+                          setPendingSelection(value.substring(selectionStart, selectionEnd));
+                        } else {
+                          setPendingSelection('');
+                        }
                       }
-                    }
-                  }}
-                  onClick={handleUserTextEnhancement}
+                    }}
+                    onMouseDown={() => {
+                      if (inputRef.current) {
+                        const { selectionStart, selectionEnd, value } = inputRef.current;
+                        if (selectionEnd > selectionStart) {
+                          setPendingSelection(value.substring(selectionStart, selectionEnd));
+                        } else {
+                          setPendingSelection('');
+                        }
+                      }
+                    }}
+                    onClick={handleUserTextEnhancement}
                     disabled={isEnhancingUserText}
-                    className={`touch-target text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''}`}
+                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''}`}
                     title="文章を強化"
                   >
                     {isEnhancingUserText ? <Loader className="animate-spin" size={16} /> : '✨'}
