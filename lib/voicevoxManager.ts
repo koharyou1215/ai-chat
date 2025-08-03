@@ -68,20 +68,23 @@ export class VOICEVOXManager {
   };
 
   /**
-   * 利用可能な話者リストを取得
+   * 利用可能な話者リストを取得（プロキシAPI経由）
    */
   static async getAvailableSpeakers(apiUrl?: string): Promise<VOICEVOXSpeaker[]> {
-    const url = apiUrl || this.defaultSettings.apiUrl;
-    
     try {
-      const response = await fetch(`${url}/speakers`);
+      const url = apiUrl || this.defaultSettings.apiUrl;
+      const response = await fetch(`/api/voicevox?apiUrl=${encodeURIComponent(url)}`);
       
       if (!response.ok) {
-        throw new Error(`VOICEVOX API error: ${response.status} ${response.statusText}`);
+        throw new Error(`VOICEVOX プロキシAPI error: ${response.status} ${response.statusText}`);
       }
       
-      const speakers: VOICEVOXSpeaker[] = await response.json();
-      return speakers;
+      const result = await response.json();
+      if (result.success) {
+        return result.speakers;
+      } else {
+        throw new Error(result.error || 'VOICEVOX話者リスト取得失敗');
+      }
     } catch (error) {
       console.error('VOICEVOX話者リストの取得に失敗:', error);
       
@@ -168,68 +171,45 @@ export class VOICEVOXManager {
   }
 
   /**
-   * テキストから音声クエリを作成
+   * テキストから音声を合成（プロキシAPI経由）
    */
-  static async createAudioQuery(
+  static async synthesizeAudio(
     text: string, 
-    speaker: number, 
-    settings: Partial<VOICEVOXSettings> = {}
-  ): Promise<AudioQuery> {
-    const mergedSettings = { ...this.defaultSettings, ...settings };
-    const url = mergedSettings.apiUrl;
-
-    try {
-      const response = await fetch(`${url}/audio_query?text=${encodeURIComponent(text)}&speaker=${speaker}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`VOICEVOX audio_query API error: ${response.status} ${response.statusText}`);
-      }
-
-      const audioQuery: AudioQuery = await response.json();
-      
-      // 設定を適用
-      audioQuery.speedScale = mergedSettings.speed;
-      audioQuery.pitchScale = mergedSettings.pitch;
-      audioQuery.intonationScale = mergedSettings.intonation;
-      audioQuery.volumeScale = mergedSettings.volume;
-
-      return audioQuery;
-    } catch (error) {
-      console.error('VOICEVOX audio_queryの作成に失敗:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 音声クエリから音声を合成
-   */
-  static async synthesize(
-    audioQuery: AudioQuery, 
     speaker: number, 
     settings: Partial<VOICEVOXSettings> = {}
   ): Promise<ArrayBuffer> {
     const mergedSettings = { ...this.defaultSettings, ...settings };
-    const url = mergedSettings.apiUrl;
 
     try {
-      const response = await fetch(`${url}/synthesis?speaker=${speaker}`, {
+      const response = await fetch('/api/voicevox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(audioQuery),
+        body: JSON.stringify({
+          text,
+          speaker,
+          apiUrl: mergedSettings.apiUrl
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`VOICEVOX synthesis API error: ${response.status} ${response.statusText}`);
+        throw new Error(`VOICEVOX プロキシAPI error: ${response.status} ${response.statusText}`);
       }
 
-      return await response.arrayBuffer();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'VOICEVOX音声合成失敗');
+      }
+
+      // Base64をArrayBufferに変換
+      const binaryString = atob(result.audioData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      return bytes.buffer;
     } catch (error) {
       console.error('VOICEVOX音声合成に失敗:', error);
       throw error;
@@ -250,13 +230,10 @@ export class VOICEVOXManager {
       
       const mergedSettings = { ...this.defaultSettings, ...settings };
       
-      // 1. 音声クエリを作成
-      const audioQuery = await this.createAudioQuery(text, mergedSettings.speaker, mergedSettings);
+      // 音声を合成（プロキシAPI経由）
+      const audioBuffer = await this.synthesizeAudio(text, mergedSettings.speaker, mergedSettings);
       
-      // 2. 音声を合成
-      const audioBuffer = await this.synthesize(audioQuery, mergedSettings.speaker, mergedSettings);
-      
-      // 3. 音声を再生
+      // 音声を再生
       await this.playAudio(audioBuffer);
       
       console.log('✅ VOICEVOX音声再生完了');

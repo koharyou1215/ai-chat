@@ -144,13 +144,18 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
 
         {/* デバッグ情報表示 */}
         {formSettings.voiceEnabled && (
-          <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
-            🔍 デバッグ: voiceEnabled={String(formSettings.voiceEnabled)}, voiceProvider="{formSettings.voiceProvider}"
+          <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded space-y-1">
+            <div>🔍 デバッグ情報:</div>
+            <div>• voiceEnabled = {String(formSettings.voiceEnabled)}</div>
+            <div>• voiceProvider = "{formSettings.voiceProvider || 'undefined'}"</div>
+            <div>• voiceProvider === 'voicevox' = {String(formSettings.voiceProvider === 'voicevox')}</div>
+            <div>• voicevoxSpeaker = {formSettings.voicevoxSpeaker || 'undefined'}</div>
+            <div>• 条件チェック = {String(formSettings.voiceEnabled && formSettings.voiceProvider === 'voicevox')}</div>
           </div>
         )}
 
         {/* VOICEVOX設定 */}
-        {formSettings.voiceEnabled && formSettings.voiceProvider === 'voicevox' && (
+        {formSettings.voiceEnabled && (formSettings.voiceProvider === 'voicevox' || !formSettings.voiceProvider) && (
           <>
             {/* API URL設定 */}
             <div>

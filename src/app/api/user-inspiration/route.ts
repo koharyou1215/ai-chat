@@ -128,29 +128,57 @@ ${message}
 上記の会話履歴を踏まえて、ユーザーが送信できる適切な返信候補を生成してください。
 ${character ? `「${character.name}」との会話に適した返信を提案してください。` : ''}`;
 
-    console.log('[/api/user-inspiration] OpenRouter APIへのリクエストを送信します。');
-    const response = await chatCompletion({
-      apiKey: openRouterApiKey,
-      model: model,
-      messages: [
-        { role: 'system', content: prompt },
-      ],
-      temperature: 0.7,
-      maxTokens: inspirationMaxTokens, // 専用のトークン数を使用
-    });
-    console.log(`[/api/user-inspiration] OpenRouter APIからの生レスポンス: ${JSON.stringify(response)}`);
-
-    const content: string = response;
-    console.log(`[/api/user-inspiration] OpenRouterからの応答内容: ${content}`);
-
-    // 直接的な返信として扱う（JSON形式ではない）
-    if (content && content.trim()) {
+    // 複数候補を生成（順次リクエスト - レート制限対策）
+    const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
+    console.log(`[/api/user-inspiration] ${candidateCount}個の候補を順次生成開始`);
+    
+    const inspirationTexts: string[] = [];
+    
+    try {
+      for (let i = 0; i < candidateCount; i++) {
+        console.log(`[/api/user-inspiration] 候補${i + 1}/${candidateCount}を生成中...`);
+        
+        try {
+          const response = await chatCompletion({
+            apiKey: openRouterApiKey,
+            model: model,
+            messages: [
+              { role: 'system', content: prompt },
+            ],
+            temperature: 0.7,
+            maxTokens: inspirationMaxTokens, // 専用のトークン数を使用
+          });
+          
+          const content: string = response;
+          if (content && content.trim()) {
+            inspirationTexts.push(content.trim());
+            console.log(`[/api/user-inspiration] ✅ 候補${i + 1}生成完了: ${content.trim().substring(0, 50)}...`);
+          }
+          
+          // レート制限対策として各リクエスト間に1秒の遅延
+          if (i < candidateCount - 1) {
+            console.log('[/api/user-inspiration] ⏱️ レート制限対策として1秒待機中...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (candidateError) {
+          console.warn(`[/api/user-inspiration] ⚠️ 候補${i + 1}の生成に失敗:`, candidateError);
+          // 1つでも成功していれば継続、全て失敗の場合は下でエラーハンドリング
+        }
+      }
+      
+      if (inspirationTexts.length === 0) {
+        throw new Error('All inspiration candidate requests failed');
+      }
+      
+      console.log(`[/api/user-inspiration] ✅ ${inspirationTexts.length}/${candidateCount}個の候補生成完了`);
+      
       return NextResponse.json({ 
-        candidates: [content.trim()],
+        candidates: inspirationTexts,
         directResponse: true 
       });
-    } else {
-      console.error('[/api/user-inspiration] OpenRouterからの応答が空です。');
+      
+    } catch (error) {
+      console.error('[/api/user-inspiration] 候補生成中にエラー:', error);
       return NextResponse.json({ 
         candidates: ["会話の流れを理解できませんでした。もう一度お聞かせください。"],
         fallback: true 
