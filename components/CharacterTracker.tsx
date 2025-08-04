@@ -52,13 +52,19 @@ export default function CharacterTrackerDisplay({
   compact = false 
 }: CharacterTrackerDisplayProps) {
   const [animatingTrackers, setAnimatingTrackers] = useState<Set<string>>(new Set());
+  const [previousValues, setPreviousValues] = useState<Record<string, TrackerValue>>({});
 
   // 値が変更された時のアニメーション
   useEffect(() => {
     const timeouts: NodeJS.Timeout[] = [];
     
     trackers.forEach(tracker => {
-      if (currentValues[tracker.name] !== undefined) {
+      const currentValue = currentValues[tracker.name];
+      const previousValue = previousValues[tracker.name];
+      
+      // 値が実際に変化した場合のみアニメーション
+      if (currentValue && previousValue && 
+          currentValue.value !== previousValue.value) {
         setAnimatingTrackers(prev => new Set([...prev, tracker.name]));
         const timeout = setTimeout(() => {
           setAnimatingTrackers(prev => {
@@ -66,13 +72,16 @@ export default function CharacterTrackerDisplay({
             next.delete(tracker.name);
             return next;
           });
-        }, 1000);
+        }, 1500); // アニメーション時間を1.5秒に延長
         timeouts.push(timeout);
       }
     });
 
+    // 前回の値を更新
+    setPreviousValues(currentValues);
+
     return () => timeouts.forEach(clearTimeout);
-  }, [currentValues, trackers]);
+  }, [currentValues, trackers, previousValues]);
 
   if (!trackers || trackers.length === 0) {
     return null;
@@ -134,10 +143,12 @@ export default function CharacterTrackerDisplay({
           return (
             <div
               key={tracker.name}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
                 tracker.type === 'numeric' ? getValueColor(numericValue, maxValue) : 'text-blue-600 bg-blue-100'
               } ${
-                animatingTrackers.has(tracker.name) ? 'animate-pulse' : ''
+                animatingTrackers.has(tracker.name) 
+                  ? 'animate-pulse scale-110 shadow-lg ring-2 ring-white/50' 
+                  : 'scale-100'
               }`}
             >
               {getTrackerIcon(tracker.name)}

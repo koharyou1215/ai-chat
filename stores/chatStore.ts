@@ -70,7 +70,7 @@ const defaultPersona: UserPersona = {
 const defaultSettings: AppSettings = {
   temperature: 1.1, // より創造的な応答に変更
   topP: 0.9,
-  maxTokens: 500, // より短い応答に変更
+  maxTokens: 1000, // ユーザー設定: より長い応答に変更
   memorySize: 15000,
   historySize: 8, // 履歴件数を適切に設定してコンテキストを保持
   bubbleOpacity: 0.9,
@@ -107,7 +107,7 @@ const defaultSettings: AppSettings = {
   voicevoxApiUrl: 'http://localhost:50021', // ローカルVOICEVOX API（推奨）
   usedModel: 'google/gemini-2.5-pro',
   enableImageGeneration: true,
-  chatCompletionSound: true,
+  chatNotificationSound: true,
   imageEngine: 'runware', // Runwareを強制デフォルト
   bubbleBlur: true,
   openRouterApiKey: '',
@@ -119,72 +119,74 @@ const defaultSettings: AppSettings = {
   imageSeed: undefined,
   imageWidth: 512,
   imageHeight: 768,
-  imageSteps: 28,
+  imageSteps: 50,
   imageCfgScale: 8,
   imageSampler: 'DPM++ 2M Karras',
-  inspirationPrompt: `# ユーザー返信生成AI
+  inspirationPrompt: `### あなたの役割
 
-あなたは創作的で自然なユーザー返信を提案する専門AIです。
+あなたは会話継続の専門AIアシスタントです。あなた自身が、指定された【USERペルソナ】になりきって、文章を生成してください。{{user}}と{{char}}間の会話履歴を分析し、自然で刺激的な返信候補を4パターン生成してください。 
+### ユーザー情報
+{{user}}：男
+{{user}}の性格：ミ
 
-【キャラクター情報】
-名前: {{char}}
-性格・特徴: {character.character_definition || character.personality}
+###**分析すべき要素**
+- 会話の文脈と話題の流れ
+- {{user}}と発言意図と感情状態
+- これまでの{{user}}とトーンとスタイル
+- {{char}}との関係性  
+###**生成する3つのアプローチ** 
+- **行動と五感の追加:** 単なるセリフだけでなく、その時のユーザーの行動、仕草、視線などを加えた、臨場感のある返信案を考える。
+- **関係性の進展:** 二人の関係性（敵対、恋人、主従など）を踏まえ、その関係をさらに一歩進める、あるいは揺るがすような、意味深な問いかけや行動を含む返信案を考える。
+- **NSFWへの展開（必要に応じて）:** 会話の流れが許すならば、親密な雰囲気を高めたり、キャラクターを挑発したり、ユーザーの欲望を仄めかしたりする、扇情的な返信案を考える。
 
-【ペルソナ設定】
-{persona}
+- ### 出力の仕様
+- **文字数:** 各提案は、それぞれ100～300字程度の、物語を動かすのに十分な情報量を持つ、豊かな文章とする。
+- **バリエーション:** 提案する返信案は、それぞれ異なるアプローチ
+- 何も頭に付けない箇条書き形式
+- {{user}}視点の発言のみ
+- 前置き説明文や括弧内コメント禁止  
+###**出力形式**
+1. [共感・理解を示す返信文]
+{{char}}の気持ちに寄り添い、理解を示す返信 
+2. [質問・興味を引く返信文] 
+ 相手の興味を引く質問や話題展開を含む返信
+3. [挑発・逸脱型な返信文] 
+ 意地悪なことを言ったり、予想外の行動でペースを乱したりするパターン
+4. [分析・観察型な返信文] 
+ 相手の反応を冷静に観察し、まるで実験でもするかのように淡々と事実を述べるパターン
 
-【直前のキャラクター発言】
-{lastCharacterMessage}
+- **【禁止語】**「そうなんですね」「なるほど」「詳しく聞かせて」「{{char}}さんらしい答えですね」といった、会話を停滞させる相槌は絶対に使用しないでください。`,
 
-【最近の会話履歴】
-{recentConversation}
+  enhancementPrompt: `### あなたの役割
+あなたは文章表現の専門家であり、簡潔なテキストを、感情の機微や情景が鮮明に浮かび上がるような、詳細で臨場感あふれる描写に変換するプロフェッショナルです。あなた自身が、指定された【USERペルソナ】になりきって、文章を生成してください。
 
-## 出力要件
+### タスク内容
+以下の【入力情報】に基づき、【変換対象のテキスト】を、【強化の原則】と【出力要件】に従って、読者がその情景を鮮明に想像できる、詳細で魅力的な文章に拡張してください。
 
-### 提案すべき返信の特徴
-- 会話の文脈に自然に続く内容
-- ユーザーの個性や感情が表現された発言
-- 相手との関係性を考慮した適切なトーン
-- 会話を発展させる要素を含む
+### 入力情報
+- **会話の文脈（これまでの流れ）:**
+{conversationContext}
 
-### 避けるべき表現
-- 「そうなんですね」「なるほど」
-- 「詳しく聞かせて」「教えて」
-- 「{{char}}さんらしい」「さすが」
-- その他の定型的・機械的な相槌
+- **変換対象のテキスト:**
+{text}
 
-### 推奨する要素
-- ユーザーの個性が表れる独特な反応
-- 感情や驚き、興味を自然に表現
-- 会話に新しい要素や視点を加える
-- キャラクターの発言への具体的な反応や感想
+- **USERペルソナ（男）:**
 
-## 出力要件
-**返信候補のみを1つ出力してください。説明や解説は不要です。**`,
 
-  enhancementPrompt: `# 文章強化プロンプト
+### 強化の原則
+1.  **意図の完全な保持:** 【元のテキスト】が持つ核心的な意味、感情、目的を絶対に捻じ曲げないでください。
+2.  **描写の三重奏（セリフ・動き・心情）:** たとえ元のテキストがセリフのみ、あるいは動きのみだったとしても、必ず「セリフ」「身体の動き」「{{user}}の内心（モノローグや感情）」をバランス良く織り交ぜてください。
+3.  **五感への訴求:** 身体の動きを「どのように（例：ゆっくりと、乱暴に、優しく）」動いたのか、具体的に描写してください。また、その場で聞こえる「音」、肌で感じる「触感」や「温度」、目に見える「光と影」といった、視覚以外の感覚的詳細を追加してください。
+4.  **時間の解像度向上:** 物語を先に進めすぎるのではなく、元のテキストが示す「その一瞬」をスローモーションのように引き延ばし、動作の順序や感情の変化を詳細に描写することに集中してください。
 
-あなたは文章表現強化の専門家です。与えられたテキストを、読者が鮮明に情景を想像できる詳細な描写に変換してください。
+### 出力要件
+- **視点:** 指定された【USERペルソナ】の一人称視点に徹してください。
+- **内容:** セリフ、行動、心情描写をバランス良く含んだ、臨場感あふれる文章。
+- **文字数:** 200～400字程度の、豊かで満足感のある文章量にしてください。
+- **形式:** 強化されたテキストのみを、そのまま出力してください。
+- **制約事項:** JSON形式や構造化された形式は使用せず、一切の解説、前置き、注釈なしで、完成された文章だけを出力してください。
 
-## 入力情報
-- 会話の文脈：{conversationContext}
-- 強化対象テキスト：{text}
-
-## 強化指針
-1. **内容の保持**：元テキストの意図・場面進行を完全に維持
-2. **描写の焦点**：「どのように」という動作の詳細に重点を置く
-3. **表現の深化**：五感に訴える具体的で臨場感のある描写を追加
-4. **文字数**：100～150文字程度に調整
-
-## 創作設定
-- ジャンル：創作フィクション（ファンタジー要素含む）
-- 表現レベル：R-18対応
-
-## 出力形式
-- 強化されたテキストのみを出力
-- 説明文、解説、JSON形式は一切使用しない
-- {{char}}の台詞や行動は絶対に追加しない
-- {{user}}視点の動作描写のみに集中`,
+### 強化されたテキスト:`,
   
   // 画像生成関連設定
   imageGenerationEnabled: true,
@@ -192,7 +194,11 @@ const defaultSettings: AppSettings = {
   emotionDetectionSensitivity: 0.5, // 感情検出の感度（0.0-1.0）
   scenarioDetectionEnabled: true, // シチュエーション検出を有効にするか
   customQualityTags: 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k',
-  runwareLoraSettings: []
+  runwareLoraSettings: [
+    { id: 'civitai:124347@152309', name: 'LoRA 1', weight: 1.0, enabled: true },
+    { id: 'civitai:633553@740450', name: 'LoRA 2', weight: 1.0, enabled: true },
+    { id: 'civitai:649378@726524', name: 'LoRA 3', weight: 1.0, enabled: true }
+  ]
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -503,7 +509,10 @@ export const useChatStore = create<ChatStore>()(
         const content = message.content.toLowerCase();
         
         character.trackers.forEach(tracker => {
-          const currentValue = currentValues[tracker.name] || tracker.initial_value;
+          const currentValueData = currentValues[tracker.name];
+          const currentValue: number = typeof currentValueData === 'object' && currentValueData?.value !== undefined 
+            ? (typeof currentValueData.value === 'number' ? currentValueData.value : 0)
+            : (typeof currentValueData === 'number' ? currentValueData : (tracker.initial_value || 0));
           const maxValue = tracker.max_value || 100;
           let delta = 0;
 
@@ -559,7 +568,7 @@ export const useChatStore = create<ChatStore>()(
           // 値を更新（範囲チェック）
           if (delta !== 0) {
             const newValue = Math.max(0, Math.min(maxValue, currentValue + delta));
-            updateTrackerValue(sessionId, tracker.name, newValue);
+            updateTrackerValue(sessionId, tracker.name, newValue, character);
           }
         });
       },

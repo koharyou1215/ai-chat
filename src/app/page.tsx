@@ -4,7 +4,7 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User } from 'lucide-react';
+import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User, Activity } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
@@ -197,6 +197,9 @@ export default function ChatPage() {
   const [sendButtonClicked, setSendButtonClicked] = useState(false);
   const [bulbButtonClicked, setBulbButtonClicked] = useState(false);
   const [sparkleButtonClicked, setSparkleButtonClicked] = useState(false);
+  
+  // トラッカー表示の制御
+  const [showTrackers, setShowTrackers] = useState(true);
   
   // タブ管理
   const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'history' | 'settings'>('characters');
@@ -2108,8 +2111,8 @@ export default function ChatPage() {
                 </button>
                 
                 {/* トラッカー表示（コンパクト） */}
-                {currentCharacter?.trackers && currentSessionId && (
-                  <div className="mt-1">
+                {showTrackers && currentCharacter?.trackers && currentSessionId && (
+                  <div className="mt-1 transition-all duration-300 ease-in-out">
                     <CharacterTrackerDisplay
                       trackers={currentCharacter.trackers}
                       currentValues={getTrackerValues(currentSessionId)}
@@ -2121,6 +2124,20 @@ export default function ChatPage() {
                 )}
               </div>
               <div className="flex gap-2">
+                {/* トラッカートグルボタン */}
+                {currentCharacter?.trackers && currentSessionId && (
+                  <button
+                    onClick={() => setShowTrackers(!showTrackers)}
+                    className={`pointer-events-auto touch-target p-1.5 md:p-2 rounded-lg transition-all duration-200 ${
+                      showTrackers 
+                        ? 'text-blue-400 bg-blue-400/20 hover:bg-blue-400/30' 
+                        : 'theme-text-primary hover:bg-white/10'
+                    }`}
+                    title={showTrackers ? 'トラッカーを非表示' : 'トラッカーを表示'}
+                  >
+                    <Activity size={16} className={showTrackers ? 'animate-pulse' : ''} />
+                  </button>
+                )}
                 <button
                   onClick={() => setIsSettingsOpen(true)}
                   className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
@@ -2429,7 +2446,7 @@ export default function ChatPage() {
                   <button
                     onClick={handleUserInspiration}
                     disabled={isLoadingUserInspiration}
-                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''}`}
+                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''} ${!isLoadingUserInspiration ? 'animate-pulse hover:animate-none' : ''}`}
                     title="返信を提案"
                   >
                     {isLoadingUserInspiration ? <Loader className="animate-spin" size={16} /> : '💡'}
@@ -2457,7 +2474,7 @@ export default function ChatPage() {
                     }}
                     onClick={handleUserTextEnhancement}
                     disabled={isEnhancingUserText}
-                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''}`}
+                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''} ${!isEnhancingUserText ? 'animate-bounce hover:animate-none' : ''}`}
                     title="文章を強化"
                   >
                     {isEnhancingUserText ? <Loader className="animate-spin" size={16} /> : '✨'}
@@ -2465,7 +2482,7 @@ export default function ChatPage() {
                   <button
                     onClick={handleSend}
                     disabled={isLoading}
-                    className={`touch-target bg-blue-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${sendButtonClicked ? 'scale-95 bg-blue-600' : ''}`}
+                    className={`touch-target bg-blue-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${sendButtonClicked ? 'scale-95 bg-blue-600' : ''} ${!isLoading && message.trim() ? 'animate-pulse hover:animate-none' : ''}`}
                     title="送信 (Ctrl+Enter)"
                   >
                     {isLoading ? <Loader className="animate-spin" size={16} /> : <Send size={16} />}

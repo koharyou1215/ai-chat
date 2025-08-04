@@ -87,16 +87,18 @@ export default function ChatSettings({ formSettings, setFormSettings }: ChatSett
           </label>
           <select
             id="responseFormat"
-            value={formSettings.responseFormat || ''}
+            value={formSettings.responseFormat || 'normal'}
             onChange={(e) => setFormSettings(prev => ({ ...prev, responseFormat: e.target.value }))}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
           >
-            <option value="">自動</option>
-            <option value="JSON">JSON</option>
-            <option value="Markdown">Markdown</option>
+            <option value="normal">通常チャット式</option>
+            <option value="roleplay">ロールプレイ式</option>
+            <option value="novel">小説風</option>
+            <option value="casual">カジュアル式</option>
+            <option value="formal">フォーマル式</option>
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            AIの返信フォーマットを指定します。（一部モデルのみ対応）
+            AIの会話スタイルを選択します。キャラクターとの対話方式が変わります。
           </p>
         </div>
 

@@ -98,23 +98,44 @@ export default function UISettings({ formSettings, setFormSettings }: UISettings
           </div>
         </div>
 
-        {/* 画像生成エンジン */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            画像生成エンジン
+        {/* 画像生成オンオフ */}
+        <div className="flex items-center justify-between">
+          <label htmlFor="enableImageGeneration" className="block text-sm font-medium text-gray-700">
+            画像生成を有効化
           </label>
-          <select
-            value={formSettings.imageEngine || ''}
-            onChange={(e) => setFormSettings(prev => ({ ...prev, imageEngine: e.target.value as 'sd' | 'runware' }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-          >
-            <option value="runware">Runware (クラウド)</option>
-            <option value="sd">Stable Diffusion (ローカル/URL)</option>
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Runware は API キー必須、Stable Diffusion は環境変数 LOCAL_SD_URL を設定してください
+          <input
+            type="checkbox"
+            id="enableImageGeneration"
+            checked={formSettings.enableImageGeneration ?? true}
+            onChange={(e) => setFormSettings(prev => ({ ...prev, enableImageGeneration: e.target.checked }))}
+            className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          />
+        </div>
+        <div className="mb-4">
+          <p className="text-xs text-gray-500">
+            チェックを外すとAIの応答に合わせた画像生成を停止します。
           </p>
         </div>
+
+        {/* 画像生成エンジン */}
+        {formSettings.enableImageGeneration && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              画像生成エンジン
+            </label>
+            <select
+              value={formSettings.imageEngine || ''}
+              onChange={(e) => setFormSettings(prev => ({ ...prev, imageEngine: e.target.value as 'sd' | 'runware' }))}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+            >
+              <option value="runware">Runware (クラウド)</option>
+              <option value="sd">Stable Diffusion (ローカル/URL)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Runware は API キー必須、Stable Diffusion は環境変数 LOCAL_SD_URL を設定してください
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

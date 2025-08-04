@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List, RefreshCw, Layers, Bot } from 'lucide-react';
+import { User, Plus, Edit, Trash2, Search, Package, ArrowLeft, Grid, List, RefreshCw, Layers, Bot, ArrowUpDown } from 'lucide-react';
 import { Character } from '../types/character';
 
 interface CharacterGalleryProps {
@@ -31,6 +31,7 @@ export default function CharacterGallery({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular' | 'created' | 'updated'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [showVariations, setShowVariations] = useState(false);
   const [selectedBaseCharacter, setSelectedBaseCharacter] = useState<string | null>(null);
 
@@ -68,28 +69,38 @@ export default function CharacterGallery({
       return matchesSearch && matchesTags;
     })
     .sort((a, b) => {
+      let comparison = 0;
+      
       switch (sortBy) {
         case 'name':
-          return a.name.localeCompare(b.name);
+          comparison = a.name.localeCompare(b.name);
+          break;
         case 'recent':
           // 最近使用された順（仮実装）
-          return 0;
+          comparison = 0;
+          break;
         case 'popular':
           // 人気順（仮実装）
-          return 0;
+          comparison = 0;
+          break;
         case 'created':
-          // 登録順（新しい順）
+          // 登録順
           const aCreated = a.createdAt || 0;
           const bCreated = b.createdAt || 0;
-          return bCreated - aCreated;
+          comparison = aCreated - bCreated;
+          break;
         case 'updated':
-          // 更新順（新しい順）
+          // 更新順
           const aUpdated = a.updatedAt || a.createdAt || 0;
           const bUpdated = b.updatedAt || b.createdAt || 0;
-          return bUpdated - aUpdated;
+          comparison = aUpdated - bUpdated;
+          break;
         default:
-          return 0;
+          comparison = 0;
       }
+      
+      // 昇順/降順の反転
+      return sortOrder === 'desc' ? -comparison : comparison;
     });
 
   return (
@@ -190,19 +201,33 @@ export default function CharacterGallery({
 
           {/* ソート・ビュー */}
           <div className="flex items-center justify-between mt-2 md:mt-4">
-            <div className="flex items-center gap-2 md:gap-4">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
-                className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-              >
-                <option value="name">名前順</option>
-                <option value="created">登録順</option>
-                <option value="updated">更新順</option>
-                <option value="recent">最近使用</option>
-                <option value="popular">人気順</option>
-              </select>
-            </div>
+                      <div className="flex items-center gap-2 md:gap-4">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
+              className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+            >
+              <option value="name">名前順</option>
+              <option value="created">登録順</option>
+              <option value="updated">更新順</option>
+              <option value="recent">最近使用</option>
+              <option value="popular">人気順</option>
+            </select>
+            
+            {/* 昇順/降順切り替え */}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                sortOrder === 'desc' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+              title={sortOrder === 'asc' ? '降順に変更' : '昇順に変更'}
+            >
+              <ArrowUpDown size={14} className="md:w-4 md:h-4" />
+              <span className="text-xs hidden md:inline">
+                {sortOrder === 'asc' ? '昇順' : '降順'}
+              </span>
+            </button>
+          </div>
 
             <div className="flex items-center gap-1 md:gap-2">
               {/* バリエーション表示切り替え */}
