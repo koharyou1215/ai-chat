@@ -252,6 +252,52 @@ export default function ChatPage() {
   // キーボード開閉検出用の状態
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
+  // 左スワイプによるブラウザ戻るを防止
+  useEffect(() => {
+    // Touch events を防止
+    const preventSwipeBack = (e: TouchEvent) => {
+      // 1本指で画面左端からスワイプした場合のみ防止
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const startX = touch.clientX;
+        // 画面左端から30px以内でのタッチを検出
+        if (startX < 30) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    // Pointer events を防止（新しいブラウザ向け）
+    const preventPointerSwipeBack = (e: PointerEvent) => {
+      if (e.pointerType === 'touch' && e.clientX < 30) {
+        e.preventDefault();
+      }
+    };
+
+    // イベントリスナーを追加
+    document.addEventListener('touchstart', preventSwipeBack, { passive: false });
+    document.addEventListener('pointerdown', preventPointerSwipeBack, { passive: false });
+
+    // ブラウザの履歴操作も制御
+    const handlePopState = (e: PopStateEvent) => {
+      // 現在の状態を維持
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // 初期状態をプッシュ
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    console.log('🚫 左スワイプとブラウザ戻るを防止しました');
+
+    // クリーンアップ
+    return () => {
+      document.removeEventListener('touchstart', preventSwipeBack);
+      document.removeEventListener('pointerdown', preventPointerSwipeBack);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // キーボード開閉検出のためのuseEffect
   useEffect(() => {
     // visualViewport APIが利用可能かチェック

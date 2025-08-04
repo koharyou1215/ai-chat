@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react'
+import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle, TestTube, HardDrive } from 'lucide-react'
 import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser, supabase } from '../lib/supabase'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { syncAllData, SyncData } from '../lib/cloudSyncManager'
+import DataBackup from './DataBackup'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -25,6 +26,15 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
     settings: boolean
   } | null>(null)
 
+  // デバッグ情報
+  useEffect(() => {
+    console.log('🔧 AuthModal初期化:', {
+      isOpen,
+      hasSupabase: !!supabase,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+    })
+  }, [isOpen])
+
   useEffect(() => {
     // 認証状態の監視
     const { data: { subscription } } = onAuthStateChange((user) => {
@@ -39,21 +49,49 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) {
+    
+    // モバイル対応のメールアドレス検証
+    const cleanEmail = email ? email.replace(/\s+/g, '').toLowerCase() : ''
+    console.log('📧 メール検証:', { 
+      originalEmail: email, 
+      cleanEmail: cleanEmail, 
+      length: cleanEmail.length,
+      isEmpty: !cleanEmail,
+      hasAtSymbol: cleanEmail.includes('@'),
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+    })
+    
+    if (!cleanEmail) {
       setMessage('メールアドレスを入力してください')
+      console.warn('❌ メールアドレスが空です')
+      return
+    }
+
+    // 基本的なメールフォーマットチェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(cleanEmail)) {
+      setMessage('正しいメールアドレス形式で入力してください')
+      console.warn('❌ メールアドレス形式が不正:', cleanEmail)
       return
     }
 
     setIsLoading(true)
     setMessage('')
     
-    const result = await signInWithEmail(email.trim())
-    
-    if (result.success) {
-      setMessage('認証メールを送信しました！メールをチェックしてリンクをクリックしてください。')
-      setEmail('')
-    } else {
-      setMessage(`エラー: ${result.error}`)
+    try {
+      const result = await signInWithEmail(cleanEmail)
+      
+      if (result.success) {
+        setMessage('SUCCESS:認証メールを送信しました！メールをチェックしてリンクをクリックしてください。')
+        setEmail('')
+        console.log('✅ メール送信成功')
+      } else {
+        setMessage(`エラー: ${result.error}`)
+        console.error('❌ メール送信失敗:', result.error)
+      }
+    } catch (error) {
+      setMessage('エラー: 予期しないエラーが発生しました')
+      console.error('❌ 予期しないエラー:', error)
     }
     
     setIsLoading(false)
@@ -64,7 +102,7 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
     const success = await signOut()
     
     if (success) {
-      setMessage('ログアウトしました')
+      setMessage('SUCCESS:ログアウトが完了しました。ローカルデータは引き続き利用できます。')
       setUser(null)
       setSyncStatus(null)
     } else {
@@ -93,7 +131,7 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
       
       if (result.success && result.data) {
         setSyncStatus(result.syncedItems)
-        setMessage('同期が完了しました！')
+        setMessage('SUCCESS:データの同期が完了しました！すべてのデバイスで最新データが利用できます。')
         onDataSync(result.data)
         localStorage.setItem('last-sync-time', new Date().toISOString())
       } else {
@@ -184,6 +222,9 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
                   Supabaseの無料枠（500MB・50,000リクエスト/月）で十分利用可能です。
                 </p>
               </div>
+
+              {/* データバックアップ機能 */}
+              <DataBackup />
             </div>
           </div>
         </div>
@@ -262,6 +303,9 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
                 </div>
               )}
 
+              {/* データバックアップ機能（ログイン済みユーザー向け） */}
+              <DataBackup />
+
               <button
                 onClick={handleSignOut}
                 disabled={isLoading}
@@ -292,21 +336,85 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        const newEmail = e.target.value
+                        console.log('📧 メール入力変更:', { 
+                          old: email, 
+                          new: newEmail, 
+                          length: newEmail.length,
+                          hasWhitespace: /\s/.test(newEmail)
+                        })
+                        setEmail(newEmail)
+                      }}
                       placeholder="your@email.com"
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
                       disabled={isLoading}
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading || !email.trim()}
-                  className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {isLoading ? '送信中...' : 'ログインリンクを送信'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading || !email || email.length < 3}
+                    className="w-full bg-blue-500 text-white py-3 px-4 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                  >
+                    {isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        メール送信中...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        ログインリンクを送信
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!email || email.length < 3) {
+                        setMessage('メールアドレスを入力してください')
+                        return
+                      }
+                      
+                      setIsLoading(true)
+                      setMessage('')
+                      
+                      try {
+                        const response = await fetch('/api/test-email', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: email.replace(/\s+/g, '').toLowerCase() })
+                        })
+                        
+                        const result = await response.json()
+                        
+                        if (result.success) {
+                          setMessage('SUCCESS:テストメール送信完了！（実際のメールは送信されません）')
+                        } else {
+                          setMessage(`エラー: ${result.error}`)
+                        }
+                      } catch (error) {
+                        setMessage('エラー: テスト送信に失敗しました')
+                        console.error('テストメール送信エラー:', error)
+                      }
+                      
+                      setIsLoading(false)
+                    }}
+                    disabled={isLoading || !email || email.length < 3}
+                    className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <TestTube className="w-4 h-4" />
+                    テスト送信（Supabaseなし）
+                  </button>
+                </div>
               </form>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -322,12 +430,61 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
           )}
 
           {message && (
-            <div className={`mt-4 p-3 rounded-lg text-sm ${
+            <div className={`mt-4 p-4 rounded-lg ${
               message.includes('エラー') 
-                ? 'bg-red-50 border border-red-200 text-red-700'
-                : 'bg-blue-50 border border-blue-200 text-blue-700'
+                ? 'bg-red-50 border-2 border-red-200 text-red-700'
+                : message.startsWith('SUCCESS:')
+                ? 'bg-green-50 border-2 border-green-300 text-green-800'
+                : 'bg-blue-50 border-2 border-blue-200 text-blue-700'
             }`}>
-              {message}
+              <div className="flex items-start gap-3">
+                {message.includes('エラー') ? (
+                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                ) : message.startsWith('SUCCESS:') ? (
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <Mail className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className={`font-medium text-sm ${
+                    message.includes('エラー') 
+                      ? 'text-red-800'
+                      : message.startsWith('SUCCESS:')
+                      ? 'text-green-800'
+                      : 'text-blue-800'
+                  }`}>
+                    {message.includes('エラー') 
+                      ? '送信エラー'
+                      : message.startsWith('SUCCESS:')
+                      ? '✅ メール送信完了'
+                      : '📧 メール送信中'
+                    }
+                  </div>
+                  <div className="text-sm mt-1">
+                    {message.startsWith('SUCCESS:') ? message.replace('SUCCESS:', '') : message}
+                  </div>
+                  {message.includes('Failed to execute') && (
+                    <div className="mt-3 text-xs text-red-600 bg-red-100 p-2 rounded border border-red-200">
+                      <div><strong>🔧 デバッグ情報:</strong></div>
+                      <div>Supabase設定: {!!supabase ? '有効' : '無効'}</div>
+                      <div>URL設定: {process.env.NEXT_PUBLIC_SUPABASE_URL ? '有り' : '無し'}</div>
+                      <div>Key設定: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '有り' : '無し'}</div>
+                      <div>タイムスタンプ: {new Date().toLocaleString()}</div>
+                    </div>
+                  )}
+                  {message.startsWith('SUCCESS:') && (
+                    <div className="mt-2 text-xs text-green-600 bg-green-100 p-2 rounded border border-green-200">
+                      <strong>📨 次のステップ:</strong><br/>
+                      1. メールボックスを確認してください<br/>
+                      2. 件名「[AI Chat] ログインリンク」を探してください<br/>
+                      3. メール内のリンクをクリックしてログインを完了してください
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* データバックアップ機能（未ログインユーザー向け） */}
+              <DataBackup />
             </div>
           )}
         </div>

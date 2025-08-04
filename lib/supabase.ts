@@ -1,12 +1,52 @@
 import { createClient, User } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// 環境変数の厳密チェック
+const isValidSupabaseConfig = () => {
+  return supabaseUrl && 
+         supabaseAnonKey && 
+         supabaseUrl.trim() !== '' && 
+         supabaseAnonKey.trim() !== '' &&
+         supabaseUrl.startsWith('https://') &&
+         supabaseAnonKey.length > 10
+}
 
 // Supabaseクライアント（設定がない場合はnull）
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
-  : null
+let supabaseClient = null
+try {
+  if (isValidSupabaseConfig()) {
+    supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!)
+    console.log('✅ Supabaseクライアント作成成功')
+  } else {
+    console.warn('⚠️ Supabase設定が無効:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+      urlValid: supabaseUrl?.startsWith('https://'),
+      keyValid: (supabaseAnonKey?.length || 0) > 10
+    })
+  }
+} catch (error) {
+  console.error('❌ Supabaseクライアント作成エラー:', error)
+  supabaseClient = null
+}
+
+export const supabase = supabaseClient
+
+// デバッグ情報（本番では削除予定）
+if (typeof window !== 'undefined') {
+  console.log('🔧 Supabase設定状況:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    urlValid: supabaseUrl?.startsWith('https://'),
+    keyValid: (supabaseAnonKey?.length || 0) > 10,
+    clientCreated: !!supabase,
+    urlValue: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
+    keyValue: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'undefined',
+    timestamp: new Date().toISOString()
+  })
+}
 
 // ユーザー情報を取得
 export const getCurrentUser = async () => {
@@ -21,8 +61,16 @@ export const getCurrentUser = async () => {
 
 // 簡単なログイン（メールアドレスのみ、パスワードなし）
 export const signInWithEmail = async (email: string) => {
-  if (!supabase) return { success: false, error: 'Supabaseが設定されていません' }
+  console.log('🔐 Supabaseログイン試行:', { email, hasSupabase: !!supabase })
+  
+  if (!supabase) {
+    const errorMsg = 'Supabaseが設定されていません。環境変数を確認してください。'
+    console.error('❌', errorMsg)
+    return { success: false, error: errorMsg }
+  }
+  
   try {
+    console.log('📤 Supabase OTP送信開始...')
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {
@@ -31,14 +79,38 @@ export const signInWithEmail = async (email: string) => {
     })
     
     if (error) {
-      console.error('ログインエラー:', error)
-      return { success: false, error: error.message }
+      console.error('❌ Supabaseログインエラー:', {
+        message: error.message,
+        status: error.status,
+        details: error
+      })
+      
+      // より親切なエラーメッセージ
+      let userFriendlyError = error.message
+      if (error.message.includes('Invalid login credentials')) {
+        userFriendlyError = 'メールアドレスが正しくありません'
+      } else if (error.message.includes('Too many requests')) {
+        userFriendlyError = 'リクエストが多すぎます。しばらく待ってから再試行してください'
+      } else if (error.message.includes('Rate limit')) {
+        userFriendlyError = '送信制限に達しました。数分後に再試行してください'
+      }
+      
+      return { success: false, error: userFriendlyError }
     }
     
+    console.log('✅ Supabase OTP送信成功:', data)
     return { success: true, data }
-  } catch (error) {
-    console.error('予期しないエラー:', error)
-    return { success: false, error: '予期しないエラーが発生しました' }
+  } catch (error: any) {
+    console.error('❌ 予期しないSupabaseエラー:', error)
+    
+    let errorMessage = '予期しないエラーが発生しました'
+    if (error.message?.includes('fetch')) {
+      errorMessage = 'ネットワークエラーです。インターネット接続を確認してください'
+    } else if (error.message?.includes('Invalid value')) {
+      errorMessage = 'Supabase設定に問題があります。管理者にお問い合わせください'
+    }
+    
+    return { success: false, error: errorMessage }
   }
 }
 

@@ -91,8 +91,31 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
             </button>
           </div>
 
+          {/* 操作ボタン（上部に移動） */}
+          <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-200 bg-gray-50/30">
+            <button
+              onClick={handleReset}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm"
+            >
+              リセット
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            >
+              戻る
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 text-sm"
+            >
+              <Save size={14} />
+              保存
+            </button>
+          </div>
+
           {/* 設定内容 */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
             <div className="space-y-8">
               {/* API設定 */}
               <ApiSettings formSettings={formSettings} setFormSettings={setFormSettings} />
@@ -124,29 +147,6 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
               {/* バックアップと復元 */}
               <BackupAndOtherSettings formSettings={formSettings} setFormSettings={setFormSettings} onClose={onClose} />
             </div>
-          </div>
-
-          {/* フッター */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              リセット
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              キャンセル
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-            >
-              <Save size={16} />
-              保存
-            </button>
           </div>
         </div>
       </div>

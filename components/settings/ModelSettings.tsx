@@ -102,6 +102,8 @@ export default function ModelSettings({ formSettings, setFormSettings }: ModelSe
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
           >
             {[ // OpenRouter Models
+              'openai/gpt-4o-mini',
+              'openai/gpt-4o',
               'qwen/qwen3-235b-a22b-07-25:free',
               'qwen/qwen3-235b-a22b-thinking-2507',
               'moonshotai/kimi-k2:free',
@@ -110,8 +112,10 @@ export default function ModelSettings({ formSettings, setFormSettings }: ModelSe
               'x-ai/grok-4',
               'google/gemini-2.5-flash',
               'google/gemini-2.5-pro',
+              'google/gemini-2.5-flash-lite-preview-06-17',
               'deepseek/deepseek-r1-0528-qwen3-8b:free',
               'deepseek/deepseek-chat-v3-0324:free',
+              'anthropic/claude-3.5-sonnet',
               'anthropic/claude-opus-4',
               'anthropic/claude-sonnet-4',
               'anthropic/claude-3.7-sonnet:thinking',
