@@ -279,4 +279,3 @@ API
   /api/generate-image → lib/runwareApi / lib/stableDiffusionApi / local sd
 
 Cloud Sync
-  AuthModal → lib/cloudSyncManager → lib/*CloudSync → supabase.ts → Supabase REST

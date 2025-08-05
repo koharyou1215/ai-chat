@@ -121,13 +121,14 @@ ${character.scenario ? `シナリオ: ${character.scenario}` : ''}
 ## 出力要件
 **返信候補のみを1つ出力してください。説明や解説は不要です。**`;
 
+    const hasConversation = message && message.trim();
+    const actionType = hasConversation ? '会話に適した返信' : '初回挨拶';
+    const generalActionType = hasConversation ? '返信' : '挨拶';
+    
     const prompt = `${characterPrompt}${basePrompt}
 
-会話履歴:
-${message}
-
-上記の会話履歴を踏まえて、ユーザーが送信できる適切な返信候補を生成してください。
-${character ? `「${character.name}」との会話に適した返信を提案してください。` : ''}`;
+${hasConversation ? `会話履歴:\n${message}\n` : ''}
+${character ? `「${character.name}」との${actionType}を提案してください。` : `ユーザーが送信できる自然な${generalActionType}を生成してください。`}`;
 
     // 複数候補を生成（順次リクエスト - レート制限対策）
     const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
