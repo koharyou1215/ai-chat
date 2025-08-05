@@ -29,6 +29,7 @@ export class GeminiApiManager {
     options: {
       maxTokens?: number;
       temperature?: number;
+      openRouterApiKey?: string; // 設定画面からのAPIキーを受け取る
     } = {}
   ): Promise<GeminiResponse> {
     console.log(`🎯 generateWithPriority開始 - モデル: ${model}`);
@@ -39,7 +40,7 @@ export class GeminiApiManager {
     });
     
     const geminiApiKey = process.env.GEMINI_API_KEY;
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
+    const openRouterKey = options.openRouterApiKey || process.env.OPENROUTER_API_KEY;
 
     // Gemini APIを最初に試行
     if (geminiApiKey && this.isGeminiModel(model)) {
@@ -146,19 +147,19 @@ export class GeminiApiManager {
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
           },
           {
             category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, 
-            threshold: HarmBlockThreshold.BLOCK_NONE,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
           },
           {
             category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
           },
           {
             category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
           },
         ]
       });

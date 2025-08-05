@@ -74,7 +74,7 @@ ${character.scenario ? `シナリオ: ${character.scenario}` : ''}
     console.log('[/api/user-inspiration] カスタムプロンプト確認:', {
       hasCustomPrompt: !!customPrompt,
       customPromptLength: customPrompt?.length || 0,
-      customPromptPreview: customPrompt?.substring(0, 100) + '...'
+      customPromptPreview: customPrompt ? customPrompt.substring(0, 100) + '...' : 'なし'
     });
     const basePrompt = customPrompt || `# ユーザー返信生成AI
 
@@ -142,11 +142,12 @@ ${character ? `「${character.name}」との会話に適した返信を提案し
         try {
           // Gemini API優先システムを使用
           const response = await GeminiApiManager.generateWithPriority(
-            model,
-            [{ role: 'system', content: prompt }],
+            [{ role: 'user', content: prompt }],
             {
+              model: model,
               maxTokens: inspirationMaxTokens,
               temperature: 0.7,
+              openRouterApiKey
             }
           );
           

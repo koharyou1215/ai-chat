@@ -367,6 +367,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
                 {
                   maxTokens: modelConfig.generationConfig.maxOutputTokens,
                   temperature: modelConfig.generationConfig.temperature,
+                  openRouterApiKey: settings?.openRouterApiKey // 設定画面からのAPIキーを渡す
                 }
               );
               
@@ -441,6 +442,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
               {
                 maxTokens: modelConfig.generationConfig.maxOutputTokens,
                 temperature: modelConfig.generationConfig.temperature,
+                openRouterApiKey: settings?.openRouterApiKey // 設定画面からのAPIキーを渡す
               }
             );
 

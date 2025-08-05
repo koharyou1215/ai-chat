@@ -14,22 +14,28 @@ export const saveMemoToCloud = async (memo: ChatMemo) => {
       return { success: false, error: 'ログインが必要です' }
     }
 
+    // 上書き運用: user_id + memo_key で一意にする（memo_key は messageId か id を採用）
+    const memoKey = memo.messageId || memo.id
+    const payload = {
+      id: memo.id,
+      user_id: user.id,
+      memo_key: memoKey,
+      // 任意の補助フィールド（必要に応じて拡張可能）
+      message_id: memo.messageId,
+      session_id: memo.sessionId,
+      character_id: memo.characterId,
+      content: memo.content,
+      note: memo.note,
+      tags: memo.tags || [],
+      is_ai_memory: memo.isAiMemory ?? false,
+      importance: memo.importance ?? 1,
+      created_at: new Date(memo.createdAt).toISOString(),
+      updated_at: new Date(memo.updatedAt).toISOString()
+    }
+
     const { data, error } = await supabase
       .from('memos')
-      .upsert({
-        id: memo.id,
-        user_id: user.id,
-        message_id: memo.messageId,
-        session_id: memo.sessionId,
-        character_id: memo.characterId,
-        content: memo.content,
-        note: memo.note,
-        tags: memo.tags || [],
-        is_ai_memory: memo.isAiMemory || false,
-        importance: memo.importance || 1,
-        created_at: new Date(memo.createdAt).toISOString(),
-        updated_at: new Date(memo.updatedAt).toISOString()
-      })
+      .upsert(payload, { onConflict: 'user_id,memo_key' })
       .select()
 
     if (error) {
@@ -67,7 +73,7 @@ export const loadMemosFromCloud = async (): Promise<ChatMemo[]> => {
     }
 
     // Supabaseのデータを我々のChatMemo型に変換
-    return data.map(item => ({
+    return data.map((item: any) => ({
       id: item.id,
       messageId: item.message_id,
       sessionId: item.session_id,
@@ -75,8 +81,8 @@ export const loadMemosFromCloud = async (): Promise<ChatMemo[]> => {
       content: item.content,
       note: item.note,
       tags: item.tags || [],
-      isAiMemory: item.is_ai_memory || false,
-      importance: item.importance || 1,
+      isAiMemory: item.is_ai_memory ?? false,
+      importance: item.importance ?? 1,
       createdAt: new Date(item.created_at).getTime(),
       updatedAt: new Date(item.updated_at).getTime()
     }))
@@ -143,4 +149,4 @@ export const syncMemos = async (localMemos: ChatMemo[]): Promise<ChatMemo[]> => 
     console.error('メモ同期エラー:', error)
     return localMemos
   }
-} 
+}

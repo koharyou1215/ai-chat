@@ -44,28 +44,38 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // キャラクター固有のappearancePromptを追加
+    // キャラクター固有のappearancePromptを先頭にマージ（重複防止）
     if (character?.appearancePrompt) {
-      processedPrompt = `${character.appearancePrompt}, ${processedPrompt}`;
-      console.log("✅ キャラクター固有のappearancePromptを追加:", character.appearancePrompt);
+      const charAp = String(character.appearancePrompt).trim();
+      if (charAp && !processedPrompt.startsWith(charAp)) {
+        processedPrompt = `${charAp}, ${processedPrompt}`;
+        console.log("✅ キャラクターappearancePrompt反映:", charAp);
+      }
     }
     
-    // ネガティブプロンプトの処理
+    // ネガティブプロンプトの処理（優先順位: 明示指定 > 設定 > キャラクター定義）
     let processedNegativePrompt = '';
     if (negativePrompt && typeof negativePrompt === 'string') {
       processedNegativePrompt = negativePrompt.trim();
     } else if (settings?.negativePrompt) {
       processedNegativePrompt = settings.negativePrompt.trim();
+    } else if (character?.appearanceNegativePrompt) {
+      processedNegativePrompt = String(character.appearanceNegativePrompt).trim();
     }
     
-    // キャラクター固有のappearanceNegativePromptを追加
+    // キャラクター固有のappearanceNegativePromptをマージ（重複防止）
     if (character?.appearanceNegativePrompt) {
-      if (processedNegativePrompt) {
-        processedNegativePrompt = `${character.appearanceNegativePrompt}, ${processedNegativePrompt}`;
-      } else {
-        processedNegativePrompt = character.appearanceNegativePrompt;
+      const charNeg = String(character.appearanceNegativePrompt).trim();
+      if (charNeg) {
+        if (processedNegativePrompt) {
+          if (!processedNegativePrompt.includes(charNeg)) {
+            processedNegativePrompt = `${charNeg}, ${processedNegativePrompt}`;
+          }
+        } else {
+          processedNegativePrompt = charNeg;
+        }
+        console.log("✅ キャラクターappearanceNegativePrompt反映:", charNeg);
       }
-      console.log("✅ キャラクター固有のappearanceNegativePromptを追加:", character.appearanceNegativePrompt);
     }
     
     console.log("Received prompt for image generation:", processedPrompt);
@@ -147,7 +157,32 @@ export async function POST(request: NextRequest) {
         });
       } catch (runwareError) {
         console.error('[/api/generate-image] Runwareエラー:', runwareError);
-        // Stable Diffusionにフォールバック
+        
+        // RunwareエラーをキャッチしてStable Diffusionにフォールバック
+        // フォールバックが失敗した場合のため、エラーを保持
+        const runwareErrorMessage = runwareError instanceof Error ? runwareError.message : 'Runware API failed';
+        
+        // Stable Diffusionが利用可能かチェック
+        const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
+        const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey;
+        const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
+        const localSdUrl = process.env.LOCAL_SD_URL;
+        
+        if (!stableDiffusionApiKey && !localSdUrl) {
+          // フォールバック先がない場合は即座にエラーを返す
+          return NextResponse.json({
+            success: false,
+            error: `画像生成に失敗しました: ${runwareErrorMessage}. Stable Diffusionも利用できません。`,
+            provider: 'runware_failed',
+            debug: {
+              runwareError: runwareErrorMessage,
+              hasStableDiffusionApiKey: !!stableDiffusionApiKey,
+              hasLocalSdUrl: !!localSdUrl
+            }
+          }, { status: 500 });
+        }
+        
+        // Stable Diffusionにフォールバック継続
       }
     }
 
@@ -297,7 +332,7 @@ export async function POST(request: NextRequest) {
         isValidLocalUrl: isValidLocalUrl
       }
     }, { status: 400 });
-    }
+  }
 
   } catch (error) {
     console.error('[/api/generate-image] 予期しないエラー:', error);

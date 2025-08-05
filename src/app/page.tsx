@@ -4,13 +4,14 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User, Activity } from 'lucide-react';
+import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User, Activity, Zap } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
 // ThemeManagerは削除 - シンプルなローカルストレージ管理に変更
 import { VoiceManager } from '../../lib/voiceManager';
 import SettingsModal from '../../components/SettingsModal';
+import QuickSettingsModal from '../../components/QuickSettingsModal';
 import VoiceControls from '../../components/VoiceControls';
 import CharacterModal from '../../components/CharacterModal';
 import CharacterSelector from '../../components/CharacterSelector';
@@ -152,6 +153,7 @@ export default function ChatPage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
@@ -242,7 +244,6 @@ export default function ChatPage() {
     memos, 
     settings, 
     updateSettings,
-    trackerValues,
     updateTrackerValue,
     getTrackerValues,
     initializeTrackersForSession,
@@ -282,7 +283,7 @@ export default function ChatPage() {
     document.addEventListener('pointerdown', preventPointerSwipeBack, { passive: false });
 
     // ブラウザの履歴操作も制御
-    const handlePopState = (e: PopStateEvent) => {
+    const handlePopState = (_e: PopStateEvent) => {
       // 現在の状態を維持
       window.history.pushState(null, '', window.location.href);
     };
@@ -925,7 +926,7 @@ export default function ChatPage() {
           // Runware固有のモデルIDとLORA IDをsettingsから渡す
           // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
           // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
-          settings: settings, // settings オブジェクト全体を渡す
+
         }),
       });
 
@@ -970,14 +971,11 @@ export default function ChatPage() {
           character: currentCharacter,
           settings: settings,
           conversationContext: ['テスト用の会話'],
-          loraSettings: settings.loraSettings,
-          negativePrompt: settings.negativePrompt,
           width: currentCharacter?.imageWidth || 512,
           height: currentCharacter?.imageHeight || 768,
           steps: currentCharacter?.imageSteps || 20,
           cfg_scale: currentCharacter?.imageCfgScale || 7,
           sampler: currentCharacter?.imageSampler || 'DPM++ 2M Karras',
-          settings: settings,
         }),
       });
 
@@ -1637,7 +1635,7 @@ export default function ChatPage() {
           // Runware固有のモデルIDとLORA IDをsettingsから渡す
           // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
           // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
-          settings: settings, // settings オブジェクト全体を渡す
+
         })
       });
 
@@ -2116,7 +2114,7 @@ export default function ChatPage() {
                     <CharacterTrackerDisplay
                       trackers={currentCharacter.trackers}
                       currentValues={getTrackerValues(currentSessionId)}
-                      onChange={(name, value) => updateTrackerValue(currentSessionId, name, value)}
+                      onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
                       readOnly={false}
                       compact={true}
                     />
@@ -2139,18 +2137,25 @@ export default function ChatPage() {
                   </button>
                 )}
                 <button
+                  onClick={() => setIsQuickSettingsOpen(true)}
+                  className="pointer-events-auto touch-target text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
+                  title="クイック設定"
+                >
+                  <Zap size={16} />
+                </button>
+                <button
                   onClick={() => setIsSettingsOpen(true)}
-                  className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
-                  title="設定"
+                  className="pointer-events-auto touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 md:hidden shadow-sm"
+                  title="詳細設定"
                 >
                   <Settings size={16} />
                 </button>
                 <button
-                  onClick={() => setIsThemeModalOpen(true)}
-                  className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors md:hidden"
-                  title="テーマ"
+                  onClick={() => setIsCharacterGalleryOpen(true)}
+                  className="pointer-events-auto touch-target text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
+                  title="キャラクターギャラリー"
                 >
-                  <Palette size={16} />
+                  <User size={16} />
                 </button>
               </div>
             </div>
@@ -2428,7 +2433,7 @@ export default function ChatPage() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="メッセージを入力 (Ctrl+Enterで送信)"
-                  className={`w-full p-3 md:p-4 pr-20 md:pr-28 rounded-full resize-none transition-all duration-300 
+                  className={`w-full p-3 md:p-4 pr-24 md:pr-32 rounded-full resize-none transition-all duration-300 
                     ${isInputExpanded ? 
                       'bg-white/95 dark:bg-gray-800/95 backdrop-blur-md shadow-xl border border-blue-300/50' : 
                       'bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm border border-white/30 shadow-md'
@@ -2436,56 +2441,60 @@ export default function ChatPage() {
                     text-gray-900 dark:text-white placeholder-gray-700 dark:placeholder-gray-400 
                     focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/60
                     focus:bg-white/98 dark:focus:bg-gray-800/98 focus:shadow-xl
-                    text-sm md:text-base font-medium ${
+                    text-base md:text-base font-medium ${
                     isInputExpanded ? 'h-24 md:h-32' : 'h-12 md:h-16'
                   }`}
                   onFocus={() => setIsInputExpanded(true)}
                   onBlur={() => setIsInputExpanded(false)}
                 />
-                <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  <button
-                    onClick={handleUserInspiration}
-                    disabled={isLoadingUserInspiration}
-                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-yellow-500 p-1.5 md:p-2 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''} ${!isLoadingUserInspiration ? 'animate-pulse hover:animate-none' : ''}`}
-                    title="返信を提案"
-                  >
-                    {isLoadingUserInspiration ? <Loader className="animate-spin" size={16} /> : '💡'}
-                  </button>
-                  <button
-                    onTouchStart={() => {
-                      if (inputRef.current) {
-                        const { selectionStart, selectionEnd, value } = inputRef.current;
-                        if (selectionEnd > selectionStart) {
-                          setPendingSelection(value.substring(selectionStart, selectionEnd));
-                        } else {
-                          setPendingSelection('');
+                <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  {/* 電球とキラキラボタンを縦に配置 */}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={handleUserInspiration}
+                      disabled={isLoadingUserInspiration}
+                      className={`min-w-[36px] min-h-[36px] md:min-w-[40px] md:min-h-[40px] text-gray-500 hover:text-yellow-500 p-1.5 rounded-full hover:bg-yellow-100 transition-all duration-200 disabled:opacity-50 ${bulbButtonClicked ? 'scale-95 bg-yellow-100 text-yellow-600' : ''} ${!isLoadingUserInspiration ? 'animate-pulse hover:animate-none' : ''} shadow-sm hover:shadow-md`}
+                      title="返信を提案"
+                    >
+                      {isLoadingUserInspiration ? <Loader className="animate-spin" size={14} /> : '💡'}
+                    </button>
+                    <button
+                      onTouchStart={() => {
+                        if (inputRef.current) {
+                          const { selectionStart, selectionEnd, value } = inputRef.current;
+                          if (selectionEnd > selectionStart) {
+                            setPendingSelection(value.substring(selectionStart, selectionEnd));
+                          } else {
+                            setPendingSelection('');
+                          }
                         }
-                      }
-                    }}
-                    onMouseDown={() => {
-                      if (inputRef.current) {
-                        const { selectionStart, selectionEnd, value } = inputRef.current;
-                        if (selectionEnd > selectionStart) {
-                          setPendingSelection(value.substring(selectionStart, selectionEnd));
-                        } else {
-                          setPendingSelection('');
+                      }}
+                      onMouseDown={() => {
+                        if (inputRef.current) {
+                          const { selectionStart, selectionEnd, value } = inputRef.current;
+                          if (selectionEnd > selectionStart) {
+                            setPendingSelection(value.substring(selectionStart, selectionEnd));
+                          } else {
+                            setPendingSelection('');
+                          }
                         }
-                      }
-                    }}
-                    onClick={handleUserTextEnhancement}
-                    disabled={isEnhancingUserText}
-                    className={`min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] text-gray-500 hover:text-purple-500 p-1.5 md:p-2 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''} ${!isEnhancingUserText ? 'animate-bounce hover:animate-none' : ''}`}
-                    title="文章を強化"
-                  >
-                    {isEnhancingUserText ? <Loader className="animate-spin" size={16} /> : '✨'}
-                  </button>
+                      }}
+                      onClick={handleUserTextEnhancement}
+                      disabled={isEnhancingUserText}
+                      className={`min-w-[36px] min-h-[36px] md:min-w-[40px] md:min-h-[40px] text-gray-500 hover:text-purple-500 p-1.5 rounded-full hover:bg-purple-100 transition-all duration-200 disabled:opacity-50 ${sparkleButtonClicked ? 'scale-95 bg-purple-100 text-purple-600' : ''} ${!isEnhancingUserText ? 'animate-bounce hover:animate-none' : ''} shadow-sm hover:shadow-md`}
+                      title="文章を強化"
+                    >
+                      {isEnhancingUserText ? <Loader className="animate-spin" size={14} /> : '✨'}
+                    </button>
+                  </div>
+                  {/* 送信ボタン */}
                   <button
                     onClick={handleSend}
                     disabled={isLoading}
-                    className={`touch-target bg-blue-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${sendButtonClicked ? 'scale-95 bg-blue-600' : ''} ${!isLoading && message.trim() ? 'animate-pulse hover:animate-none' : ''}`}
+                    className={`touch-target bg-blue-500 text-white w-10 h-10 md:w-12 md:h-12 rounded-full hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center ${sendButtonClicked ? 'scale-95 bg-blue-600' : ''} ${!isLoading && message.trim() ? 'animate-pulse hover:animate-none' : ''} shadow-lg hover:shadow-xl`}
                     title="送信 (Ctrl+Enter)"
                   >
-                    {isLoading ? <Loader className="animate-spin" size={16} /> : <Send size={16} />}
+                    {isLoading ? <Loader className="animate-spin" size={18} /> : <Send size={18} />}
                   </button>
                 </div>
               </div>
@@ -2520,6 +2529,16 @@ export default function ChatPage() {
           onClose={() => setIsSettingsOpen(false)}
           settings={settings}
           onSave={updateSettings}
+        />
+      )}
+
+      {/* クイック設定モーダル */}
+      {isQuickSettingsOpen && (
+        <QuickSettingsModal
+          isOpen={isQuickSettingsOpen}
+          onClose={() => setIsQuickSettingsOpen(false)}
+          settings={settings}
+          onUpdateSettings={updateSettings}
         />
       )}
       {isPersonaModalOpen && (
@@ -2568,10 +2587,30 @@ export default function ChatPage() {
           characters={allCharacters}
           currentCharacter={currentCharacter}
           onSelectCharacter={(character) => {
+            console.log('ギャラリーからキャラクター変更:', character.name);
+            
+            // キャラクターを設定
             setCurrentCharacter(character);
+            
+            // 現在のセッションをクリア
             setCurrentSessionId(null);
+            
+            // 音声再生を停止
             VoiceManager.stopAudio();
+            
+            // キャラクター個別の背景を適用
             loadCharacterBackground(character.name);
+            
+            // 新しいセッションID生成
+            const newSessionId = crypto.randomUUID();
+            setCurrentSessionId(newSessionId);
+            
+            // トラッカー初期化
+            if (character.trackers) {
+              initializeTrackersForSession(newSessionId, character);
+            }
+            
+            // 初回メッセージを設定
             setInitialMessage(character);
             setIsCharacterGalleryOpen(false);
           }}
@@ -2597,6 +2636,14 @@ export default function ChatPage() {
                   setCurrentCharacter(firstCharacter);
                   setCurrentSessionId(null);
                   loadCharacterBackground(firstCharacter.name);
+                  
+                  // 新しいセッションID生成とトラッカー初期化
+                  const newSessionId = crypto.randomUUID();
+                  setCurrentSessionId(newSessionId);
+                  if (firstCharacter.trackers) {
+                    initializeTrackersForSession(newSessionId, firstCharacter);
+                  }
+                  
                   setInitialMessage(firstCharacter);
                 } else {
                   setCurrentCharacter(null);

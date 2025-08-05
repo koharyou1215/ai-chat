@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     console.log('[/api/enhance-text] カスタムプロンプト確認:', {
       hasCustomPrompt: !!customPrompt,
       customPromptLength: customPrompt?.length || 0,
-      customPromptPreview: customPrompt?.substring(0, 100) + '...'
+      customPromptPreview: customPrompt ? customPrompt.substring(0, 100) + '...' : 'なし'
     });
     const basePrompt = customPrompt || `# 文章強化プロンプト
 
@@ -150,16 +150,45 @@ ${conversationContext}
 
       // Gemini API優先システムを使用
       const response = await GeminiApiManager.generateWithPriority(
-        modelToUse,
         [{ role: 'user', content: simplePrompt }],
         {
+          model: modelToUse,
           maxTokens: variantCount === 1 ? 1500 : 2000,
           temperature: 0.8,
+          openRouterApiKey
         }
       );
 
       if (!response.success || !response.content) {
-        throw new Error(`AI生成失敗: ${response.error}`);
+        console.warn('⚠️ Gemini API失敗、OpenRouterフォールバック開始');
+        
+        // OpenRouterフォールバックを試行
+        const openRouterMessages = [
+          { role: 'user' as const, content: simplePrompt }
+        ];
+
+        const fallbackResponse = await callOpenRouter(
+          openRouterMessages,
+          {
+            model: modelToUse,
+            maxTokens: 1500,
+            temperature: 0.8,
+          },
+          openRouterApiKey
+        );
+
+        if (!fallbackResponse.success || !fallbackResponse.content) {
+          throw new Error(`AI生成失敗 (Gemini/OpenRouter両方): ${response.error || fallbackResponse.error}`);
+        }
+
+        const enhancedText = fallbackResponse.content.trim();
+        
+        return NextResponse.json({
+          success: true,
+          enhanced_text: enhancedText,
+          enhanced_texts: [enhancedText],
+          provider: 'openrouter'
+        });
       }
 
       const enhancedText = response.content;

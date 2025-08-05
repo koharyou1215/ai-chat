@@ -18,13 +18,17 @@ export const saveSettingsToCloud = async (settings: AppSettings) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { geminiApiKey, stableDiffusionApiKey, elevenLabsApiKey, ...safeSettings } = settings
 
+    // 上書き運用: settings テーブル（最小スキーマ）に合わせて保存
+    // テーブル名を 'settings'（user_id unique, data jsonb）に統一
+    const payload = {
+      user_id: user.id,
+      data: safeSettings,
+      updated_at: new Date().toISOString()
+    }
+
     const { data, error } = await supabase
-      .from('user_settings')
-      .upsert({
-        user_id: user.id,
-        settings: safeSettings,
-        updated_at: new Date().toISOString()
-      })
+      .from('settings')
+      .upsert(payload, { onConflict: 'user_id' })
       .select()
 
     if (error) {
@@ -51,7 +55,7 @@ export const loadSettingsFromCloud = async (): Promise<Partial<AppSettings> | nu
     }
 
     const { data, error } = await supabase
-      .from('user_settings')
+      .from('settings')
       .select('*')
       .eq('user_id', user.id)
       .single()
@@ -65,7 +69,8 @@ export const loadSettingsFromCloud = async (): Promise<Partial<AppSettings> | nu
       return null
     }
 
-    return data.settings
+    // 最小スキーマでは data(jsonb) に設定本体を保持
+    return (data as any).data
   } catch (error) {
     console.error('予期しないエラー:', error)
     return null
@@ -104,4 +109,4 @@ export const syncSettings = async (localSettings: AppSettings): Promise<AppSetti
     console.error('設定同期エラー:', error)
     return localSettings
   }
-} 
+}

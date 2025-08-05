@@ -70,11 +70,25 @@ export const signInWithEmail = async (email: string) => {
   }
   
   try {
-    console.log('📤 Supabase OTP送信開始...')
+    // redirectTo を安全に決定（優先: window.__authRedirectTo → fallback: Site URL想定のorigin + /auth/callback）
+    let redirectTo: string | undefined;
+    try {
+      if (typeof window !== 'undefined') {
+        const globalWin = window as unknown as { __authRedirectTo?: string; location?: Location };
+        redirectTo =
+          (globalWin.__authRedirectTo && /^https?:\/\//.test(globalWin.__authRedirectTo) ? globalWin.__authRedirectTo : undefined) ||
+          (globalWin.location ? `${globalWin.location.origin}/auth/callback` : undefined);
+      }
+    } catch {
+      // ignore
+    }
+
+    console.log('📤 Supabase OTP送信開始...', { redirectTo })
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {
         shouldCreateUser: true, // ユーザーが存在しない場合は自動作成
+        emailRedirectTo: redirectTo,
       }
     })
     
@@ -100,13 +114,15 @@ export const signInWithEmail = async (email: string) => {
     
     console.log('✅ Supabase OTP送信成功:', data)
     return { success: true, data }
-  } catch (error: any) {
+  } catch (error) {
+    // 型安全: errorはunknownとして扱い、メッセージ抽出はガードで行う
     console.error('❌ 予期しないSupabaseエラー:', error)
     
     let errorMessage = '予期しないエラーが発生しました'
-    if (error.message?.includes('fetch')) {
+    const msg = typeof error === 'object' && error && 'message' in error ? String((error as { message?: string }).message) : ''
+    if (msg.includes('fetch')) {
       errorMessage = 'ネットワークエラーです。インターネット接続を確認してください'
-    } else if (error.message?.includes('Invalid value')) {
+    } else if (msg.includes('Invalid value')) {
       errorMessage = 'Supabase設定に問題があります。管理者にお問い合わせください'
     }
     
@@ -131,4 +147,4 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return supabase.auth.onAuthStateChange((event, session) => {
     callback(session?.user || null)
   })
-} 
+}

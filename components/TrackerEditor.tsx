@@ -100,7 +100,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-700">パラメータトラッカー</h3>
+        <h3 className="text-lg font-semibold text-gray-800">パラメータトラッカー</h3>
         <button
           onClick={addNewTracker}
           className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -112,7 +112,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
 
       {/* 定型トラッカーのクイック追加 */}
       <div className="bg-gray-50 p-3 rounded-lg">
-        <p className="text-sm text-gray-600 mb-2">よく使われるパラメータ:</p>
+        <p className="text-sm text-gray-700 mb-2">よく使われるパラメータ:</p>
         <div className="flex flex-wrap gap-2">
           {predefinedTrackers.map((predefined) => {
             const isAlreadyAdded = trackers.some(t => t.name === predefined.name);
@@ -143,7 +143,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
                       内部名 (英数字)
                     </label>
                     <input
@@ -151,11 +151,11 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                       value={tempTracker?.name || ''}
                       onChange={(e) => setTempTracker(prev => prev ? {...prev, name: e.target.value} : null)}
                       placeholder="例: affection"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
                       表示名
                     </label>
                     <input
@@ -163,14 +163,14 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                       value={tempTracker?.display_name || ''}
                       onChange={(e) => setTempTracker(prev => prev ? {...prev, display_name: e.target.value} : null)}
                       placeholder="例: 好感度"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                     />
                   </div>
                 </div>
                 
                 {/* Type Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     トラッカー種類
                   </label>
                   <select
@@ -193,7 +193,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                       };
                       setTempTracker(updatedTracker);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   >
                     <option value="numeric">数値型</option>
                     <option value="state">状態型</option>
@@ -206,36 +206,36 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                 {tempTracker?.type === 'numeric' && (
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         初期値
                       </label>
                       <input
                         type="number"
                         value={tempTracker?.initial_value || 0}
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_value: parseInt(e.target.value) || 0} : null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         最小値
                       </label>
                       <input
                         type="number"
                         value={tempTracker?.min_value || 0}
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, min_value: parseInt(e.target.value) || 0} : null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         最大値
                       </label>
                       <input
                         type="number"
                         value={tempTracker?.max_value || 100}
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, max_value: parseInt(e.target.value) || 100} : null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                       />
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                 {tempTracker?.type === 'state' && (
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         初期状態
                       </label>
                       <input
@@ -252,11 +252,11 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                         value={tempTracker?.initial_state || ''}
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_state: e.target.value} : null)}
                         placeholder="例: 初対面"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         可能な状態（カンマ区切り）
                       </label>
                       <input
@@ -264,7 +264,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                         value={tempTracker?.possible_states?.join(', ') || ''}
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, possible_states: e.target.value.split(',').map(s => s.trim()).filter(s => s)} : null)}
                         placeholder="例: 初対面, 知り合い, 友人, 親友, 恋人"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                       />
                     </div>
                   </div>
@@ -279,14 +279,14 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_boolean: e.target.checked} : null)}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">初期値（有効/無効）</span>
+                      <span className="text-sm font-medium text-gray-800">初期値（有効/無効）</span>
                     </label>
                   </div>
                 )}
 
                 {tempTracker?.type === 'text' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
                       初期テキスト
                     </label>
                     <input
@@ -294,7 +294,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                       value={tempTracker?.initial_text || ''}
                       onChange={(e) => setTempTracker(prev => prev ? {...prev, initial_text: e.target.value} : null)}
                       placeholder="例: 初期メモ"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                     />
                   </div>
                 )}
@@ -302,13 +302,13 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                 {/* Common fields */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
                       カテゴリ
                     </label>
                     <select
                       value={tempTracker?.category || 'status'}
                       onChange={(e) => setTempTracker(prev => prev ? {...prev, category: e.target.value} : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                     >
                       <option value="status">ステータス</option>
                       <option value="relationship">関係性</option>
@@ -325,13 +325,13 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                         onChange={(e) => setTempTracker(prev => prev ? {...prev, persistent: e.target.checked} : null)}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">永続化</span>
+                      <span className="text-sm font-medium text-gray-800">永続化</span>
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     説明
                   </label>
                   <textarea
@@ -339,7 +339,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     onChange={(e) => setTempTracker(prev => prev ? {...prev, description: e.target.value} : null)}
                     placeholder="トラッカーの説明を入力してください"
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -410,7 +410,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     内部名 (英数字)
                   </label>
                   <input
@@ -418,11 +418,11 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     value={tempTracker.name}
                     onChange={(e) => setTempTracker({...tempTracker, name: e.target.value})}
                     placeholder="例: affection"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     表示名
                   </label>
                   <input
@@ -430,13 +430,13 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     value={tempTracker.display_name}
                     onChange={(e) => setTempTracker({...tempTracker, display_name: e.target.value})}
                     placeholder="例: 好感度"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     初期値
                   </label>
                   <input
@@ -445,11 +445,11 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     max={tempTracker.max_value || 100}
                     value={tempTracker.initial_value}
                     onChange={(e) => setTempTracker({...tempTracker, initial_value: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-800 mb-1">
                     最大値
                   </label>
                   <input
@@ -457,7 +457,7 @@ export default function TrackerEditor({ trackers, onChange }: TrackerEditorProps
                     min="1"
                     value={tempTracker.max_value || 100}
                     onChange={(e) => setTempTracker({...tempTracker, max_value: parseInt(e.target.value) || 100})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 bg-white"
                   />
                 </div>
               </div>

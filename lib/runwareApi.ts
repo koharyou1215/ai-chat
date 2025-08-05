@@ -39,6 +39,7 @@ export class RunwareService {
 
   async generateImage(params: {
     positivePrompt: string;
+    negativePrompt?: string;
     model: string;
     width?: number;
     height?: number;
@@ -61,6 +62,7 @@ export class RunwareService {
         taskType: "imageInference",
         taskUUID: taskUUID,
         positivePrompt: params.positivePrompt,
+        ...(params.negativePrompt && { negativePrompt: params.negativePrompt }),
         width: params.width || 512,
         height: params.height || 512,
         model: params.model,

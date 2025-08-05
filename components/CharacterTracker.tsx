@@ -143,7 +143,7 @@ export default function CharacterTrackerDisplay({
           return (
             <div
               key={tracker.name}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+              className={`group flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-300 cursor-pointer ${
                 tracker.type === 'numeric' ? getValueColor(numericValue, maxValue) : 'text-blue-600 bg-blue-100'
               } ${
                 animatingTrackers.has(tracker.name) 
@@ -154,6 +154,32 @@ export default function CharacterTrackerDisplay({
               {getTrackerIcon(tracker.name)}
               <span>{tracker.display_name}</span>
               <span className="font-bold">{displayValue}</span>
+              
+              {/* コンパクトモード用調整ボタン */}
+              {!readOnly && tracker.type === 'numeric' && (
+                <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleValueChange(tracker.name, -1);
+                    }}
+                    className="p-0.5 text-red-500 hover:bg-red-50 rounded transition-colors"
+                    title="1減らす"
+                  >
+                    <TrendingDown className="w-2.5 h-2.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleValueChange(tracker.name, 1);
+                    }}
+                    className="p-0.5 text-green-500 hover:bg-green-50 rounded transition-colors"
+                    title="1増やす"
+                  >
+                    <TrendingUp className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import CharacterGallery from '../../components/CharacterGallery';
+import CharacterGallery from '../../../components/CharacterGallery';
 import CharacterModal from '../../../components/CharacterModal';
-import { CharacterLoader } from '../../../lib/characterLoader'; // パスを修正
-import { Character } from '../../../types/character'; // Character 型をインポート (パスを修正)
+import { CharacterLoader } from '../../../lib/characterLoader';
+import { Character } from '../../../types/character';
 
 export default function CharactersPage() {
   const router = useRouter();

@@ -68,7 +68,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         appearancePrompt: character.appearancePrompt || '',
         appearanceNegativePrompt: character.appearanceNegativePrompt || '',
         chatBackgroundUrl: character.chatBackgroundUrl || '',
-        trackers: Array.isArray(character.trackers) ? character.trackers : []
+        trackers: Array.isArray(character.trackers) ? character.trackers : [],
+        aiModel: character.aiModel || undefined,
+        isVariation: character.isVariation || false
       });
     } else {
       // 新規作成時はリセット
@@ -92,7 +94,9 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         appearancePrompt: '',
         appearanceNegativePrompt: '',
         chatBackgroundUrl: '',
-        trackers: []
+        trackers: [],
+        aiModel: undefined,
+        isVariation: false
       });
     }
   }, [character, isOpen]);
@@ -648,9 +652,46 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
               </div>
             </section>
 
-            {/* NSFW設定 */}
+            {/* 詳細設定 */}
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4">詳細設定</h3>
+              
+              {/* AIモデル選択 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  生成元AIモデル
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={formData.aiModel || ''}
+                    onChange={(e) => setFormData(prev => ({ 
+                      ...prev, 
+                      aiModel: e.target.value as 'gemini' | 'claude' | 'grok' | 'original' | undefined 
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+                  >
+                    <option value="">オリジナル</option>
+                    <option value="gemini">🤖 Gemini</option>
+                    <option value="claude">🧠 Claude</option>
+                    <option value="grok">⚡ Grok</option>
+                    <option value="original">👤 オリジナル</option>
+                  </select>
+                  <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={formData.isVariation || false}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isVariation: e.target.checked }))}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">バリエーション</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  AIが生成したキャラクターの場合は生成元を選択してください
+                </p>
+              </div>
+
+              {/* NSFW設定 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   NSFW プロファイル

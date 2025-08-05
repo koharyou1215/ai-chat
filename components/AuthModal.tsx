@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle, TestTube, HardDrive } from 'lucide-react'
+import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle, TestTube } from 'lucide-react'
 import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser, supabase } from '../lib/supabase'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { syncAllData, SyncData } from '../lib/cloudSyncManager'
@@ -79,6 +79,18 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
     setMessage('')
     
     try {
+      // /auth/callback に戻す絶対URLを明示
+      const redirectTo =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+
+      // signInWithEmail は1引数仕様のため、redirectToは内部で参照されるようにlib側で処理する前提
+      // ここでは副作用的に window.__authRedirectTo に格納（libで拾う）
+      if (typeof window !== 'undefined') {
+        // 型安全にwindowへ一時格納（lib/supabase.ts側で参照してemailRedirectToに使用）
+        (window as unknown as { __authRedirectTo?: string }).__authRedirectTo = redirectTo;
+      }
       const result = await signInWithEmail(cleanEmail)
       
       if (result.success) {
@@ -113,33 +125,49 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
   }
 
   const handleSync = async () => {
-    if (!user || !onDataSync) return
+    // onDataSync が未指定でも同期自体は実行し、UIに進捗を出す
+    if (!user) {
+      setMessage('ログインが必要です')
+      return
+    }
     
     setIsSyncing(true)
-    setMessage('')
+    setMessage('同期を開始しました…')
+    console.log('🔄 [AuthModal] Sync start')
     
     try {
-      // 現在のローカルデータを取得（この部分は実際の実装で調整が必要）
+      // ローカルデータの取得と可視ログ
+      const characters = JSON.parse(localStorage.getItem('ai-chat-characters') || '[]')
+      const personas = JSON.parse(localStorage.getItem('ai-chat-personas') || '[]')
+      const settingsJson = JSON.parse(localStorage.getItem('ai-chat-settings') || '{}')
       const localData: SyncData = {
-        characters: JSON.parse(localStorage.getItem('ai-chat-characters') || '[]'),
-        personas: JSON.parse(localStorage.getItem('ai-chat-personas') || '[]'),
-        memos: [], // メモストアから取得
-        settings: JSON.parse(localStorage.getItem('ai-chat-settings') || '{}')
+        characters,
+        personas,
+        memos: [], // TODO: メモストア連携
+        settings: settingsJson
       }
+      console.log('🔎 [AuthModal] Local snapshot:', {
+        characters: Array.isArray(characters) ? characters.length : 0,
+        personas: Array.isArray(personas) ? personas.length : 0,
+        hasSettings: !!settingsJson && Object.keys(settingsJson).length > 0
+      })
       
       const result = await syncAllData(localData)
+      console.log('✅ [AuthModal] syncAllData result:', result)
       
       if (result.success && result.data) {
         setSyncStatus(result.syncedItems)
         setMessage('SUCCESS:データの同期が完了しました！すべてのデバイスで最新データが利用できます。')
-        onDataSync(result.data)
+        if (onDataSync) {
+          onDataSync(result.data)
+        }
         localStorage.setItem('last-sync-time', new Date().toISOString())
       } else {
-        setMessage(`同期エラー: ${result.error}`)
+        setMessage(`同期エラー: ${result.error ?? '不明なエラー'}`)
       }
     } catch (error) {
-      console.error('同期エラー:', error)
-      setMessage('同期中にエラーが発生しました')
+      console.error('❌ [AuthModal] 同期エラー:', error)
+      setMessage('同期中にエラーが発生しました。コンソールログを確認してください。')
     } finally {
       setIsSyncing(false)
     }
@@ -271,7 +299,10 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
               </div>
 
               <button
-                onClick={handleSync}
+                onClick={() => {
+                  console.log('🖱️ [AuthModal] Sync button clicked')
+                  handleSync()
+                }}
                 disabled={isSyncing}
                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2 mb-3"
               >
@@ -491,4 +522,4 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
       </div>
     </div>
   )
-} 
+}
