@@ -32,7 +32,6 @@ import Typewriter from '../../components/Typewriter';
 import { saveCharacterToCloud } from '../../lib/characterCloudSync';
 
 // 画像圧縮関数
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const compressImage = (file: File, maxWidth = 1920, maxHeight = 1080, quality = 0.8): Promise<string> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
@@ -463,6 +462,15 @@ export default function ChatPage() {
         // 履歴マネージャーを初期化
         await historyManager.init();
         
+        // 全セッションを初期読み込み（デプロイ環境で履歴表示のため）
+        try {
+          const allSessions = await historyManager.getAllSessions();
+          console.log('📚 全セッション初期読み込み:', allSessions.length, '件');
+          setSessions(allSessions);
+        } catch (error) {
+          console.error('❌ 全セッション読み込みエラー:', error);
+        }
+        
         // 最後に選択されたキャラクターを復元、なければデフォルトキャラクターを設定
         const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
         let targetCharacter = defaultCharacter;
@@ -507,22 +515,44 @@ export default function ChatPage() {
           setCurrentCharacter(targetCharacter);
           setStoreCurrentCharacter(targetCharacter);
           
-          // 履歴の自動読み込み設定を確認
-          const shouldAutoLoadHistory = settings.autoLoadHistory !== false; // デフォルトはtrue
+          // 履歴の自動読み込み設定を確認（デプロイ環境では常に有効+強制保存）
+          const shouldAutoLoadHistory = process.env.NODE_ENV === 'production' ? true : (settings.autoLoadHistory !== false);
+          
+          console.log('🔍 履歴読み込み設定:', {
+            shouldAutoLoadHistory,
+            nodeEnv: process.env.NODE_ENV,
+            settingsAutoLoad: settings.autoLoadHistory,
+            characterName: targetCharacter.name
+          });
+          
+          // デプロイ環境では履歴保存を強制有効化
+          if (process.env.NODE_ENV === 'production') {
+            console.log('🔒 本番環境: 履歴保存を強制有効化');
+            updateSettings({ 
+              autoLoadHistory: true
+            });
+          }
           
           if (shouldAutoLoadHistory) {
-            // そのキャラクターのセッションのみ読み込む
-            const characterSessions = await historyManager.getSessionsByCharacter(targetCharacter.name);
-            setSessions(characterSessions);
-            
-            // 最後のセッションとキャラクターを復元
-            if (characterSessions.length > 0) {
-              const lastSession = characterSessions[characterSessions.length - 1];
-              setCurrentSessionId(lastSession.id);
-              setMessages(lastSession.messages);
-              console.log('✅ 最後のセッションを復元:', lastSession.id);
-            } else {
-              // セッションがない場合は初期メッセージを設定
+            try {
+              // そのキャラクターのセッションのみ読み込む
+              const characterSessions = await historyManager.getSessionsByCharacter(targetCharacter.name);
+              console.log('📚 キャラクターセッション読み込み結果:', characterSessions.length, '件');
+              setSessions(characterSessions);
+              
+              // 最後のセッションとキャラクターを復元
+              if (characterSessions.length > 0) {
+                const lastSession = characterSessions[characterSessions.length - 1];
+                setCurrentSessionId(lastSession.id);
+                setMessages(lastSession.messages);
+                console.log('✅ 最後のセッションを復元:', lastSession.id, lastSession.messages?.length, 'メッセージ');
+              } else {
+                // セッションがない場合は初期メッセージを設定
+                console.log('📝 セッションがないため初期メッセージを設定');
+                setInitialMessage(targetCharacter);
+              }
+            } catch (error) {
+              console.error('❌ 履歴読み込みエラー:', error);
               setInitialMessage(targetCharacter);
             }
           } else {
@@ -2146,8 +2176,8 @@ export default function ChatPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                {/* トラッカートグルボタン */}
-                {currentCharacter?.trackers && currentSessionId && (
+                {/* トラッカートグルボタン - 条件を緩和してデバッグ */}
+                {(currentCharacter?.trackers || process.env.NODE_ENV === 'development') && (
                   <button
                     onClick={() => setShowTrackers(!showTrackers)}
                     className={`touch-target p-1.5 md:p-2 rounded-lg transition-all duration-200 ${
@@ -2166,6 +2196,13 @@ export default function ChatPage() {
                   title="クイック設定"
                 >
                   <Zap size={16} />
+                </button>
+                <button
+                  onClick={() => setIsChatHistoryOpen(true)}
+                  className="touch-target text-green-400 hover:text-green-300 hover:bg-green-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
+                  title="チャット履歴"
+                >
+                  <MessageSquare size={16} />
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}
@@ -2731,6 +2768,49 @@ export default function ChatPage() {
           allCharacters={allCharacters}
         />
       )}
+
+      {/* チャット履歴ギャラリー */}
+      {isChatHistoryOpen && (
+        <ChatHistoryGallery
+          sessions={sessions}
+          characters={allCharacters}
+          onSelectSession={async (session) => {
+            try {
+              // セッション履歴を読み込み
+              console.log('📖 セッション読み込み開始:', session.id);
+              const loadedSession = await historyManager.loadSession(session.id);
+              
+              if (loadedSession && loadedSession.messages && loadedSession.messages.length > 0) {
+                setMessages(loadedSession.messages);
+                setCurrentSessionId(session.id);
+                console.log('✅ セッション読み込み完了:', loadedSession.messages.length, '件のメッセージ');
+              } else {
+                console.warn('⚠️ セッションにメッセージがありません');
+              }
+              
+              setIsChatHistoryOpen(false);
+            } catch (error) {
+              console.error('❌ セッション読み込みエラー:', error);
+            }
+          }}
+          onDeleteSession={async (sessionId) => {
+            try {
+              await historyManager.deleteSession(sessionId);
+              const updatedSessions = await historyManager.getAllSessions();
+              setSessions(updatedSessions);
+              
+              if (currentSessionId === sessionId) {
+                setCurrentSessionId('');
+                setMessages([]);
+              }
+            } catch (error) {
+              console.error('セッション削除エラー:', error);
+            }
+          }}
+          onClose={() => setIsChatHistoryOpen(false)}
+        />
+      )}
+
       {isMessageEditorOpen && (
         <MessageEditorModal
           isOpen={isMessageEditorOpen}
