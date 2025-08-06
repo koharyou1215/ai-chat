@@ -168,6 +168,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   updateTrackerValue: (sessionId, name, value) => {
+    console.log(`🔄 updateTrackerValue呼び出し:`, {
+      sessionId,
+      name,
+      value,
+      type: typeof value
+    });
+    
     const state = get();
     const map = { ...state.trackerValues };
     const session = { ...(map[sessionId] || {}) };
@@ -180,8 +187,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     else if (typeof value === 'string') type = 'text';
     if (existing) type = existing.type;
 
+    const oldValue = session[name]?.value;
     session[name] = toTrackerValue(value as number | string | boolean, type);
     map[sessionId] = session;
+
+    console.log(`🔄 トラッカー値更新完了:`, {
+      name,
+      oldValue,
+      newValue: session[name].value,
+      changed: oldValue !== session[name].value
+    });
 
     set({ trackerValues: map });
     state._persist(map);

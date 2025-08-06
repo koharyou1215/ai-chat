@@ -56,17 +56,33 @@ export default function CharacterTrackerDisplay({
 
   // 値が変更された時のアニメーション
   useEffect(() => {
+    console.log('🔍 CharacterTracker useEffect実行:', {
+      trackerCount: trackers.length,
+      currentValuesKeys: Object.keys(currentValues),
+      previousValuesKeys: Object.keys(previousValues)
+    });
+    
     const timeouts: NodeJS.Timeout[] = [];
     
     trackers.forEach(tracker => {
       const currentValue = currentValues[tracker.name];
       const previousValue = previousValues[tracker.name];
       
+      console.log(`🔍 トラッカー「${tracker.name}」の状態:`, {
+        currentValue: currentValue?.value,
+        previousValue: previousValue?.value,
+        hasCurrentValue: !!currentValue,
+        hasPreviousValue: !!previousValue,
+        valuesEqual: currentValue?.value === previousValue?.value
+      });
+      
       // 値が実際に変化した場合のみアニメーション
       if (currentValue && previousValue && 
           currentValue.value !== previousValue.value) {
+        console.log(`✨ トラッカー「${tracker.name}」アニメーション開始: ${previousValue.value} → ${currentValue.value}`);
         setAnimatingTrackers(prev => new Set([...prev, tracker.name]));
         const timeout = setTimeout(() => {
+          console.log(`✨ トラッカー「${tracker.name}」アニメーション終了`);
           setAnimatingTrackers(prev => {
             const next = new Set(prev);
             next.delete(tracker.name);
@@ -79,6 +95,7 @@ export default function CharacterTrackerDisplay({
 
     // 前回の値を更新
     setPreviousValues(currentValues);
+    console.log('🔍 previousValues更新完了:', Object.keys(currentValues));
 
     return () => timeouts.forEach(clearTimeout);
   }, [currentValues, trackers, previousValues]);

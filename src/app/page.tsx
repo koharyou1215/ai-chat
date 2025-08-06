@@ -1086,8 +1086,19 @@ export default function ChatPage() {
       
       if (data.candidates && data.candidates.length > 0) {
         console.log('✅ 返信提案成功:', data.candidates.length, '件の候補');
+        console.log('🔍 受信した候補:', data.candidates);
+        data.candidates.forEach((candidate, index) => {
+          console.log(`🔍 候補${index + 1} の型:`, typeof candidate);
+          console.log(`🔍 候補${index + 1} の内容:`, candidate);
+          console.log(`🔍 候補${index + 1} の長さ:`, candidate?.length || 'undefined');
+          console.log(`🔍 候補${index + 1} の最初の100文字:`, candidate?.substring(0, 100) || 'empty');
+        });
         setUserInspirationCandidates(data.candidates);
         setShowInspirationCandidates(true);
+        console.log('🔍 状態更新後:', {
+          showInspirationCandidates: true,
+          userInspirationCandidatesLength: data.candidates.length
+        });
       } else {
         console.error('❌ 返信提案失敗:', data.error || '候補が空です');
         alert('返信提案の生成に失敗しました');
@@ -2590,18 +2601,23 @@ export default function ChatPage() {
               {showInspirationCandidates && userInspirationCandidates.length > 0 && (
                 <div className="mb-3 space-y-2">
                   <div className="text-sm text-gray-600 font-medium mb-2">💡 返答候補を選択してください：</div>
-                  {userInspirationCandidates.map((candidate, index) => (
-                    <button
-                      key={index}
-                      onClick={() => selectInspirationCandidate(candidate)}
-                      className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="text-gray-500 text-xs mt-1">✏️</span>
-                        <span className="flex-1">{candidate}</span>
-                      </div>
-                    </button>
-                  ))}
+                  {userInspirationCandidates.map((candidate, index) => {
+                    console.log(`🔍 表示時候補${index + 1}:`, candidate);
+                    console.log(`🔍 表示時候補${index + 1} の型:`, typeof candidate);
+                    console.log(`🔍 表示時候補${index + 1} の長さ:`, candidate?.length || 'undefined');
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => selectInspirationCandidate(candidate)}
+                        className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500 text-xs mt-1">✏️</span>
+                          <span className="flex-1">{candidate}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => {
                       setShowInspirationCandidates(false);

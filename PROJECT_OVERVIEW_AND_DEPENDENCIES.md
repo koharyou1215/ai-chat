@@ -80,7 +80,9 @@ src/app（App Router）
 components（UI群）
 - SettingsModal.tsx / QuickSettingsModal.tsx / CharacterModal.tsx / PersonaModal.tsx / AuthModal.tsx / ThemeModal.tsx / VoiceControls.tsx / …
 - CharacterSelector.tsx / CharacterGallery.tsx / CharacterImportExport.tsx / CharacterTracker.tsx / TrackerEditor.tsx
-- UserInspirationModal.tsx / EnhancedImpressionModal.tsx / ChatSummaryModal.tsx / MemoModal.tsx / MemoListModal.tsx
+- UserInspirationModal.tsx / EnhancedImpressionModal.tsx / ChatSummaryModal.tsx / 
+
+.tsx / MemoListModal.tsx
 - DataBackup.tsx / BackupControls.tsx / ChatHistoryGallery.tsx
 - Live2DAvatar.tsx / MobileHelper.tsx / ChatMemoProvider.tsx / ThemeInitializer.tsx
 - settings/*（Model設定、API設定など）
@@ -229,10 +231,11 @@ GeminiApiManager（lib/geminiApiManager.ts）
   - Gemini API直接呼び出し → 失敗時OpenRouterフォールバック
   - 全てのモデルタイプ（Gemini、Claude、GPT、Qwen等）に対応
 
-- **user-inspiration機能の内容表示問題解決**
-  - カテゴリタイトルのみ表示される問題を修正
-  - 候補抽出ロジック改善（`^\d+\.`番号形式と`\[.*?\]`ブラケット形式の両方対応）
-  - デバッグログ追加でAIレスポンス内容の確認可能
+- **user-inspiration機能の内容表示問題解決（2025-08-07完全修復）**
+  - ✅ カテゴリタイトルのみ表示される問題を完全修正
+  - ✅ 候補抽出ロジック改善（内容長制限削除、正規表現改良）
+  - ✅ 完全な候補内容表示機能の実装
+  - ✅ デバッグログ追加でAIレスポンス内容の確認可能
 
 - **TypeScript型安全性向上**
   - GenerationOptionsインターface追加
@@ -242,9 +245,10 @@ GeminiApiManager（lib/geminiApiManager.ts）
 ### 動作確認済み機能
 - ✅ チャット機能（simple-chat API）
 - ✅ 文章強化機能（enhance-text API）
-- ✅ 返信提案機能（user-inspiration API）
+- ✅ 返信提案機能（user-inspiration API）- **完全修復完了！**
 - ✅ 全AIモデルの安定動作
 - ✅ フォールバックシステムの確実な動作
+- ✅ UserInspirationModal完全表示機能（2025-08-07修正完了）
 
 ---
 

@@ -121,8 +121,8 @@ export default function MemoModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
+      <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden z-[91]">
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
@@ -138,7 +138,7 @@ export default function MemoModal({
         </div>
 
         {/* コンテンツ */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] pb-32">
           <div className="space-y-6">
             {/* 対象メッセージ + 要約生成 */}
             <section>
@@ -314,17 +314,17 @@ export default function MemoModal({
           </div>
         </div>
 
-        {/* フッター */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50/50">
+        {/* フッター（モバイルでも常に最前面） */}
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[96] w-full max-w-2xl flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50/95 backdrop-blur-md">
           <button
             onClick={onClose}
-            className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-5 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             キャンセル
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+            className="relative z-[97] px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
           >
             <Save size={16} />
             保存

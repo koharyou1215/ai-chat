@@ -62,4 +62,7 @@ export function UserInspirationModal({ isOpen, candidates, onSelect, onClose }: 
       </div>
     </div>
   );
-} 
+}
+
+// デフォルトエクスポートと名前付きエクスポートの両方をサポート
+export default UserInspirationModal;

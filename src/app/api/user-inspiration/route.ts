@@ -126,32 +126,55 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
-    // 候補を抽出（新しい形式に対応）
+    // 候補を抽出（改良版：番号付きリストと括弧形式の両方に対応）
     let candidates: string[] = [];
     
-    // まず番号付きリスト（1. 2. 3. 4.）で分割を試行
-    const numberedCandidates = content.split('\n')
-      .filter((line: string) => line.match(/^\d+\./))
-      .map((line: string) => line.replace(/^\d+\.\s*/, '').trim())
-      .filter((candidate: string) => candidate.length > 0);
+    console.log(`🔍 AI応答内容（先頭200文字）:`, content.substring(0, 200));
     
-    if (numberedCandidates.length > 0) {
-      candidates = numberedCandidates;
+    // まず番号付きリスト（1. 2. 3. 4.）で分割を試行
+    const numberedSections = content.split(/(?=\d+\.)/);
+    const validNumberedSections = numberedSections
+      .filter(section => section.trim().match(/^\d+\./))
+      .map(section => {
+        const cleanContent = section.replace(/^\d+\.\s*/, '').trim();
+        return cleanContent;
+      })
+      .filter(candidate => candidate.length > 0);
+    
+    if (validNumberedSections.length > 0) {
+      console.log(`🔍 番号付きリストを検出: ${validNumberedSections.length}件`);
+      candidates = validNumberedSections;
+      candidates.forEach((candidate, index) => {
+        console.log(`🔍 番号付き候補${index + 1}:`, {
+          content: candidate.substring(0, 100) + '...',
+          length: candidate.length
+        });
+      });
     } else {
       // 番号付きがない場合、［］形式で抽出
-      const bracketMatches = content.match(/\[([^\]]+)\][^[]*?(?=\[|$)/g);
+      // 改良版：[タイトル]とその後の内容をより正確に抽出
+      const bracketPattern = /\[([^\]]+)\]\s*([\s\S]*?)(?=\[|$)/g;
+      const bracketMatches = [...content.matchAll(bracketPattern)];
+      
       if (bracketMatches && bracketMatches.length > 0) {
-        candidates = bracketMatches.map((match: string) => {
-          // [タイトル]の後の内容を抽出
-          const titleMatch = match.match(/\[([^\]]+)\]/);
-          const title = titleMatch ? titleMatch[1] : '';
-          const contentAfterTitle = match.replace(/\[([^\]]+)\]/, '').trim();
+        candidates = bracketMatches.map((match) => {
+          const title = match[1]; // [タイトル] の中身
+          const contentAfterTitle = match[2] ? match[2].trim() : ''; // タイトル後の内容
           
-          // タイトルと内容を組み合わせ
-          if (contentAfterTitle.length > 10) {
-            return `${title}: ${contentAfterTitle}`;
+          console.log(`🔍 候補解析:`, {
+            fullMatch: match[0],
+            title: title,
+            contentAfterTitle: contentAfterTitle,
+            contentLength: contentAfterTitle.length
+          });
+          
+          // タイトルと内容を組み合わせ（長さ制限を削除）
+          if (contentAfterTitle.length > 0) {
+            return `[${title}] ${contentAfterTitle}`;
           } else {
-            return title;
+            // 内容がない場合は、AIが完全な応答を生成していない可能性
+            console.warn(`⚠️ 候補「${title}」に内容がありません`);
+            return `[${title}] （内容を生成中...)`;
           }
         }).filter((candidate: string) => candidate.length > 0);
       } else {
