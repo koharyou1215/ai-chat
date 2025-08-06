@@ -5,6 +5,7 @@ import { X, Mail, LogOut, User, Cloud, RefreshCw, CheckCircle, AlertCircle, Test
 import { signInWithEmail, signOut, onAuthStateChange, getCurrentUser, supabase } from '../lib/supabase'
 import { User as SupabaseUser } from '@supabase/supabase-js'
 import { syncAllData, SyncData } from '../lib/cloudSyncManager'
+import { historyManager } from '../lib/historyManager'
 import DataBackup from './DataBackup'
 
 interface AuthModalProps {
@@ -264,6 +265,7 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
                 <h3 className="font-medium text-blue-800 mb-2">✅ 有効な機能</h3>
                 <ul className="text-blue-700 text-sm space-y-1">
                   <li>• キャラクターデータのクラウド保存</li>
+                  <li>• チャット履歴のクラウド同期</li>
                   <li>• デバイス間でのデータ同期</li>
                   <li>• 自動バックアップ</li>
                   <li>• どのデバイスからでもアクセス可能</li>
@@ -271,12 +273,44 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
               </div>
 
               <button
-                onClick={handleSync}
+                onClick={async () => {
+                  setIsSyncing(true);
+                  setSyncStatus({
+                    characters: false,
+                    personas: false,
+                    memos: false,
+                    settings: false
+                  });
+
+                  try {
+                    // 通常のデータ同期
+                    await handleSync();
+                    
+                    // 履歴同期（別途実行）
+                    try {
+                      const { historyManager } = await import('../lib/historyManager');
+                      const syncResult = await historyManager.syncWithCloud();
+                      
+                      if (syncResult.success) {
+                        setMessage(`SUCCESS: ${syncResult.message}`);
+                      } else {
+                        setMessage(`WARNING: 履歴同期エラー - ${syncResult.message}`);
+                      }
+                    } catch (historyError) {
+                      console.warn('履歴同期スキップ:', historyError);
+                    }
+                  } catch (error) {
+                    console.error('同期エラー:', error);
+                    setMessage('ERROR: 同期に失敗しました');
+                  } finally {
+                    setIsSyncing(false);
+                  }
+                }}
                 disabled={isSyncing}
                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2 mb-3"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? '同期中...' : 'データを同期'}
+                {isSyncing ? '同期中...' : 'データ・履歴を同期'}
               </button>
 
               {syncStatus && (

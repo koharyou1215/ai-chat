@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Save, Tag, Plus, MessageSquare, Brain, Star } from 'lucide-react';
+import { X, Save, Tag, Plus, MessageSquare, Brain, Star, Sparkles } from 'lucide-react';
 import { ChatMemo } from '../types/character';
 import { MemoryManager } from '../lib/memoryManager';
 
@@ -26,7 +26,8 @@ export default function MemoModal({
   existingMemo,
   onSave
 }: MemoModalProps) {
-  const [note, setNote] = useState('');
+  // 案B: メモ内容欄は廃止し、AI要約テキストを編集可能フィールドで保持
+  const [summary, setSummary] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [isAiMemory, setIsAiMemory] = useState(false);
@@ -34,12 +35,12 @@ export default function MemoModal({
 
   useEffect(() => {
     if (existingMemo) {
-      setNote(existingMemo.note);
+      setSummary(existingMemo.note || '');
       setTags(existingMemo.tags);
       setIsAiMemory(existingMemo.isAiMemory || false);
       setImportance(existingMemo.importance || 1);
     } else {
-      setNote('');
+      setSummary('');
       setTags([]);
       setIsAiMemory(false);
       setImportance(1);
@@ -48,14 +49,14 @@ export default function MemoModal({
   }, [existingMemo, isOpen]);
 
   const handleSave = () => {
-    if (!note.trim()) {
-      alert('メモ内容を入力してください');
+    if (!summary.trim()) {
+      alert('要約テキストが空です。「AIで要約」ボタンで作成するか、手入力してください。');
       return;
     }
 
     // 自動重要度計算（AIメモリの場合）
-    const calculatedImportance = isAiMemory 
-      ? MemoryManager.calculateImportance(note.trim(), tags)
+    const calculatedImportance = isAiMemory
+      ? MemoryManager.calculateImportance(summary.trim(), tags)
       : importance;
 
     const memo: ChatMemo = {
@@ -64,7 +65,7 @@ export default function MemoModal({
       sessionId,
       characterId,
       content: messageContent,
-      note: note.trim(),
+      note: summary.trim(), // 保存するのは要約テキスト
       tags: tags,
       createdAt: existingMemo?.createdAt || Date.now(),
       updatedAt: Date.now(),
@@ -94,6 +95,29 @@ export default function MemoModal({
     }
   };
 
+  // AIで要約（/api/generate-memo-title）呼び出し
+  const generateSummary = async () => {
+    try {
+      const res = await fetch('/api/generate-memo-title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: messageContent,
+          current: summary || '',
+          maxLen: 30
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.success || !data?.title) {
+        throw new Error(data?.error || '要約生成に失敗しました');
+      }
+      setSummary(data.title);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      alert(`要約生成に失敗しました: ${msg}`);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -116,35 +140,43 @@ export default function MemoModal({
         {/* コンテンツ */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           <div className="space-y-6">
-            {/* 元メッセージ */}
+            {/* 対象メッセージ + 要約生成 */}
             <section>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">対象メッセージ</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">対象メッセージ</h3>
+                <button
+                  type="button"
+                  onClick={generateSummary}
+                  className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-1"
+                  title="AIで要約（20〜30文字程度）"
+                >
+                  <Sparkles size={16} />
+                  AIで要約
+                </button>
+              </div>
               <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                   {messageContent}
                 </p>
               </div>
-            </section>
 
-            {/* メモ内容 */}
-            <section>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">メモ内容 *</h3>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 resize-none"
-                rows={6}
-                placeholder="このメッセージについて覚えておきたいことを記録してください...
-
-例：
-- キャラクターの重要な設定情報
-- ストーリーの転換点
-- 感情的な重要なシーン
-- 後で参照したい情報"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                重要な会話内容や感想、後で思い出したいポイントを記録できます
-              </p>
+              {/* 生成結果（編集可） */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  生成結果（編集可）*
+                </label>
+                <input
+                  type="text"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                  placeholder="AI要約または手入力（例：緊張が高まる対峙シーン）"
+                  maxLength={60}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  保存時はこのテキストがメモとして記録されます（最大60文字推奨）
+                </p>
+              </div>
             </section>
 
             {/* タグ */}
@@ -251,7 +283,7 @@ export default function MemoModal({
                             type="button"
                             onClick={() => setImportance(level)}
                             className={`p-1 rounded ${
-                              level <= (isAiMemory ? MemoryManager.calculateImportance(note, tags) : importance)
+                              level <= (isAiMemory ? MemoryManager.calculateImportance(summary, tags) : importance)
                                 ? 'text-yellow-500'
                                 : 'text-gray-300'
                             }`}
@@ -261,7 +293,7 @@ export default function MemoModal({
                           </button>
                         ))}
                         <span className="text-sm text-gray-600 ml-2">
-                          {isAiMemory ? MemoryManager.calculateImportance(note, tags) : importance}/5
+                          {isAiMemory ? MemoryManager.calculateImportance(summary, tags) : importance}/5
                         </span>
                       </div>
                     </div>
@@ -278,38 +310,7 @@ export default function MemoModal({
               </div>
             </section>
 
-            {/* プレビュー */}
-            <section className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">プレビュー</h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">メモ:</span>
-                  <div className="text-gray-600 mt-1 whitespace-pre-wrap">
-                    {note || '（メモが入力されていません）'}
-                  </div>
-                </div>
-                {tags.length > 0 && (
-                  <div>
-                    <span className="font-medium text-gray-700">タグ:</span>
-                    <span className="text-gray-600 ml-2">
-                      {tags.join(', ')}
-                    </span>
-                  </div>
-                )}
-                {isAiMemory && (
-                  <div>
-                    <span className="font-medium text-gray-700">AIメモリ:</span>
-                    <span className="text-blue-600 ml-2">有効</span>
-                    <span className="text-gray-600 ml-2">
-                      (重要度: {isAiMemory ? MemoryManager.calculateImportance(note, tags) : importance}/5)
-                    </span>
-                  </div>
-                )}
-                <div className="text-xs text-gray-500">
-                  {existingMemo ? '最終更新' : '作成'}: {new Date().toLocaleString()}
-                </div>
-              </div>
-            </section>
+            {/* プレビュー削除（案B） */}
           </div>
         </div>
 
@@ -332,4 +333,4 @@ export default function MemoModal({
       </div>
     </div>
   );
-} 
+}

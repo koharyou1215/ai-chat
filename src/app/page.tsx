@@ -124,23 +124,24 @@ interface ChatSummary {
 }
 
 // 動的インポート（初期バンドル削減）
-const CharacterGallery = dynamic(() => import('../../components/CharacterGallery').then(mod => mod.default as React.ComponentType<CharacterGalleryProps>), { ssr: false });
-const EnhancedImpressionModal = dynamic(() => import('../../components/EnhancedImpressionModal'), { ssr: false });
+const CharacterGallery = dynamic(() => import('../../components/CharacterGallery').then(mod => (mod.default ?? (mod as any).CharacterGallery) as React.ComponentType<CharacterGalleryProps>), { ssr: false });
+// 動的 import の default/export 両対応（ChunkLoadError 対策）
+const EnhancedImpressionModal = dynamic(() => import('../../components/EnhancedImpressionModal').then(m => (m.default ?? (m as any).EnhancedImpressionModal ?? m)), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ChatHistoryGallery = dynamic(() => import('../../components/ChatHistoryGallery'), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const InspirationModal = dynamic(() => import('../../components/InspirationModal').then(m => m.InspirationModal), { ssr: false });
+const InspirationModal = dynamic(() => import('../../components/InspirationModal').then(m => (m.InspirationModal ?? (m as any).default ?? m)), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const UserInspirationModal = dynamic(() => import('../../components/UserInspirationModal').then(m => m.UserInspirationModal), { ssr: false });
+const UserInspirationModal = dynamic(() => import('../../components/UserInspirationModal').then(m => (m.UserInspirationModal ?? (m as any).default ?? m)), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CharacterImportExport = dynamic(() => import('../../components/CharacterImportExport'), { ssr: false });
+const CharacterImportExport = dynamic(() => import('../../components/CharacterImportExport').then(m => (m.default ?? (m as any).CharacterImportExport ?? m)), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PersonaImportExport = dynamic(() => import('../../components/PersonaImportExport'), { ssr: false });
+const PersonaImportExport = dynamic(() => import('../../components/PersonaImportExport').then(m => (m.default ?? (m as any).PersonaImportExport ?? m)), { ssr: false });
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
-const MessageEditorModal = dynamic(() => import('../../components/MessageEditorModal').then(m => m.MessageEditorModal), { ssr: false });
+const MessageEditorModal = dynamic(() => import('../../components/MessageEditorModal').then(m => (m.MessageEditorModal ?? (m as any).default ?? m)), { ssr: false });
 
 export default function ChatPage() {
   const [message, setMessage] = useState('');
@@ -717,6 +718,26 @@ export default function ChatPage() {
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
 
     try {
+      // 現在のトラッカー状態を取得してAPIに送信用のフォーマットに変換
+      const currentTrackerValues = getTrackerValues(currentSessionId);
+      const trackersWithCurrentState = currentCharacter?.trackers?.map(tracker => {
+        const currentValue = currentTrackerValues[tracker.name];
+        
+        if (currentValue) {
+          // 現在の状態で上書き
+          return {
+            ...tracker,
+            current_value: tracker.type === 'numeric' ? currentValue.value : undefined,
+            current_state: tracker.type === 'state' ? currentValue.value : undefined,
+            current_boolean: tracker.type === 'boolean' ? currentValue.value : undefined,
+            current_text: tracker.type === 'text' ? currentValue.value : undefined,
+          };
+        }
+        
+        // 現在の状態がない場合は初期値を使用
+        return tracker;
+      }) || [];
+
       // Gemini APIでチャット応答を生成（簡単版）
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
@@ -729,8 +750,8 @@ export default function ChatPage() {
           character: currentCharacter,
           memos,
           conversation: [...messages, newMessage].slice(-(settings.historySize || 8)),
-          // トラッカーデータを追加
-          trackers: currentCharacter?.trackers || []
+          // 現在のトラッカー状態を送信
+          trackers: trackersWithCurrentState
         }),
       });
 
@@ -749,6 +770,32 @@ export default function ChatPage() {
         // JSON形式（通常 or インスピレーション）
         const chatData = await chatResponse.json();
         if (chatData.success) {
+          // サーバーからトラッカー状態を受信した場合は更新
+          if (chatData.trackers && Array.isArray(chatData.trackers) && currentSessionId && currentCharacter) {
+            chatData.trackers.forEach((tracker: Record<string, unknown>) => {
+              if (tracker.name && tracker.current_state !== undefined) {
+                // state型トラッカーの更新
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_state as string, currentCharacter);
+                console.log(`🔄 トラッカー状態更新: ${tracker.name} = ${tracker.current_state}`);
+              }
+              if (tracker.name && tracker.current_value !== undefined) {
+                // numeric型トラッカーの更新
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_value as number, currentCharacter);
+                console.log(`🔄 トラッカー値更新: ${tracker.name} = ${tracker.current_value}`);
+              }
+              if (tracker.name && tracker.current_boolean !== undefined) {
+                // boolean型トラッカーの更新
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_boolean as boolean, currentCharacter);
+                console.log(`🔄 トラッカーブール更新: ${tracker.name} = ${tracker.current_boolean}`);
+              }
+              if (tracker.name && tracker.current_text !== undefined) {
+                // text型トラッカーの更新
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_text as string, currentCharacter);
+                console.log(`🔄 トラッカーテキスト更新: ${tracker.name} = ${tracker.current_text}`);
+              }
+            });
+          }
+          
           if (chatData.candidates && chatData.candidates.length > 1) {
             // インスピレーション候補がある場合
             setInspirationCandidates(chatData.candidates);
@@ -1296,6 +1343,26 @@ export default function ChatPage() {
 
       console.log('📚 会話コンテキスト件数:', conversationContext.length);
 
+      // 現在のトラッカー状態を取得してAPIに送信用のフォーマットに変換
+      const currentTrackerValues = getTrackerValues(currentSessionId);
+      const trackersWithCurrentState = currentCharacter?.trackers?.map(tracker => {
+        const currentValue = currentTrackerValues[tracker.name];
+        
+        if (currentValue) {
+          // 現在の状態で上書き
+          return {
+            ...tracker,
+            current_value: tracker.type === 'numeric' ? currentValue.value : undefined,
+            current_state: tracker.type === 'state' ? currentValue.value : undefined,
+            current_boolean: tracker.type === 'boolean' ? currentValue.value : undefined,
+            current_text: tracker.type === 'text' ? currentValue.value : undefined,
+          };
+        }
+        
+        // 現在の状態がない場合は初期値を使用
+        return tracker;
+      }) || [];
+
       // APIを呼び出して新しい応答を生成
       console.log('🌐 API呼び出し開始');
       const chatResponse = await fetch('/api/simple-chat', {
@@ -1309,8 +1376,8 @@ export default function ChatPage() {
           character: currentCharacter,
           memos,
           conversation: conversationContext,
-          // トラッカーデータを追加
-          trackers: currentCharacter?.trackers || []
+          // 現在のトラッカー状態を送信
+          trackers: trackersWithCurrentState
         }),
       });
 
@@ -1339,6 +1406,28 @@ export default function ChatPage() {
         console.log('📋 JSONレスポンス:', json);
         
         if (json.success) {
+          // サーバーからトラッカー状態を受信した場合は更新
+          if (json.trackers && Array.isArray(json.trackers) && currentSessionId && currentCharacter) {
+            json.trackers.forEach((tracker: Record<string, unknown>) => {
+              if (tracker.name && tracker.current_state !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_state as string, currentCharacter);
+                console.log(`🔄 トラッカー状態更新（再生成）: ${tracker.name} = ${tracker.current_state}`);
+              }
+              if (tracker.name && tracker.current_value !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_value as number, currentCharacter);
+                console.log(`🔄 トラッカー値更新（再生成）: ${tracker.name} = ${tracker.current_value}`);
+              }
+              if (tracker.name && tracker.current_boolean !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_boolean as boolean, currentCharacter);
+                console.log(`🔄 トラッカーブール更新（再生成）: ${tracker.name} = ${tracker.current_boolean}`);
+              }
+              if (tracker.name && tracker.current_text !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_text as string, currentCharacter);
+                console.log(`🔄 トラッカーテキスト更新（再生成）: ${tracker.name} = ${tracker.current_text}`);
+              }
+            });
+          }
+          
           aiContent = json.content;
           console.log('✅ 再生成成功:', aiContent.substring(0, 100) + '...');
         } else {
@@ -1584,7 +1673,28 @@ export default function ChatPage() {
     if (isLoading || !currentCharacter) return;
     setIsLoading(true);
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
+    
     try {
+      // 現在のトラッカー状態を取得してAPIに送信用のフォーマットに変換
+      const currentTrackerValues = getTrackerValues(currentSessionId);
+      const trackersWithCurrentState = currentCharacter?.trackers?.map(tracker => {
+        const currentValue = currentTrackerValues[tracker.name];
+        
+        if (currentValue) {
+          // 現在の状態で上書き
+          return {
+            ...tracker,
+            current_value: tracker.type === 'numeric' ? currentValue.value : undefined,
+            current_state: tracker.type === 'state' ? currentValue.value : undefined,
+            current_boolean: tracker.type === 'boolean' ? currentValue.value : undefined,
+            current_text: tracker.type === 'text' ? currentValue.value : undefined,
+          };
+        }
+        
+        // 現在の状態がない場合は初期値を使用
+        return tracker;
+      }) || [];
+
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1597,8 +1707,8 @@ export default function ChatPage() {
           character: currentCharacter,
           memos,
           conversation: messages.slice(-(settings.historySize || 15)),
-          // トラッカーデータを追加
-          trackers: currentCharacter?.trackers || []
+          // 現在のトラッカー状態を送信
+          trackers: trackersWithCurrentState
         })
       });
 
@@ -1609,7 +1719,31 @@ export default function ChatPage() {
       const contentType = chatResponse.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
         const json = await chatResponse.json();
-        if (json.success) aiContent = json.content;
+        if (json.success) {
+          // サーバーからトラッカー状態を受信した場合は更新
+          if (json.trackers && Array.isArray(json.trackers) && currentSessionId && currentCharacter) {
+            json.trackers.forEach((tracker: Record<string, unknown>) => {
+              if (tracker.name && tracker.current_state !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_state as string, currentCharacter);
+                console.log(`🔄 トラッカー状態更新（継続）: ${tracker.name} = ${tracker.current_state}`);
+              }
+              if (tracker.name && tracker.current_value !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_value as number, currentCharacter);
+                console.log(`🔄 トラッカー値更新（継続）: ${tracker.name} = ${tracker.current_value}`);
+              }
+              if (tracker.name && tracker.current_boolean !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_boolean as boolean, currentCharacter);
+                console.log(`🔄 トラッカーブール更新（継続）: ${tracker.name} = ${tracker.current_boolean}`);
+              }
+              if (tracker.name && tracker.current_text !== undefined) {
+                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_text as string, currentCharacter);
+                console.log(`🔄 トラッカーテキスト更新（継続）: ${tracker.name} = ${tracker.current_text}`);
+              }
+            });
+          }
+          
+          aiContent = json.content;
+        }
       } else {
         const reader = chatResponse.body?.getReader();
         const decoder = new TextDecoder();

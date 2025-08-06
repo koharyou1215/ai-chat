@@ -4,6 +4,20 @@
 
 ## [未リリース]
 
+### 追加
+- 503 Service Unavailable エラー完全解決
+  - GeminiApiManager.generateWithPriority システム実装
+  - Gemini API → OpenRouterフォールバック機能強化
+- user-inspiration機能の内容表示問題解決
+  - カテゴリタイトルのみ表示される問題を修正
+  - 候補抽出ロジック改善（番号・ブラケット形式両対応）
+
+### 修正
+- TypeScript型安全性向上
+  - GenerationOptionsインターface追加
+  - エラーハンドリング改善
+  - 重複コード除去
+
 ### 追加予定
 - 機能の追加予定
 

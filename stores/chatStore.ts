@@ -72,7 +72,8 @@ const defaultSettings: AppSettings = {
   topP: 0.9,
   maxTokens: 1000, // ユーザー設定: より長い応答に変更
   memorySize: 15000,
-  historySize: 8, // 履歴件数を適切に設定してコンテキストを保持
+  // 履歴件数を拡張してコンテキスト維持を強化（起動直後の一問一答感を軽減）
+  historySize: 24,
   bubbleOpacity: 0.9,
   geminiApiKey: '',
   stableDiffusionApiKey: '',

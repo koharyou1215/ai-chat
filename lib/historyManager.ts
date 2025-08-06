@@ -23,8 +23,14 @@ class HistoryManager {
   private dbName = 'ai-chat-history';
   private version = 1;
   private db: IDBDatabase | null = null;
+  private cloudSyncEnabled = false;
 
   async init(): Promise<void> {
+    await this.initIndexedDB();
+    await this.initCloudSync();
+  }
+
+  private async initIndexedDB(): Promise<void> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
 
@@ -45,6 +51,78 @@ class HistoryManager {
         }
       };
     });
+  }
+
+  private async initCloudSync(): Promise<void> {
+    try {
+      // クラウド同期は環境変数で制御
+      this.cloudSyncEnabled = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (this.cloudSyncEnabled) {
+        console.log('☁️ 履歴クラウド同期が有効です');
+      } else {
+        console.log('💾 ローカル履歴のみを使用します');
+      }
+    } catch (error) {
+      console.warn('⚠️ クラウド同期初期化に失敗しました:', error);
+      this.cloudSyncEnabled = false;
+    }
+  }
+
+  // クラウド同期が利用可能かチェック
+  isCloudSyncAvailable(): boolean {
+    return this.cloudSyncEnabled;
+  }
+
+  // 履歴をクラウドと同期
+  async syncWithCloud(): Promise<{ success: boolean; message: string }> {
+    if (!this.cloudSyncEnabled) {
+      return { success: false, message: 'クラウド同期が無効です' };
+    }
+
+    try {
+      // 動的インポート（Supabaseが利用可能な場合のみ）
+      const { syncHistory } = await import('./historyCloudSync');
+      const localSessions = await this.getAllSessions();
+      
+      const result = await syncHistory(localSessions);
+      
+      if (result.success && result.data) {
+        // クラウドからの最新データをローカルに反映
+        await this.replaceAllSessions(result.data);
+        return { success: true, message: `${result.data.length}件の履歴を同期しました` };
+      } else {
+        return { success: false, message: result.error || '同期に失敗しました' };
+      }
+    } catch (error) {
+      console.error('❌ クラウド同期エラー:', error);
+      return { success: false, message: String(error) };
+    }
+  }
+
+  // 全セッションを置き換え（クラウド同期用）
+  private async replaceAllSessions(sessions: SessionSummary[]): Promise<void> {
+    if (!this.db) return;
+
+    const transaction = this.db.transaction(['sessions'], 'readwrite');
+    const store = transaction.objectStore('sessions');
+
+    // 既存データを全削除
+    await new Promise<void>((resolve, reject) => {
+      const clearRequest = store.clear();
+      clearRequest.onsuccess = () => resolve();
+      clearRequest.onerror = () => reject(clearRequest.error);
+    });
+
+    // 新しいデータを追加
+    for (const session of sessions) {
+      await new Promise<void>((resolve, reject) => {
+        const putRequest = store.put(session);
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
+      });
+    }
+
+    console.log('✅ ローカル履歴を更新しました:', sessions.length, '件');
   }
 
   async saveSession(session: ChatSession): Promise<void> {

@@ -1,5 +1,11 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
+interface GenerationOptions {
+  maxTokens?: number;
+  temperature?: number;
+  openRouterApiKey?: string;
+}
+
 interface GeminiResponse {
   success: boolean;
   content?: string;
@@ -26,11 +32,7 @@ export class GeminiApiManager {
   static async generateWithPriority(
     model: string,
     messages: Array<{role: string, content: string}>,
-    options: {
-      maxTokens?: number;
-      temperature?: number;
-      openRouterApiKey?: string; // 設定画面からのAPIキーを受け取る
-    } = {}
+    options: GenerationOptions = {}
   ): Promise<GeminiResponse> {
     console.log(`🎯 generateWithPriority開始 - モデル: ${model}`);
     console.log(`🔑 APIキー状況:`, {
@@ -42,7 +44,35 @@ export class GeminiApiManager {
     const geminiApiKey = process.env.GEMINI_API_KEY;
     const openRouterKey = options.openRouterApiKey || process.env.OPENROUTER_API_KEY;
 
-    // Gemini APIを最初に試行
+    // Gemini以外のモデルの場合は最初からOpenRouterを試行
+    if (!this.isGeminiModel(model)) {
+      console.log(`🔄 非Geminiモデル: ${model} - OpenRouterを直接使用`);
+      
+      if (openRouterKey) {
+        try {
+          const result = await this.callOpenRouterFallback(model, messages, options, openRouterKey);
+          if (result.success) {
+            console.log(`✅ OpenRouter成功: ${model}`);
+            return { ...result, provider: 'openrouter' };
+          } else {
+            console.error(`❌ OpenRouter失敗: ${result.error}`);
+            return { success: false, content: '', error: result.error || 'OpenRouter生成失敗', provider: 'openrouter' };
+          }
+        } catch (error: unknown) {
+          console.error(`❌ OpenRouterエラー:`, {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          return { success: false, content: '', error: error instanceof Error ? error.message : 'OpenRouter API エラー', provider: 'openrouter' };
+        }
+      } else {
+        console.log(`❌ OpenRouter APIキーなし - 非Geminiモデル処理不可`);
+        return { success: false, content: '', error: 'OpenRouter APIキーが必要です', provider: 'openrouter' };
+      }
+    }
+
+    // Gemini APIを最初に試行（Geminiモデルの場合）
     if (geminiApiKey && this.isGeminiModel(model)) {
       console.log(`🔹 Gemini API優先: ${model}を試行中...`);
       
@@ -53,10 +83,10 @@ export class GeminiApiManager {
           return { ...result, provider: 'gemini' };
         }
         console.log(`⚠️ Gemini API失敗: ${result.error}, OpenRouterフォールバック開始`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`❌ Gemini APIエラー:`, {
-          name: error.name,
-          message: error.message,
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
           model: model
         });
       }
@@ -79,58 +109,18 @@ export class GeminiApiManager {
         } else {
           console.error(`❌ OpenRouter失敗: ${result.error}`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`❌ OpenRouterエラー:`, {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
         });
       }
     } else {
       console.log(`⏭️ OpenRouter スキップ - APIキーなし`);
     }
-    return { success: false, content: '', error: 'Gemini API失敗（OpenRouter無効化中）', provider: 'gemini' };
 
-    // OpenRouterフォールバック
-    if (openRouterKey) {
-      console.log(`🔄 OpenRouterフォールバック: ${model}`);
-      
-      try {
-        const result = await this.callOpenRouterFallback(model, messages, options, openRouterKey);
-        if (result.success) {
-          console.log(`✅ OpenRouter成功: ${model}`);
-          return { ...result, provider: 'openrouter' };
-        } else {
-          console.error(`❌ OpenRouter失敗: ${result.error}`);
-          return {
-            success: false,
-            error: result.error || 'OpenRouter API呼び出しに失敗しました',
-            provider: 'openrouter'
-          };
-        }
-      } catch (error: any) {
-        console.error(`❌ OpenRouterエラー:`, {
-          name: error.name,
-          message: error.message,
-          model: model
-        });
-        return {
-          success: false,
-          error: `OpenRouter呼び出しエラー: ${error.message || error}`,
-          provider: 'openrouter'
-        };
-      }
-    } else {
-      console.warn(`⚠️ OpenRouter APIキーが設定されていません`);
-    }
-
-    const finalError = 'APIキーが設定されていないか、すべてのAPI呼び出しが失敗しました';
-    console.error(`❌ 全APIで失敗: ${finalError}`);
-    return {
-      success: false,
-      error: finalError,
-      provider: 'gemini'
-    };
+    return { success: false, content: '', error: 'すべてのAPI呼び出しが失敗しました', provider: 'gemini' };
   }
 
   /**
@@ -147,7 +137,7 @@ export class GeminiApiManager {
   private static async callGeminiDirect(
     model: string,
     messages: Array<{role: string, content: string}>,
-    options: any,
+    options: GenerationOptions,
     apiKey: string
   ): Promise<{success: boolean, content?: string, error?: string}> {
     try {
@@ -247,7 +237,7 @@ export class GeminiApiManager {
         // parts から連結してフォールバック抽出
         const parts = response.candidates[0].content.parts;
         const joined = parts
-          .map((p: any) => (typeof p?.text === 'string' ? p.text : ''))
+          .map((p: { text?: string }) => (typeof p?.text === 'string' ? p.text : ''))
           .filter(Boolean)
           .join('\n');
         text = joined || '';
@@ -267,20 +257,20 @@ export class GeminiApiManager {
         success: true,
         content: text
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`❌ Gemini APIエラー詳細:`, {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error && 'cause' in error ? error.cause : undefined
       });
       
       // より詳細なエラーメッセージを構築
       let errorMessage = 'Gemini API呼び出しエラー';
-      if (error.message) {
+      if (error instanceof Error && error.message) {
         errorMessage += `: ${error.message}`;
       }
-      if (error.cause) {
+      if (error instanceof Error && 'cause' in error && error.cause) {
         errorMessage += ` (原因: ${error.cause})`;
       }
       
@@ -297,7 +287,7 @@ export class GeminiApiManager {
   private static async callOpenRouterFallback(
     model: string,
     messages: Array<{role: string, content: string}>,
-    options: any,
+    options: GenerationOptions,
     apiKey: string
   ): Promise<{success: boolean, content?: string, error?: string}> {
     try {
@@ -305,12 +295,12 @@ export class GeminiApiManager {
       
       // OpenRouterフォーマットに変換（Geminiモデルのみgoogle/プレフィックス付与）
       let openRouterModel: string;
-      if (model.startsWith('google/gemini')) {
-        // 既にgoogle/geminiが付いている場合はそのまま使用
+      if (model.startsWith('google/')) {
+        // 既にgoogle/プレフィックスが付いている場合はそのまま使用
         openRouterModel = model;
       } else if (model.includes('gemini')) {
         // geminiが含まれているがプレフィックスがない場合は付与
-        openRouterModel = model.startsWith('google/') ? model : `google/${model}`;
+        openRouterModel = `google/${model}`;
       } else {
         // その他のモデルはプレフィックスを付けない
         openRouterModel = model;
@@ -384,16 +374,16 @@ export class GeminiApiManager {
 
       console.error(`❌ OpenRouterレスポンス形式が不正:`, data);
       throw new Error('OpenRouterレスポンス形式が不正 - choices配列がありません');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`❌ OpenRouterエラー詳細:`, {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
       
       // より詳細なエラーメッセージを構築
       let errorMessage = 'OpenRouter呼び出しエラー';
-      if (error.message) {
+      if (error instanceof Error && error.message) {
         errorMessage += `: ${error.message}`;
       }
       

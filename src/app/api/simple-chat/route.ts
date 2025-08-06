@@ -133,12 +133,56 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       basePrompt = `あなたは{{char}}（ナミ）という名前の航海士です。明るく親しみやすい関西弁で話してください。{{user}}は会話相手を指します。`;
     }
     
-    // メモリ情報を追加
+    // メモリ情報を追加（雰囲気・関係性・継続目標を強化）
     if (memos && characterId) {
-      const memorySummary = MemoryManager.generateMemorySummary(memos, characterId || character.name, settings?.memorySize || 1000);
-      if (memorySummary) {
-        basePrompt += `\n\n${memorySummary}`;
-        basePrompt += `\n\n上記の記憶情報を参考にして、一貫性のある自然な返答をしてください。`;
+      const memorySummary = MemoryManager.generateMemorySummary(
+        memos,
+        characterId || character.name,
+        settings?.memorySize || 1000
+      );
+
+      // 直近履歴から雰囲気（mood）と関係性（relationship）を簡易抽出
+      const recentTexts = Array.isArray(conversation)
+        ? conversation
+            .slice(-8)
+            .map((m: { content?: string }) => String(m?.content || ''))
+            .join('\n')
+        : '';
+      const moodHints = [
+        { key: '親密', rx: /(優しい|微笑|頬を|触れ|寄り添|安心|ときめ|近づ)/ },
+        { key: '緊張', rx: /(黙り|沈黙|張り詰|固ま|強張|ためら|警戒)/ },
+        { key: '対立', rx: /(怒|叱|睨|拒否|反発|口論|言い争|刺々)/ },
+        { key: '高揚', rx: /(興奮|熱|鼓動|ドキドキ|勢い|昂ぶ)/ },
+        { key: '穏やか', rx: /(落ち着|穏やか|静か|ゆったり|安堵)/ },
+      ];
+      const relationshipHints = [
+        { key: '初対面', rx: /(初めて|まだ知ら|自己紹介|はじめま|初対面)/ },
+        { key: '知り合い', rx: /(久しぶり|最近|この前|前回|前にも)/ },
+        { key: '仲間', rx: /(一緒|協力|任務|役割|相棒|助け)/ },
+        { key: '友人', rx: /(友|気安|くだけ|冗談|笑い合)/ },
+        { key: '親密', rx: /(抱|手を|寄り添|見つめ|照れ|赤面|キス)/ },
+      ];
+      const foundMood = moodHints.find(h => h.rx.test(recentTexts))?.key;
+      const foundRel = relationshipHints.find(h => h.rx.test(recentTexts))?.key;
+
+      const moodLine = foundMood ? `- 現在の雰囲気(推定): ${foundMood}` : '';
+      const relLine = foundRel ? `- 関係性(推定): ${foundRel}` : '';
+
+      // 継続目標（直前ラウンドの先へ進める具体方針）
+      const continuationGoal =
+        '直前の身体の動き・視線・距離感・声色などの具体描写を1つ以上引き継いで、' +
+        '次の一歩（感情の変化や状況の進展）を短いアクション/セリフで前進させてください。';
+
+      if (memorySummary || moodLine || relLine) {
+        basePrompt += '\n\n【長期メモと雰囲気/関係性の指針】';
+        if (memorySummary) basePrompt += `\n${memorySummary}`;
+        if (moodLine || relLine) {
+          basePrompt += '\n- 文脈ラベル（推定）:';
+          if (moodLine) basePrompt += `\n  ${moodLine}`;
+          if (relLine) basePrompt += `\n  ${relLine}`;
+        }
+        basePrompt += `\n- 継続目標: ${continuationGoal}`;
+        basePrompt += '\nこの指針を踏まえ、唐突な場面転換や人格の齟齬を避け、前回までの「空気」を保ってください。';
       }
     }
     
@@ -246,21 +290,46 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         basePrompt += instruction;
       }
     }
+
+    // 直近のユーザー発言と直前のAI発言を強制的に再提示（直前ラウンド忘却対策）
+    // conversation から最後の user/assistant を抽出して、最新入力の直前に再掲する
+    const lastAssistant = Array.isArray(conversation)
+      ? [...conversation].reverse().find((m: {role:string, content:string}) => m?.role === 'assistant' && m.content?.trim())
+      : undefined;
+    const lastUser = Array.isArray(conversation)
+      ? [...conversation].reverse().find((m: {role:string, content:string}) => m?.role === 'user' && m.content?.trim())
+      : undefined;
+
+    if (lastUser || lastAssistant) {
+      basePrompt += '\n\n【直前のやり取り（忘れず反映すること）】\n';
+      if (lastUser) {
+        basePrompt += `直前ユーザー: ${lastUser.content}\n`;
+      }
+      if (lastAssistant) {
+        basePrompt += `直前${character?.name || '{{char}}'}: ${lastAssistant.content}\n`;
+      }
+      basePrompt += 'この直前のやり取りを必ず踏まえて、会話を自然に継続してください。';
+    }
     
     // 会話履歴をテキスト化（空文字やundefinedを除外）
     // ---- プロンプト短縮 ----
     // 1) 空行除去 2) 直近の履歴を適切に制限 3) 長すぎるメッセージは要約
     console.log(`📚 元の会話履歴件数: ${conversation ? conversation.length : 0}`);
+    // 履歴をより多めに保持（最低12、上限32まで）し、長文は要約
+    const targetHistorySize = Math.max(12, Math.min(settings?.historySize || 24, 32));
+    // 直前の1往復は要約せずそのまま保持し、それ以前のみ要約（直近忘却対策）
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
-          .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-(Math.min(settings?.historySize || 8, 8))) // 履歴サイズを最大8件に制限
-          .map((msg: { role: string; content: string }) => {
-            // 長すぎるメッセージは要約
-            if (msg.content.length > 300) {
+          .filter((msg: { role: string; content: string }) => msg && typeof msg.content === 'string' && msg.content.trim().length > 0)
+          .slice(-targetHistorySize)
+          .map((msg: { role: string; content: string }, idx: number, arr: Array<{role:string; content:string}>) => {
+            const isInLastTurnPair =
+              idx >= arr.length - 2 // 最後の2件（直近のuserとassistant想定）
+              || (idx === arr.length - 3 && arr.length >= 3 && arr[arr.length - 1]?.role === 'assistant' && arr[arr.length - 2]?.role === 'user');
+            if (!isInLastTurnPair && msg.content.length > 300) {
               return {
                 role: msg.role as 'user' | 'assistant',
-                content: msg.content.substring(0, 500) + '...'
+                content: msg.content.substring(0, 300) + '...'
               };
             }
             return {
@@ -277,19 +346,38 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       return `${speaker}: ${msg.content}`;
     }).join('\n');
 
+    // 履歴の文脈重視を明示（モデルの挙動を補助）
+    if (historyText) {
+      basePrompt += '\n\n【履歴の扱い】以下の会話履歴を強く参考にし、継続性のある返答を心がけてください。';
+    }
+
     // ユーザー行（continue 時は追加しない）
     const userLine = doContinue ? '' : `{{user}}: ${message}\n`;
 
-    let fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
+    // 続きを話す（doContinue=true）のときは、明確に「直前のAI発話から継続」指示を追加
+    let continuationHeader = '';
+    if (doContinue) {
+      continuationHeader =
+        '\n【続き指示】以下の履歴の直後から、' +
+        '{{char}}の返答・独白・行動・心情描写のみで自然に物語/会話を継続してください。' +
+        '前回の{{char}}の発言や描写を踏まえ、同じ場面・同じ流れを保ちつつ前進させてください。' +
+        '新規の導入や要約は不要です。呼びかけや前置きも省き、直ちに継続本文を書き始めてください。';
+    }
+
+    let fullPrompt = `${basePrompt}${continuationHeader}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
 
     if (doContinue) {
-      fullPrompt += '\n【重要】この続きでは、ユーザーの思考・行動・セリフは一切含めず、{{char}}（キャラクター）の返答・独白・行動・心情描写のみを自然に書き続けてください。物語や会話が進行するようにしてください。';
+      // 具体的なガイドラインを強化（再生成との違いを明確化）
+      fullPrompt +=
+        '\n【禁止事項】要約、前回の内容の繰り返し、メタ説明、ユーザーの台詞や行動、場面転換のやり直し。\n' +
+        '【必須】直前の情景・身体の動き・心情を引き継ぐ。新しい具体的な行動/セリフで一歩進める。';
     }
     
     console.log(`📄 プロンプト生成完了 - 文字数: ${fullPrompt.length}`);
     
     // プロンプト長が2000文字を超える場合は古い履歴から削除
-    const MAX_PROMPT_CHARS = 2000;
+    // 直前ターンを守るため、総量上限をやや拡大
+    const MAX_PROMPT_CHARS = 3800;
     if (fullPrompt.length > MAX_PROMPT_CHARS) {
       console.warn(`⚠️ プロンプトが長すぎます（${fullPrompt.length}文字）履歴を削除して短縮します`);
       // 履歴を古い順に削除しながら短縮
@@ -545,7 +633,9 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           return NextResponse.json({
             success: true,
             content: candidates[0], // 最初の候補をメインとして使用
-            candidates: candidates
+            candidates: candidates,
+            // 簡単な方法：現在受信したトラッカーをそのまま返す（クライアント側で状態更新処理）
+            trackers: trackers || []
           });
         } catch (multipleRequestError) {
           console.warn('❌ 順次候補生成に失敗、単一候補で再試行:', multipleRequestError);

@@ -2,14 +2,17 @@ import { syncCharacters } from './characterCloudSync'
 import { syncPersonas } from './personaCloudSync'
 import { syncMemos } from './memoCloudSync'
 import { syncSettings } from './settingsCloudSync'
+import { syncHistory } from './historyCloudSync'
 import { getCurrentUser } from './supabase'
 import { Character, UserPersona, ChatMemo, AppSettings } from '../types/character'
+import { SessionSummary } from './historyManager'
 
 export interface SyncData {
   characters: Character[]
   personas: UserPersona[]
   memos: ChatMemo[]
   settings: AppSettings
+  history: SessionSummary[]
 }
 
 export interface SyncResult {
@@ -21,6 +24,7 @@ export interface SyncResult {
     personas: boolean
     memos: boolean
     settings: boolean
+    history: boolean
   }
 }
 
