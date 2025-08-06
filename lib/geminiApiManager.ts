@@ -67,6 +67,30 @@ export class GeminiApiManager {
       });
     }
 
+    // OpenRouterフォールバック（復活）
+    if (openRouterKey) {
+      console.log(`� OpenRouterフォールバック: ${model}`);
+      
+      try {
+        const result = await this.callOpenRouterFallback(model, messages, options, openRouterKey);
+        if (result.success) {
+          console.log(`✅ OpenRouter成功: ${model}`);
+          return { ...result, provider: 'openrouter' };
+        } else {
+          console.error(`❌ OpenRouter失敗: ${result.error}`);
+        }
+      } catch (error: any) {
+        console.error(`❌ OpenRouterエラー:`, {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+    } else {
+      console.log(`⏭️ OpenRouter スキップ - APIキーなし`);
+    }
+    return { success: false, content: '', error: 'Gemini API失敗（OpenRouter無効化中）', provider: 'gemini' };
+
     // OpenRouterフォールバック
     if (openRouterKey) {
       console.log(`🔄 OpenRouterフォールバック: ${model}`);
@@ -167,6 +191,12 @@ export class GeminiApiManager {
       // メッセージを統合
       const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
       console.log(`📄 統合プロンプト文字数: ${prompt.length}`);
+      
+      // プロンプトが長すぎる場合は警告
+      if (prompt.length > 2000) {
+        console.warn(`⚠️ プロンプトが長すぎます: ${prompt.length}文字 - レスポンスが空になる可能性があります`);
+        console.log(`📝 プロンプト概要: ${prompt.substring(0, 200)}...`);
+      }
 
       console.log(`🚀 Gemini API実行中...`);
       const result = await generativeModel.generateContent(prompt);
@@ -193,9 +223,46 @@ export class GeminiApiManager {
         }
       }
       
-      const text = response.text();
-      console.log(`✅ Gemini API成功 - レスポンス文字数: ${text.length}`);
+      // プロンプトフィードバックの確認
+      if (response.promptFeedback) {
+        console.log(`🛡️ プロンプトフィードバック:`, response.promptFeedback);
+        if (response.promptFeedback.blockReason) {
+          console.warn(`⚠️ プロンプトがブロックされました: ${response.promptFeedback.blockReason}`);
+          return {
+            success: false,
+            error: `プロンプトがブロックされました: ${response.promptFeedback.blockReason}`
+          };
+        }
+      }
 
+      // メインテキスト抽出（空文字対策）
+      let text = '';
+      try {
+        text = response.text() || '';
+      } catch {
+        text = '';
+      }
+
+      if (!text && response.candidates?.[0]?.content?.parts?.length) {
+        // parts から連結してフォールバック抽出
+        const parts = response.candidates[0].content.parts;
+        const joined = parts
+          .map((p: any) => (typeof p?.text === 'string' ? p.text : ''))
+          .filter(Boolean)
+          .join('\n');
+        text = joined || '';
+        console.log(`� text()空のためpartsから抽出: length=${text.length}`);
+      }
+
+      if (!text) {
+        console.warn('⚠️ 返却テキストが空です（Gemini）');
+        return {
+          success: false,
+          error: 'Gemini応答が空です（finishReasonやsafetyRatingsを確認してください）'
+        };
+      }
+
+      console.log(`✅ Gemini API成功 - レスポンス文字数: ${text.length}`);
       return {
         success: true,
         content: text
@@ -259,6 +326,13 @@ export class GeminiApiManager {
       };
       
       console.log(`🚀 OpenRouter API実行中...`);
+      console.log(`📝 リクエストボディ:`, {
+        ...requestBody,
+        messages: requestBody.messages.map(m => ({
+          ...m,
+          content: m.content.substring(0, 100) + '...'
+        }))
+      });
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -292,6 +366,16 @@ export class GeminiApiManager {
       if (data.choices && data.choices[0]) {
         const content = data.choices[0].message?.content || '';
         console.log(`✅ OpenRouter API成功 - レスポンス文字数: ${content.length}`);
+        
+        // 空のレスポンスの場合は詳細ログ
+        if (content.length === 0) {
+          console.warn(`⚠️ OpenRouterから空のレスポンス:`, {
+            choice: data.choices[0],
+            finishReason: data.choices[0].finish_reason,
+            usage: data.usage
+          });
+        }
+        
         return {
           success: true,
           content: content

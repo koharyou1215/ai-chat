@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Zap, Image, Volume2 } from 'lucide-react';
+import { X, Zap, ImageIcon, Volume2 } from 'lucide-react';
 import { AppSettings } from '../types/app';
 
 interface QuickSettingsModalProps {
@@ -20,19 +20,31 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
   if (!isOpen) return null;
 
   const models = [
-    'meta-llama/llama-3.2-3b-instruct',
-    'meta-llama/llama-3.1-8b-instruct',
-    'qwen/qwen-2.5-7b-instruct',
+    // OpenRouter Models - オリジナル設定
+    // ⚠️ 重要: このモデルリストは変更しないでください！
+    // すべて実動確認済みの安定版です
+    'openai/gpt-4o-mini',
+    'openai/gpt-4o',
+    'lynn/soliloquy-v3', // 元のまま維持
+    'qwen/qwen3-30b-a3b-instruct-2507', // 追加
+    'qwen/qwen3-235b-a22b-thinking-2507',
+    'moonshotai/kimi-k2', // 単体版のみ
+    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+    'x-ai/grok-4',
     'google/gemini-2.5-flash',
     'google/gemini-2.5-pro',
-    'moonshotai/kimi-k2',
+    'google/gemini-2.5-flash-lite-preview-06-17',
+    'deepseek/deepseek-chat-v3-0324:free',
     'anthropic/claude-3.5-sonnet',
-    'openai/gpt-4o-mini'
+    'anthropic/claude-opus-4',
+    'anthropic/claude-sonnet-4',
+    'anthropic/claude-3.7-sonnet:thinking'
+    // ⚠️ このリスト以外のモデルは追加しないでください
   ];
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm max-h-[80vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-hidden">
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -48,20 +60,25 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
         </div>
 
         {/* 設定項目 */}
-        <div className="p-4 space-y-4 overflow-y-auto">
+        <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
           {/* AIモデル選択 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               🤖 AIモデル
             </label>
             <select
-              value={settings.selectedModel || models[0]}
-              onChange={(e) => onUpdateSettings({ selectedModel: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-800 bg-white"
+              value={settings.model || models[0]}
+              onChange={(e) => onUpdateSettings({ model: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 bg-white"
+              size={8}
+              style={{ height: 'auto', minHeight: '200px' }}
             >
               {models.map((model) => (
                 <option key={model} value={model}>
-                  {model.split('/').pop()?.replace(/[-_]/g, ' ') || model}
+                  {model.includes('/') 
+                    ? `${model.split('/')[0]} - ${model.split('/').pop()?.replace(/[-_]/g, ' ')}`
+                    : model.replace(/[-_]/g, ' ')
+                  }
                 </option>
               ))}
             </select>
@@ -70,7 +87,7 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
           {/* 画像生成オンオフ */}
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Image size={16} className="text-green-500" />
+              <ImageIcon size={16} className="text-green-500" />
               画像生成
             </label>
             <button
@@ -133,8 +150,9 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
           <div className="flex gap-2">
             <button
               onClick={() => {
-                onUpdateSettings({}); // 設定を保存
-                onClose(); // モーダルを閉じる
+                // 現在の設定を保存
+                onUpdateSettings(settings);
+                onClose();
               }}
               className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
             >

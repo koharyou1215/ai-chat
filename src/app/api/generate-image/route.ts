@@ -31,8 +31,13 @@ export async function POST(request: NextRequest) {
     if (typeof prompt === 'string') {
       processedPrompt = prompt.trim();
     } else if (prompt && typeof prompt === 'object') {
-      // オブジェクトの場合は文字列に変換を試行
-      processedPrompt = JSON.stringify(prompt).trim();
+      // オブジェクトの場合はpromptプロパティがあればそれを使用
+      if (prompt.prompt && typeof prompt.prompt === 'string') {
+        processedPrompt = prompt.prompt.trim();
+      } else {
+        // promptプロパティがない場合は文字列変換
+        processedPrompt = String(prompt).trim();
+      }
     } else {
       processedPrompt = String(prompt || '').trim();
     }
@@ -53,33 +58,27 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // ネガティブプロンプトの処理（優先順位: 明示指定 > 設定 > キャラクター定義）
+    // ネガティブプロンプトの処理（キャラクター定義のみ使用、デフォルトは追加しない）
     let processedNegativePrompt = '';
     if (negativePrompt && typeof negativePrompt === 'string') {
       processedNegativePrompt = negativePrompt.trim();
-    } else if (settings?.negativePrompt) {
-      processedNegativePrompt = settings.negativePrompt.trim();
     } else if (character?.appearanceNegativePrompt) {
       processedNegativePrompt = String(character.appearanceNegativePrompt).trim();
     }
+    // 設定のネガティブプロンプトは使用しない（長すぎる可能性があるため）
     
-    // キャラクター固有のappearanceNegativePromptをマージ（重複防止）
-    if (character?.appearanceNegativePrompt) {
+    // キャラクター固有のappearanceNegativePromptのみを使用（重複防止）
+    if (character?.appearanceNegativePrompt && !processedNegativePrompt) {
       const charNeg = String(character.appearanceNegativePrompt).trim();
       if (charNeg) {
-        if (processedNegativePrompt) {
-          if (!processedNegativePrompt.includes(charNeg)) {
-            processedNegativePrompt = `${charNeg}, ${processedNegativePrompt}`;
-          }
-        } else {
-          processedNegativePrompt = charNeg;
-        }
+        processedNegativePrompt = charNeg;
         console.log("✅ キャラクターappearanceNegativePrompt反映:", charNeg);
       }
     }
     
     console.log("Received prompt for image generation:", processedPrompt);
-    console.log("Processed negative prompt:", processedNegativePrompt);
+    console.log("Processed negative prompt BEFORE Runware:", processedNegativePrompt);
+    console.log("Negative prompt length BEFORE Runware:", processedNegativePrompt.length);
     console.log("Using model ID:", modelId);
     console.log("Aspect ratio:", aspectRatio);
     console.log("Safety checker:", safetyChecker);
@@ -135,6 +134,8 @@ export async function POST(request: NextRequest) {
         }));
 
         console.log(`[/api/generate-image] 使用するLoRA: ${lorasForApi.length}個`, lorasForApi);
+        console.log(`[/api/generate-image] Runware呼び出し前 - ネガティブプロンプト:`, processedNegativePrompt);
+        console.log(`[/api/generate-image] Runware呼び出し前 - ネガティブプロンプト長:`, processedNegativePrompt.length);
 
         const result = await runwareService.generateImage({
           positivePrompt: processedPrompt,
@@ -192,48 +193,49 @@ export async function POST(request: NextRequest) {
       const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
       const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
 
-    console.log('[/api/generate-image] Stable Diffusion API Key check:', {
-      hasSettingsApiKey: !!settingsStableDiffusionApiKey,
-      hasEnvApiKey: !!envStableDiffusionApiKey,
-      settingsApiKeyLength: settingsStableDiffusionApiKey?.length || 0,
-      envApiKeyLength: envStableDiffusionApiKey?.length || 0,
-      finalApiKeyLength: stableDiffusionApiKey?.length || 0,
-      finalApiKeyStart: stableDiffusionApiKey?.substring(0, 15) || 'none',
-      envApiKeyStart: envStableDiffusionApiKey?.substring(0, 15) || 'none'
-    });
+      console.log('[/api/generate-image] Stable Diffusion API Key check:', {
+        hasSettingsApiKey: !!settingsStableDiffusionApiKey,
+        hasEnvApiKey: !!envStableDiffusionApiKey,
+        settingsApiKeyLength: settingsStableDiffusionApiKey?.length || 0,
+        envApiKeyLength: envStableDiffusionApiKey?.length || 0,
+        finalApiKeyLength: stableDiffusionApiKey?.length || 0,
+        finalApiKeyStart: stableDiffusionApiKey?.substring(0, 15) || 'none',
+        envApiKeyStart: envStableDiffusionApiKey?.substring(0, 15) || 'none'
+      });
 
-    if (stableDiffusionApiKey) {
-      try {
-        console.log('[/api/generate-image] Stable Diffusion APIを使用して画像生成');
-        
-        const stableDiffusionService = new StableDiffusionService(stableDiffusionApiKey);
-        
-        const result = await stableDiffusionService.generateImage({
-          prompt: processedPrompt,
-          negative_prompt: processedNegativePrompt || undefined,
-          width: settings?.imageWidth || 512,
-          height: settings?.imageHeight || 512,
-          cfg_scale: settings?.guidanceScale || 7,
-          steps: settings?.steps || 20
-        });
-        
-        // base64データをデータURLに変換
-        const imageUrl = `data:image/png;base64,${result.image}`;
-        
-        console.log(`[/api/generate-image] Stable Diffusion成功`);
-        
-        return NextResponse.json({
-          success: true,
-          imageUrl: imageUrl,
-          provider: 'stable-diffusion',
-          seed: result.seed
-        });
-      } catch (stableDiffusionError) {
-        console.error('[/api/generate-image] Stable Diffusionエラー:', stableDiffusionError);
-        return NextResponse.json({
-          success: false,
-          error: `Stable Diffusion error: ${stableDiffusionError instanceof Error ? stableDiffusionError.message : 'Unknown error'}`
-        }, { status: 500 });
+      if (stableDiffusionApiKey) {
+        try {
+          console.log('[/api/generate-image] Stable Diffusion APIを使用して画像生成');
+          
+          const stableDiffusionService = new StableDiffusionService(stableDiffusionApiKey);
+          
+          const result = await stableDiffusionService.generateImage({
+            prompt: processedPrompt,
+            negative_prompt: processedNegativePrompt || undefined,
+            width: settings?.imageWidth || 512,
+            height: settings?.imageHeight || 512,
+            cfg_scale: settings?.guidanceScale || 7,
+            steps: settings?.steps || 20
+          });
+          
+          // base64データをデータURLに変換
+          const imageUrl = `data:image/png;base64,${result.image}`;
+          
+          console.log(`[/api/generate-image] Stable Diffusion成功`);
+          
+          return NextResponse.json({
+            success: true,
+            imageUrl: imageUrl,
+            provider: 'stable-diffusion',
+            seed: result.seed
+          });
+        } catch (stableDiffusionError) {
+          console.error('[/api/generate-image] Stable Diffusionエラー:', stableDiffusionError);
+          return NextResponse.json({
+            success: false,
+            error: `Stable Diffusion error: ${stableDiffusionError instanceof Error ? stableDiffusionError.message : 'Unknown error'}`
+          }, { status: 500 });
+        }
       }
     }
 
@@ -332,8 +334,6 @@ export async function POST(request: NextRequest) {
         isValidLocalUrl: isValidLocalUrl
       }
     }, { status: 400 });
-  }
-
   } catch (error) {
     console.error('[/api/generate-image] 予期しないエラー:', error);
     return NextResponse.json({

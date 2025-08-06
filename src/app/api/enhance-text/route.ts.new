@@ -1,0 +1,101 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { GeminiApiManager } from '../../../../lib/geminiApiManager';
+
+export async function POST(request: NextRequest) {
+  try {
+    const { text, character, context, variantCount = 1, settings, isUserText = false } = await request.json();
+    
+    if (!text || text.trim().length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'テキストが提供されていません'
+      }, { status: 400 });
+    }
+
+    // 設定画面を優先でAPIキーを取得
+    const openRouterApiKey = settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+    
+    if (!openRouterApiKey) {
+      return NextResponse.json({
+        success: false,
+        error: 'OpenRouter APIキーが設定されていません'
+      }, { status: 500 });
+    }
+
+    const modelToUse = settings?.model || 'openai/gpt-4o-mini';
+
+    // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
+    const customPrompt = settings?.enhancementPrompt;
+    console.log('[/api/enhance-text] カスタムプロンプト確認:', {
+      hasCustomPrompt: !!customPrompt,
+      customPromptLength: customPrompt?.length || 0,
+      customPromptPreview: customPrompt?.substring(0, 100) + '...'
+    });
+    
+    // シンプルなデフォルトプロンプト（会話履歴考慮）
+    const basePrompt = customPrompt || `# 文章強化プロンプト
+
+あなたは文章表現強化の専門家です。与えられたテキストを、より詳細で魅力的な描写に変換してください。
+
+## 会話履歴
+${context && context.length > 0 ? context.slice(-3).map((msg: { role: string; content: string }) => `${msg.role === 'user' ? 'ユーザー' : character?.name || 'キャラクター'}: ${msg.content}`).join('\n') : '（履歴なし）'}
+
+## 強化対象テキスト
+${text}
+
+## 強化指針
+1. 元テキストの意図・内容を完全に維持
+2. より具体的で詳細な描写を追加
+3. 感情や動作を豊かに表現
+4. 100～150文字程度に調整
+
+## 指示
+上記のテキストを会話の流れに沿って強化してください。
+強化されたテキストのみを出力し、説明は不要です。`;
+
+    console.log('[/api/enhance-text] Gemini APIで生成開始');
+    console.log('[/api/enhance-text] プロンプト長:', basePrompt.length);
+    console.log('[/api/enhance-text] 元テキスト:', text);
+    
+    try {
+      const response = await GeminiApiManager.generateWithPriority(
+        modelToUse,
+        [{ role: 'system', content: basePrompt }],
+        {
+          maxTokens: settings?.enhancementMaxTokens || 500,
+          temperature: 0.7,
+        }
+      );
+
+      if (response.success && response.content) {
+        console.log('[/api/enhance-text] ✅ 生成成功:', response.content.substring(0, 100) + '...');
+        return NextResponse.json({
+          success: true,
+          enhancedText: response.content.trim(),
+          originalText: text,
+          provider: response.provider
+        });
+      } else {
+        console.error('[/api/enhance-text] ❌ 生成失敗:', response.error);
+        return NextResponse.json({
+          success: false,
+          error: response.error || '文章強化に失敗しました'
+        }, { status: 500 });
+      }
+    } catch (error) {
+      console.error('[/api/enhance-text] ❌ API呼び出しエラー:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'API呼び出し中にエラーが発生しました'
+      }, { status: 500 });
+    }
+
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[/api/enhance-text] APIエラー: ${errorMessage}`);
+    return NextResponse.json({ 
+      success: false, 
+      error: `Internal Server Error: ${errorMessage}` 
+    }, { status: 500 });
+  }
+}

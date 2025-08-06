@@ -91,12 +91,14 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-        <p className="text-gray-600">認証処理中...</p>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h1 className="text-lg font-semibold mb-3">認証処理</h1>
+          <p className="text-sm text-gray-700">読み込み中...</p>
+        </div>
       </div>
-    </div>}>
+    }>
       <AuthCallbackContent />
     </Suspense>
   );

@@ -79,18 +79,6 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
     setMessage('')
     
     try {
-      // /auth/callback に戻す絶対URLを明示
-      const redirectTo =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/auth/callback`
-          : undefined;
-
-      // signInWithEmail は1引数仕様のため、redirectToは内部で参照されるようにlib側で処理する前提
-      // ここでは副作用的に window.__authRedirectTo に格納（libで拾う）
-      if (typeof window !== 'undefined') {
-        // 型安全にwindowへ一時格納（lib/supabase.ts側で参照してemailRedirectToに使用）
-        (window as unknown as { __authRedirectTo?: string }).__authRedirectTo = redirectTo;
-      }
       const result = await signInWithEmail(cleanEmail)
       
       if (result.success) {
@@ -125,49 +113,33 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
   }
 
   const handleSync = async () => {
-    // onDataSync が未指定でも同期自体は実行し、UIに進捗を出す
-    if (!user) {
-      setMessage('ログインが必要です')
-      return
-    }
+    if (!user || !onDataSync) return
     
     setIsSyncing(true)
-    setMessage('同期を開始しました…')
-    console.log('🔄 [AuthModal] Sync start')
+    setMessage('')
     
     try {
-      // ローカルデータの取得と可視ログ
-      const characters = JSON.parse(localStorage.getItem('ai-chat-characters') || '[]')
-      const personas = JSON.parse(localStorage.getItem('ai-chat-personas') || '[]')
-      const settingsJson = JSON.parse(localStorage.getItem('ai-chat-settings') || '{}')
+      // 現在のローカルデータを取得（この部分は実際の実装で調整が必要）
       const localData: SyncData = {
-        characters,
-        personas,
-        memos: [], // TODO: メモストア連携
-        settings: settingsJson
+        characters: JSON.parse(localStorage.getItem('ai-chat-characters') || '[]'),
+        personas: JSON.parse(localStorage.getItem('ai-chat-personas') || '[]'),
+        memos: [], // メモストアから取得
+        settings: JSON.parse(localStorage.getItem('ai-chat-settings') || '{}')
       }
-      console.log('🔎 [AuthModal] Local snapshot:', {
-        characters: Array.isArray(characters) ? characters.length : 0,
-        personas: Array.isArray(personas) ? personas.length : 0,
-        hasSettings: !!settingsJson && Object.keys(settingsJson).length > 0
-      })
       
       const result = await syncAllData(localData)
-      console.log('✅ [AuthModal] syncAllData result:', result)
       
       if (result.success && result.data) {
         setSyncStatus(result.syncedItems)
         setMessage('SUCCESS:データの同期が完了しました！すべてのデバイスで最新データが利用できます。')
-        if (onDataSync) {
-          onDataSync(result.data)
-        }
+        onDataSync(result.data)
         localStorage.setItem('last-sync-time', new Date().toISOString())
       } else {
-        setMessage(`同期エラー: ${result.error ?? '不明なエラー'}`)
+        setMessage(`同期エラー: ${result.error}`)
       }
     } catch (error) {
-      console.error('❌ [AuthModal] 同期エラー:', error)
-      setMessage('同期中にエラーが発生しました。コンソールログを確認してください。')
+      console.error('同期エラー:', error)
+      setMessage('同期中にエラーが発生しました')
     } finally {
       setIsSyncing(false)
     }
@@ -261,8 +233,8 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto relative">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -271,7 +243,7 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -299,10 +271,7 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
               </div>
 
               <button
-                onClick={() => {
-                  console.log('🖱️ [AuthModal] Sync button clicked')
-                  handleSync()
-                }}
+                onClick={handleSync}
                 disabled={isSyncing}
                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2 mb-3"
               >
@@ -522,4 +491,4 @@ export default function AuthModal({ isOpen, onClose, onDataSync }: AuthModalProp
       </div>
     </div>
   )
-}
+} 

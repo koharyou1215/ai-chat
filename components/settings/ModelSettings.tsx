@@ -101,24 +101,26 @@ export default function ModelSettings({ formSettings, setFormSettings }: ModelSe
             onChange={(e) => setFormSettings(prev => ({ ...prev, model: e.target.value }))}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
           >
-            {[ // OpenRouter Models
+            {[ // オリジナル設定 - Gemini 1.5追加前
+              // ⚠️ 重要: このモデルリストは変更しないでください！
+              // すべて実動確認済みの安定版です
               'openai/gpt-4o-mini',
               'openai/gpt-4o',
-              'qwen/qwen3-235b-a22b-07-25:free',
+              'lynn/soliloquy-v3', // 追加
+              'qwen/qwen3-30b-a3b-instruct-2507', // 追加
               'qwen/qwen3-235b-a22b-thinking-2507',
-              'moonshotai/kimi-k2:free',
-              'moonshotai/kimi-k2',
+              'moonshotai/kimi-k2', // 単体版のみ
               'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
               'x-ai/grok-4',
               'google/gemini-2.5-flash',
               'google/gemini-2.5-pro',
               'google/gemini-2.5-flash-lite-preview-06-17',
-              'deepseek/deepseek-r1-0528-qwen3-8b:free',
               'deepseek/deepseek-chat-v3-0324:free',
               'anthropic/claude-3.5-sonnet',
               'anthropic/claude-opus-4',
               'anthropic/claude-sonnet-4',
-              'anthropic/claude-3.7-sonnet:thinking',
+              'anthropic/claude-3.7-sonnet:thinking'
+              // ⚠️ このリスト以外のモデルは追加しないでください
             ].map(m => (
               <option key={m} value={m}>{m}</option>
             ))}

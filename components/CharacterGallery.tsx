@@ -40,17 +40,11 @@ export default function CharacterGallery({
 
   // バリエーション管理のヘルパー関数
   const getDisplayCharacters = () => {
-    if (!characters) return [];
-    
-    console.log('🤖 showVariations状態:', showVariations, '全キャラクター数:', characters.length);
-    
     if (showVariations) {
-      console.log('✅ すべてのキャラクターを表示');
-      return characters; // すべてのキャラクターを表示
+      return characters || [];
     } else {
-      const filteredChars = characters.filter(character => !character.isVariation);
-      console.log('🔒 オリジナルのみ表示:', filteredChars.length, '個');
-      return filteredChars; // オリジナルキャラクターのみを表示（AIバリエーションを除外）
+      // バリエーションでないキャラクターのみ表示
+      return (characters || []).filter(character => !character.isVariation);
     }
   };
 

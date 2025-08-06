@@ -24,12 +24,12 @@ import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
 import Image from 'next/image';
-import { loadAllPersonasFromPublic } from '../../lib/autoLoader';
-import { TouchGestureManager } from '../../lib/touchGestures';
+
 import dynamic from 'next/dynamic';
 import { BackgroundManager } from '../../lib/backgroundManager';
 import CharacterTrackerDisplay from '../../components/CharacterTracker';
 import Typewriter from '../../components/Typewriter';
+import { saveCharacterToCloud } from '../../lib/characterCloudSync';
 
 // 画像圧縮関数
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -149,7 +149,7 @@ export default function ChatPage() {
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -247,11 +247,13 @@ export default function ChatPage() {
     updateTrackerValue,
     getTrackerValues,
     initializeTrackersForSession,
-    analyzeMessageForTrackerUpdates
+    analyzeMessageForTrackerUpdates,
+    setCurrentCharacter: setStoreCurrentCharacter,
+    currentCharacter: storeCurrentCharacter
   } = useChatStore();
 
   // タッチジェスチャー管理
-  const [touchGestureManager, setTouchGestureManager] = useState<TouchGestureManager | null>(null);
+
 
   // キーボード開閉検出用の状態
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -283,7 +285,7 @@ export default function ChatPage() {
     document.addEventListener('pointerdown', preventPointerSwipeBack, { passive: false });
 
     // ブラウザの履歴操作も制御
-    const handlePopState = (_e: PopStateEvent) => {
+    const handlePopState = () => {
       // 現在の状態を維持
       window.history.pushState(null, '', window.location.href);
     };
@@ -448,201 +450,115 @@ export default function ChatPage() {
 
   // 初期化
   useEffect(() => {
-    if (isInitialized) return; // 重複実行防止
     
     const initializeApp = async () => {
-      // タッチジェスチャー初期化（モバイルデバイスのみ）
-      if (false /* スワイプでサイドバーを開かない */) {
-        const gestureManager = new TouchGestureManager(
-          () => {
-            // 左スワイプ: サイドバーを開く
-            setIsSidebarOpen(true);
-          },
-          () => {
-            // 右スワイプ: サイドバーを閉じる
-            setIsSidebarOpen(false);
-          },
-          undefined,
-          undefined,
-          undefined
-        );
-        setTouchGestureManager(gestureManager);
-      }
-
-      // 設定はZustandストアから自動的に読み込まれるため、ここでの読み込みは不要
-
-      // BackgroundManagerを初期化
-      BackgroundManager.initializeBackgrounds();
-
-      // 強制的に白背景でスタート（紫背景を完全に削除）
       try {
-        // 古いテーマ設定を完全にクリア
-        localStorage.removeItem('ai-chat-theme');
-        localStorage.removeItem('theme-data');
+        console.log('🚀 アプリ初期化開始');
         
-        // CSS変数をリセット
-        document.documentElement.style.removeProperty('--theme-background');
-        document.documentElement.style.removeProperty('--theme-background-image');
-        document.documentElement.style.removeProperty('--theme-background-size');
+        // キャラクター一覧を最初に読み込み
+        const characters = CharacterLoader.getAllCharacters();
+        setAllCharacters(characters);
+        console.log('📋 キャラクター一覧読み込み完了:', characters.length, '個');
         
-        // カスタム背景がある場合のみ適用
-        const customBackground = localStorage.getItem('customBackground');
-        if (customBackground) {
-          document.documentElement.style.setProperty('--theme-background', `url(${customBackground})`, 'important');
-          document.documentElement.style.setProperty('--theme-background-size', 'cover', 'important');
-          document.documentElement.style.setProperty('--theme-background-position', 'center', 'important');
-        } else {
-          // 強制的に白背景
-          document.documentElement.style.setProperty('--theme-background', '#ffffff', 'important');
-          document.documentElement.style.setProperty('--theme-background-size', 'auto', 'important');
-          document.body.style.background = '#ffffff';
-        }
+        // 履歴マネージャーを初期化
+        await historyManager.init();
         
-        // 背景要素の高度な動的更新（画像・動画対応）
-        setTimeout(() => {
-          const bgElement = document.getElementById('dynamic-background');
-          if (bgElement) {
-            const customBg = localStorage.getItem('customBackground');
-            if (customBg) {
-              // 動画かどうかを判定
-              if (customBg.startsWith('data:video/')) {
-                // 動画背景の場合
-                bgElement.innerHTML = `
-                  <video 
-                    autoplay 
-                    muted 
-                    loop 
-                    playsInline 
-                    style="width: 100%; height: 100%; object-fit: cover;"
-                    src="${customBg}"
-                  ></video>
-                `;
-                console.log('🎥 動画背景を適用');
-              } else {
-                // 画像背景の場合
-                bgElement.innerHTML = '';
-                bgElement.style.background = `url(${customBg})`;
-                bgElement.style.backgroundSize = 'cover';
-                bgElement.style.backgroundPosition = 'center';
-                console.log('🖼️ 画像背景を適用');
-              }
-            } else {
-              // 背景なし（白背景）
-              bgElement.innerHTML = '';
-              bgElement.style.background = '#ffffff';
-              bgElement.style.backgroundSize = 'auto';
-              console.log('⚪ 白背景を適用');
+        // 最後に選択されたキャラクターを復元、なければデフォルトキャラクターを設定
+        const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
+        let targetCharacter = defaultCharacter;
+        
+        // 優先順位: localStorage > Zustandストア > デフォルト
+        let characterSource = 'default';
+        
+        // 1. まずローカルストレージから復元を試行（Webページ対応）
+        try {
+          const storedCharacterName = localStorage.getItem('ai-chat-current-character');
+          if (storedCharacterName) {
+            const storedCharacter = characters.find(c => c.name === storedCharacterName);
+            if (storedCharacter) {
+              targetCharacter = storedCharacter;
+              characterSource = 'localStorage';
+              console.log('✅ ローカルストレージからキャラクターを復元:', storedCharacterName);
             }
           }
-        }, 100);
-      } catch (error) {
-        console.error('背景設定エラー:', error);
-        // エラー時も強制的に白背景
-        document.documentElement.style.setProperty('--theme-background', '#ffffff', 'important');
-        document.body.style.background = '#ffffff';
-      }
-
-      // キャラクターを読み込み（CharacterLoaderで一元管理）
-      console.log('🔄 キャラクター読み込み開始...');
-      
-      // CharacterLoaderを初期化（組み込みキャラクター + カスタムキャラクター）
-      CharacterLoader.initialize();
-      
-      // publicキャラクターをCharacterLoaderに読み込ませる
-      await CharacterLoader.loadPublicCharacters();
-      
-      // 全キャラクターを取得（組み込み + カスタム + public）
-      const allCharacters = CharacterLoader.getAllCharacters();
-      console.log('📊 総キャラクター数:', allCharacters.length);
-      console.log('📋 読み込まれたキャラクター一覧:', allCharacters.map(c => c.name));
-      setAllCharacters(allCharacters);
-      
-      // デフォルトキャラクターの設定確認
-      const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
-      console.log('🎭 デフォルトキャラクター確認:', defaultCharacter ? defaultCharacter.name : 'なし');
-      
-      // キャラクターが一つもない場合の警告
-      if (allCharacters.length === 0) {
-        console.warn('⚠️ キャラクターが一つも読み込まれていません！');
-      }
-      
-      // Personaを読み込み（保存済み + 自動読み込み）
-      try {
-        const savedPersonas = localStorage.getItem('ai-chat-personas');
-        const localPersonas = savedPersonas ? JSON.parse(savedPersonas) : [];
-        const publicPersonas = await loadAllPersonasFromPublic();
-        const combinedPersonas = [...localPersonas, ...publicPersonas];
-        setAllPersonas(combinedPersonas);
-      } catch (error) {
-        console.error('Persona読み込みエラー:', error);
-      }
-      
-      // 履歴を読み込み
-      try {
-        await historyManager.init();
-        const allSessions = await historyManager.getAllSessions();
-        setSessions(allSessions);
+        } catch (error) {
+          console.warn('⚠️ ローカルストレージからの復元に失敗:', error);
+        }
         
-        // 最後のセッションとキャラクターを復元
-        if (allSessions.length > 0) {
-          const lastSession = allSessions[0]; // 最新のセッション
-          console.log('🔄 最後のセッションを復元中:', lastSession.title);
-          
-          // 完全なセッション情報を取得
-          const fullSession = await historyManager.loadSession(lastSession.id);
-          
-          if (fullSession && fullSession.messages.length > 0) {
-            // 保存されたキャラクター情報を優先使用
-            let lastCharacter = fullSession.character;
+        // 2. ローカルストレージにない場合はZustandストアから復元
+        if (characterSource === 'default' && storeCurrentCharacter) {
+          const lastCharacter = characters.find(c => c.name === storeCurrentCharacter.name);
+          if (lastCharacter) {
+            targetCharacter = lastCharacter;
+            characterSource = 'zustand';
+            console.log('✅ Zustandストアからキャラクターを復元:', lastCharacter.name);
             
-            // 保存されたキャラクター情報がない場合は、名前で検索
-            if (!lastCharacter) {
-              lastCharacter = allCharacters.find(c => c.name === fullSession.characterId);
+            // Zustandストアの値をローカルストレージにも同期
+            try {
+              localStorage.setItem('ai-chat-current-character', lastCharacter.name);
+              console.log('✅ Zustandストアの値をローカルストレージに同期');
+            } catch (error) {
+              console.warn('⚠️ ローカルストレージ同期に失敗:', error);
             }
+          }
+        }
+        
+        if (targetCharacter) {
+          setCurrentCharacter(targetCharacter);
+          setStoreCurrentCharacter(targetCharacter);
+          
+          // 履歴の自動読み込み設定を確認
+          const shouldAutoLoadHistory = settings.autoLoadHistory !== false; // デフォルトはtrue
+          
+          if (shouldAutoLoadHistory) {
+            // そのキャラクターのセッションのみ読み込む
+            const characterSessions = await historyManager.getSessionsByCharacter(targetCharacter.name);
+            setSessions(characterSessions);
             
-            if (lastCharacter) {
-              setCurrentCharacter(lastCharacter);
-              setCurrentSessionId(fullSession.id);
-              setMessages(fullSession.messages);
-              console.log('✅ セッション復元完了:', fullSession.title, 'キャラクター:', lastCharacter.name);
+            // 最後のセッションとキャラクターを復元
+            if (characterSessions.length > 0) {
+              const lastSession = characterSessions[characterSessions.length - 1];
+              setCurrentSessionId(lastSession.id);
+              setMessages(lastSession.messages);
+              console.log('✅ 最後のセッションを復元:', lastSession.id);
             } else {
-              console.log('❌ キャラクターが見つかりません:', fullSession.characterId);
-              // デフォルトキャラクター設定
-              const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
-              if (defaultCharacter) {
-                setCurrentCharacter(defaultCharacter);
-                setInitialMessage(defaultCharacter);
-              }
+              // セッションがない場合は初期メッセージを設定
+              setInitialMessage(targetCharacter);
             }
           } else {
-            console.log('💭 空のセッションまたはメッセージなし');
-            // デフォルトキャラクター設定
-            const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
-            if (defaultCharacter) {
-              setCurrentCharacter(defaultCharacter);
-              setInitialMessage(defaultCharacter);
-            }
+            // 履歴の自動読み込みが無効な場合は初期メッセージのみ設定
+            console.log('📝 履歴の自動読み込みが無効化されています');
+            setInitialMessage(targetCharacter);
           }
-        } else {
-          console.log('📝 セッション履歴なし - 新規開始');
-          // デフォルトキャラクター設定
-          const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
-          if (defaultCharacter) {
-            setCurrentCharacter(defaultCharacter);
-            setInitialMessage(defaultCharacter);
+          
+          // キャラクターの背景を適用（優先順位: chatBackgroundUrl > 保存済み背景 > デフォルト）
+          console.log('🎨 キャラクター背景の適用開始:', targetCharacter.name);
+          console.log('📁 chatBackgroundUrl:', targetCharacter.chatBackgroundUrl);
+          console.log('📁 background（説明文）:', targetCharacter.background?.substring(0, 50) + '...');
+          
+          // chatBackgroundUrlがある場合のみ背景画像として使用
+          if (targetCharacter.chatBackgroundUrl) {
+            console.log('✅ chatBackgroundUrlを使用して背景を適用');
+            BackgroundManager.saveCharacterBackground(targetCharacter.name, targetCharacter.chatBackgroundUrl);
+            loadCharacterBackground(targetCharacter.name);
+          } else {
+            // chatBackgroundUrlがない場合は、以前に保存された背景があれば使用、なければデフォルト
+            console.log('ℹ️ chatBackgroundUrlなし - 保存済み背景またはデフォルトを使用');
+            loadCharacterBackground(targetCharacter.name);
           }
         }
+        
+        console.log('✅ アプリ初期化完了 (キャラクターソース:', characterSource, ')');
       } catch (error) {
         console.error('履歴読み込みエラー:', error);
         // エラー時はデフォルトキャラクター設定
         const defaultCharacter = CharacterLoader.getCharacterByName('ナミ');
         if (defaultCharacter) {
           setCurrentCharacter(defaultCharacter);
+          setStoreCurrentCharacter(defaultCharacter);
           setInitialMessage(defaultCharacter);
         }
       }
-      
-      setIsInitialized(true); // 初期化完了フラグ
     };
     
     initializeApp();
@@ -662,18 +578,7 @@ export default function ChatPage() {
     }]);
   };
 
-  // タッチジェスチャーをDOM要素にアタッチ
-  useEffect(() => {
-    if (touchGestureManager && mainContainerRef.current) {
-      touchGestureManager.attach(mainContainerRef.current);
-      
-      return () => {
-        if (mainContainerRef.current) {
-          touchGestureManager.detach(mainContainerRef.current);
-        }
-      };
-    }
-  }, [touchGestureManager]);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -724,9 +629,11 @@ export default function ChatPage() {
           setCurrentSessionId(sessionId);
         }
         
-        // 履歴リストを更新
-        const allSessions = await historyManager.getAllSessions();
-        setSessions(allSessions);
+        // 履歴リストを更新 - そのキャラクターのセッションのみ
+        if (currentCharacter) {
+          const characterSessions = await historyManager.getSessionsByCharacter(currentCharacter.name);
+          setSessions(characterSessions);
+        }
         
       } catch (error) {
         console.error('セッション保存エラー:', error);
@@ -897,7 +804,10 @@ export default function ChatPage() {
       setIsGeneratingImage(true);
       // ImagePromptGeneratorをインポートして使用
       const { ImagePromptGenerator } = await import('../../lib/imagePromptGenerator');
-      const imagePromptResult = ImagePromptGenerator.generateImagePrompt(currentCharacter, aiContent, messages.slice(-5).map(m => m.content), settings);
+      const imagePromptResult = ImagePromptGenerator.generateImagePrompt(currentCharacter, aiContent, messages.slice(-5).map(m => m.content), {
+        customQualityTags: settings.customQualityTags,
+        ...settings
+      });
       console.log('Generated Image Prompt:', imagePromptResult);
 
       if (!imagePromptResult) {
@@ -914,7 +824,6 @@ export default function ChatPage() {
           prompt: imagePromptResult,
           character: currentCharacter,
           conversationContext: messages.slice(-5).map(m => m.content),
-          settings: settings,
           loraSettings: settings.loraSettings,
           negativePrompt: settings.negativePrompt,
           width: currentCharacter?.imageWidth,
@@ -922,11 +831,10 @@ export default function ChatPage() {
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
-          // imageEngine: settings.imageEngine, // 個別ではなく settings オブジェクト全体を渡すため削除
-          // Runware固有のモデルIDとLORA IDをsettingsから渡す
-          // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
-          // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
-
+          imageEngine: settings.imageEngine,
+          runwareModelId: settings.runwareModelId,
+          runwareLoraIds: settings.runwareLoraIds,
+          runwareApiKey: settings.runwareApiKey,
         }),
       });
 
@@ -969,13 +877,16 @@ export default function ChatPage() {
         body: JSON.stringify({
           prompt: testPrompt,
           character: currentCharacter,
-          settings: settings,
           conversationContext: ['テスト用の会話'],
           width: currentCharacter?.imageWidth || 512,
           height: currentCharacter?.imageHeight || 768,
           steps: currentCharacter?.imageSteps || 20,
           cfg_scale: currentCharacter?.imageCfgScale || 7,
           sampler: currentCharacter?.imageSampler || 'DPM++ 2M Karras',
+          imageEngine: settings.imageEngine,
+          runwareModelId: settings.runwareModelId,
+          runwareLoraIds: settings.runwareLoraIds,
+          runwareApiKey: settings.runwareApiKey,
         }),
       });
 
@@ -1017,57 +928,124 @@ export default function ChatPage() {
   const handleUserInspiration = async () => {
     if (!currentCharacter || isLoadingUserInspiration) return;
     
+    console.log('🔍 返信提案開始');
+    
     // ボタンアニメーション実行
     setBulbButtonClicked(true);
     setTimeout(() => setBulbButtonClicked(false), 200);
     
-    console.log('電球ボタンが押されました');
     setIsLoadingUserInspiration(true);
     try {
-      // 最新の会話履歴を文字列として結合
-      const conversationText = messages.slice(-8).map(msg => 
+      // 現在の画面表示中のメッセージを使用（sessions管理とは独立）
+      const currentCharacterId = currentCharacter['file-name'] || currentCharacter.name;
+      const currentSession = sessions.find(s => s.characterId === currentCharacterId);
+      const sessionMessages = currentSession?.messages || [];
+      
+      // 現在の画面のメッセージを優先使用し、フォールバックとしてセッションのメッセージを使用
+      const availableMessages = messages.length > 0 ? messages : sessionMessages;
+      
+      console.log(`🔍 セッション詳細デバッグ:`, {
+        currentCharacterId,
+        sessionsLength: sessions.length,
+        sessionIds: sessions.map(s => s.characterId),
+        currentSessionFound: !!currentSession,
+        sessionMessagesLength: sessionMessages.length,
+        currentMessagesLength: messages.length,
+        availableMessagesLength: availableMessages.length,
+        usingCurrentMessages: messages.length > 0
+      });
+      
+      // 直近の2メッセージに限定してプロンプトを短くする
+      const recentMessages = availableMessages.slice(-2);
+      const conversationText = recentMessages.map(msg => 
         `${msg.role === 'user' ? 'ユーザー' : currentCharacter.name}: ${msg.content}`
-      ).join('\n\n');
+      ).join('\n');
+      
+      // 会話履歴がない場合は、デフォルトメッセージを使用
+      const finalMessage = conversationText.trim() || 'これまでの会話はありません。一般的な返信候補を提案してください。';
+      
+      console.log(`🔍 現在のキャラクター: ${currentCharacter.name} (ID: ${currentCharacterId})`);
+      console.log(`🔍 現在のセッション:`, currentSession ? `見つかりました (${availableMessages.length}件のメッセージ)` : '見つかりません');
+      console.log(`🔍 使用する履歴 (直近2件):`, conversationText);
+      console.log(`🔍 settings詳細確認:`, {
+        settingsExists: !!settings,
+        inspirationPromptExists: !!settings?.inspirationPrompt,
+        settingsType: typeof settings,
+        settingsKeys: settings ? Object.keys(settings).slice(0, 10) : [],
+        inspirationPromptLength: settings?.inspirationPrompt?.length || 0,
+        inspirationPromptPreview: settings?.inspirationPrompt ? settings.inspirationPrompt.substring(0, 100) + '...' : 'なし'
+      });
+      
+      const requestBody = {
+        message: finalMessage,
+        settings
+      };
+      
+      console.log('🔍 APIリクエスト送信:', {
+        url: '/api/user-inspiration',
+        messageLength: finalMessage.length, // conversationTextの代わりにfinalMessageを使用
+        settingsKeys: settings ? Object.keys(settings) : []
+      });
       
       const response = await fetch('/api/user-inspiration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: conversationText,
-          settings,
-          character: currentCharacter
-        })
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('🔍 APIレスポンス受信:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       });
       
       const data = await response.json();
-      console.log('インスピレーションAPI応答:', data);
-      console.log('候補配列:', data.candidates);
+      console.log('🔍 APIレスポンスデータ:', {
+        success: data.success,
+        hasCandidates: !!data.candidates,
+        candidateCount: data.candidates?.length || 0,
+        error: data.error
+      });
+      
       if (data.candidates && data.candidates.length > 0) {
-        // 最大3つの候補を表示
-        const candidates = data.candidates.slice(0, 3);
-        setUserInspirationCandidates(candidates);
+        console.log('✅ 返信提案成功:', data.candidates.length, '件の候補');
+        setUserInspirationCandidates(data.candidates);
         setShowInspirationCandidates(true);
-        console.log('返答候補を表示:', candidates);
       } else {
-        console.error('ユーザー返信候補が取得できませんでした:', data);
+        console.error('❌ 返信提案失敗:', data.error || '候補が空です');
+        alert('返信提案の生成に失敗しました');
       }
     } catch (error) {
-      console.error('User inspiration error:', error);
+      console.error('❌ User inspiration error:', error);
+      alert('返信提案中にエラーが発生しました');
     } finally {
       setIsLoadingUserInspiration(false);
     }
   };
 
   // 返答候補を選択する関数
-  // const selectInspirationCandidate = (candidate: string) => {
-  //   setMessage(candidate);
-  //   setShowInspirationCandidates(false);
-  //   setUserInspirationCandidates([]);
-  // };
+  const selectInspirationCandidate = (candidate: string) => {
+    setEditorInitialText(candidate);
+    setShowInspirationCandidates(false);
+    setUserInspirationCandidates([]);
+    // モーダルを開く（state反映後の次フレームで実行）
+    setTimeout(() => setIsMessageEditorOpen(true), 0);
+  };
 
   // ユーザー文章強化実行
   const handleUserTextEnhancement = async () => {
-    if (!message.trim() || !currentCharacter) return;
+    if (!message.trim()) {
+      alert('強化するテキストを入力してください');
+      return;
+    }
+    
+    if (!currentCharacter) {
+      alert('キャラクターを選択してください');
+      return;
+    }
+    
+    console.log('🔍 文章強化開始');
+    
     const targetText = pendingSelection || message;
     setPendingSelection('');
     
@@ -1078,30 +1056,60 @@ export default function ChatPage() {
     setIsEnhancingUserText(true);
     
     try {
-      console.log('キラキラボタンが押されました');
-      console.log('設定のAPIキー:', settings.geminiApiKey ? '設定済み' : '未設定');
+      console.log('🔍 文章強化詳細確認:', {
+        targetTextLength: targetText.length,
+        targetText: targetText.substring(0, 100) + '...',
+        settingsExists: !!settings,
+        enhancementPromptExists: !!settings?.enhancementPrompt,
+        settingsType: typeof settings,
+        settingsKeys: settings ? Object.keys(settings).slice(0, 10) : [],
+        enhancementPromptLength: settings?.enhancementPrompt?.length || 0,
+        enhancementPromptPreview: settings?.enhancementPrompt ? settings.enhancementPrompt.substring(0, 100) + '...' : 'なし'
+      });
+      
+      const requestBody = {
+        text: targetText,
+        settings: settings
+      };
+      
+      console.log('🔍 APIリクエスト送信:', {
+        url: '/api/enhance-text',
+        textLength: targetText.length,
+        settingsKeys: settings ? Object.keys(settings) : []
+      });
+      
       const response = await fetch('/api/enhance-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-          text: targetText,
-          character: currentCharacter,
-          context: [], // 入力中テキストのみを強化
-          variantCount: 1, // 1本モード
-          settings: settings,
-          isUserText: true // ユーザーテキスト強化フラグ
-        })
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('🔍 APIレスポンス受信:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       });
       
       const data = await response.json();
-      console.log('強化API応答:', data);
+      console.log('🔍 APIレスポンスデータ:', {
+        success: data.success,
+        hasEnhancedText: !!data.enhancedText,
+        originalTextLength: data.originalText?.length || 0,
+        enhancedTextLength: data.enhancedText?.length || 0,
+        error: data.error
+      });
+      
       if (data.success) {
-        console.log('強化されたテキスト:', data.enhancedText);
+        console.log('✅ 文章強化成功:', data.enhancedText.length, '文字');
         setEditorInitialText(data.enhancedText);
         setIsMessageEditorOpen(true);
+      } else {
+        console.error('❌ 文章強化失敗:', data.error || '不明なエラー');
+        alert('文章強化に失敗しました: ' + (data.error || '不明なエラー'));
       }
     } catch (error) {
-      console.error('User text enhancement error:', error);
+      console.error('❌ User text enhancement error:', error);
+      alert('文章強化中にエラーが発生しました');
     } finally {
       setIsEnhancingUserText(false);
     }
@@ -1159,9 +1167,6 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: selectedText,
-          character: currentCharacter,
-          context: messages.slice(-5),
-          variantCount: 1, // 1本モード
           settings: settings
         })
       });
@@ -1402,8 +1407,11 @@ export default function ChatPage() {
     
     try {
       await historyManager.deleteSession(sessionId);
-      const updatedSessions = await historyManager.getAllSessions();
-      setSessions(updatedSessions);
+      // 現在のキャラクターのセッションのみ更新
+      if (currentCharacter) {
+        const updatedSessions = await historyManager.getSessionsByCharacter(currentCharacter.name);
+        setSessions(updatedSessions);
+      }
       
       // 削除した履歴が現在選択中の場合はリセット
       if (currentSessionId === sessionId) {
@@ -1691,6 +1699,50 @@ export default function ChatPage() {
   // const [messageDraft, setMessageDraft] = useState('');
   const [editorInitialText, setEditorInitialText] = useState('');
 
+  // キャラクター選択時の処理
+  const onSelectCharacter = (character: Character) => {
+    console.log('🎭 キャラクター選択:', character.name);
+    
+    // キャラクターを設定（ローカルステートとZustandストアの両方）
+    setCurrentCharacter(character);
+    setStoreCurrentCharacter(character);
+    
+    // ローカルストレージにも保存（Webページ対応）
+    try {
+      localStorage.setItem('ai-chat-current-character', character.name);
+      console.log('✅ キャラクターをローカルストレージに保存:', character.name);
+    } catch (error) {
+      console.warn('⚠️ ローカルストレージ保存に失敗:', error);
+    }
+    
+    // 現在のセッションをクリア
+    setCurrentSessionId(null);
+    setMessages([]);
+    
+    // 初期メッセージを設定
+    setInitialMessage(character);
+    
+    // キャラクターの背景を適用（優先順位: chatBackgroundUrl > background > デフォルト）
+    console.log('🎨 キャラクター背景の適用開始:', character.name);
+    console.log('📁 chatBackgroundUrl:', character.chatBackgroundUrl);
+    console.log('📁 background:', character.background);
+    
+    if (character.chatBackgroundUrl) {
+      console.log('✅ chatBackgroundUrlを使用して背景を適用');
+      loadCharacterBackground(character.name);
+    } else if (character.background) {
+      console.log('✅ backgroundを使用して背景を適用');
+      BackgroundManager.saveCharacterBackground(character.name, character.background);
+      loadCharacterBackground(character.name);
+    } else {
+      console.log('⚪ デフォルト背景を適用');
+      loadCharacterBackground(character.name);
+    }
+    
+    // サイドバーを閉じる
+    setIsSidebarOpen(false);
+  };
+
   return (
     <>
       <div
@@ -1789,42 +1841,7 @@ export default function ChatPage() {
             <CharacterSelector
             characters={allCharacters}
             currentCharacter={currentCharacter}
-            onSelectCharacter={(character: Character) => {
-              console.log('キャラクター変更:', character.name);
-              
-              // キャラクターを設定
-              setCurrentCharacter(character);
-              
-              // 現在のセッションをクリア
-              setCurrentSessionId(null);
-              
-              // 音声再生を停止
-              VoiceManager.stopAudio();
-              
-              // キャラクター個別の背景を適用
-              loadCharacterBackground(character.name);
-              
-              // 新しいセッションID生成
-              const newSessionId = crypto.randomUUID();
-              setCurrentSessionId(newSessionId);
-              
-              // トラッカー初期化
-              if (character.trackers) {
-                initializeTrackersForSession(newSessionId, character);
-              }
-              
-              // 新しいキャラクターの初回メッセージを設定（ランダム選択）
-              const firstMessage = character.first_message || 'こんにちは！';
-                
-              console.log('初回メッセージ設定:', firstMessage);
-              
-              setMessages([{
-                id: crypto.randomUUID(),
-                role: 'assistant',
-                content: firstMessage,
-                timestamp: Date.now()
-              }]);
-            }}
+            onSelectCharacter={onSelectCharacter}
             onAddCharacter={() => {
               setEditingCharacter(null);
               setIsCharacterModalOpen(true);
@@ -1845,6 +1862,7 @@ export default function ChatPage() {
                   if (firstCharacter) {
                     console.log('削除後の代替キャラクター:', firstCharacter.name);
                     setCurrentCharacter(firstCharacter);
+                    setStoreCurrentCharacter(firstCharacter);
                     setCurrentSessionId(null);
                     
                     // 代替キャラクターの背景を適用
@@ -2065,16 +2083,16 @@ export default function ChatPage() {
         </div>
 
         {/* メインチャットエリア */}
-        <div className="flex-1 flex flex-col w-full md:w-auto h-full">
+        <div className="flex-1 flex flex-col w-full md:w-auto h-full max-h-screen">
           {/* ヘッダー - 固定 */}
-          <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky pointer-events-none">
+          <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
                   console.log('🍔 バーガーメニューがクリックされました。現在の状態:', isSidebarOpen, '→', !isSidebarOpen);
                   setIsSidebarOpen(!isSidebarOpen);
                 }}
-                className="pointer-events-auto touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
+                className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
                 title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
               >
                 <Menu size={18} />
@@ -2100,7 +2118,7 @@ export default function ChatPage() {
                       setIsCharacterModalOpen(true);
                     }
                   }}
-                  className="pointer-events-auto text-left inline-block max-w-fit"
+                  className="text-left inline-block max-w-fit"
                 >
                   <h3 className="text-white font-semibold truncate hover:text-blue-200 transition-colors text-sm md:text-base">
                     {currentCharacter?.name || 'キャラクター'}
@@ -2120,13 +2138,19 @@ export default function ChatPage() {
                     />
                   </div>
                 )}
+                {/* デバッグ情報 */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-white/50 mt-1">
+                    Debug: showTrackers={showTrackers.toString()}, hasTrackers={!!currentCharacter?.trackers}, hasSession={!!currentSessionId}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 {/* トラッカートグルボタン */}
                 {currentCharacter?.trackers && currentSessionId && (
                   <button
                     onClick={() => setShowTrackers(!showTrackers)}
-                    className={`pointer-events-auto touch-target p-1.5 md:p-2 rounded-lg transition-all duration-200 ${
+                    className={`touch-target p-1.5 md:p-2 rounded-lg transition-all duration-200 ${
                       showTrackers 
                         ? 'text-blue-400 bg-blue-400/20 hover:bg-blue-400/30' 
                         : 'theme-text-primary hover:bg-white/10'
@@ -2138,21 +2162,21 @@ export default function ChatPage() {
                 )}
                 <button
                   onClick={() => setIsQuickSettingsOpen(true)}
-                  className="pointer-events-auto touch-target text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
+                  className="touch-target text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
                   title="クイック設定"
                 >
                   <Zap size={16} />
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}
-                  className="pointer-events-auto touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 md:hidden shadow-sm"
+                  className="touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 md:hidden shadow-sm"
                   title="詳細設定"
                 >
                   <Settings size={16} />
                 </button>
                 <button
                   onClick={() => setIsCharacterGalleryOpen(true)}
-                  className="pointer-events-auto touch-target text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
+                  className="touch-target text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
                   title="キャラクターギャラリー"
                 >
                   <User size={16} />
@@ -2208,7 +2232,7 @@ export default function ChatPage() {
           )}
 
           {/* チャットメッセージエリア - スクロール可能 */}
-          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pt-16 pb-20 md:pt-4 md:pb-4">
+          <div className="flex-1 p-2 md:p-4 space-y-4 md:space-y-6 overflow-y-auto pt-16 pb-40 md:pt-4 md:pb-32 min-h-0 scroll-smooth overscroll-auto">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' ? (
@@ -2383,7 +2407,7 @@ export default function ChatPage() {
                 )}
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} className="h-16" />
           </div>
 
           {/* メッセージ入力フォーム - 下固定 */}
@@ -2398,13 +2422,7 @@ export default function ChatPage() {
                   {userInspirationCandidates.map((candidate, index) => (
                     <button
                       key={index}
-                      onClick={() => {
-                              setEditorInitialText(candidate);
-      setShowInspirationCandidates(false);
-      setUserInspirationCandidates([]);
-      // モーダルを開く（state反映後の次フレームで実行）
-      setTimeout(() => setIsMessageEditorOpen(true), 0);
-          }}
+                      onClick={() => selectInspirationCandidate(candidate)}
                       className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
                     >
                       <div className="flex items-start gap-2">
@@ -2509,16 +2527,29 @@ export default function ChatPage() {
           isOpen={isCharacterModalOpen}
           onClose={() => setIsCharacterModalOpen(false)}
           character={editingCharacter}
-          onSave={(updatedCharacter) => {
+          onSave={async (updatedCharacter) => {
             CharacterLoader.addCharacter(updatedCharacter);
             const updatedCharacters = CharacterLoader.getAllCharacters();
             setAllCharacters(updatedCharacters);
             if (currentCharacter?.name === updatedCharacter.name) {
               setCurrentCharacter(updatedCharacter);
+              setStoreCurrentCharacter(updatedCharacter);
             }
             setIsCharacterModalOpen(false);
             if (updatedCharacter.background) {
               BackgroundManager.saveCharacterBackground(updatedCharacter.name, updatedCharacter.background);
+            }
+            
+            // Supabaseに保存
+            try {
+              const result = await saveCharacterToCloud(updatedCharacter);
+              if (result.success) {
+                console.log('✅ キャラクターをSupabaseに保存しました:', updatedCharacter.name);
+              } else {
+                console.warn('⚠️ Supabase保存に失敗:', result.error);
+              }
+            } catch (error) {
+              console.error('❌ Supabase保存エラー:', error);
             }
           }}
         />

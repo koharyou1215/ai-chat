@@ -29,6 +29,15 @@ const config = {
     'duration-300',
     'transform',
     'scale-105',
+    // アニメーションクラス
+    'animate-pulse',
+    'animate-bounce',
+    'animate-spin',
+    'animate-ping',
+    'animate-none',
+    'hover:animate-none',
+    'scale-95',
+    'scale-110',
     // モーダル関連のクラス
     'fixed',
     'inset-0',

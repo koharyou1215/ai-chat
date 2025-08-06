@@ -1,8 +1,5 @@
 {
   "name": "みるく",
-  "aiModel": "claude",
-  "isVariation": true,
-  "baseCharacterName": "みるく",
   "age": "20歳",
   "occupation": "SNSインフルエンサー・コスプレイヤー",
   "tags": [

@@ -7,12 +7,17 @@ import CharacterGallery from '../../../components/CharacterGallery';
 import CharacterModal from '../../../components/CharacterModal';
 import { CharacterLoader } from '../../../lib/characterLoader';
 import { Character } from '../../../types/character';
+import { saveCharacterToCloud } from '../../../lib/characterCloudSync';
+import { useChatStore } from '../../../stores/chatStore';
 
 export default function CharactersPage() {
   const router = useRouter();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  
+  // Zustandストアからキャラクター設定機能を取得
+  const { setCurrentCharacter } = useChatStore();
 
   useEffect(() => {
     // キャラクターリストの初期ロード
@@ -28,11 +33,13 @@ export default function CharactersPage() {
     router.back();
   };
 
-  const handleCharacterSelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  character: Character) => {
-    // キャラクター選択後、メインページに戻る (ここでは何もしないか、選択されたキャラクターを渡すなど)
-    // 現状はrouter.push('/')のみで、キャラクター選択はuseChatStoreなどで別途行う想定のようです。
-    // router.push('/'); // ここは不要かもしれません
+  const handleCharacterSelect = (character: Character) => {
+    // キャラクター選択時にZustandストアを更新
+    setCurrentCharacter(character);
+    console.log('✅ キャラクター選択:', character.name);
+    
+    // メインページに戻る
+    router.push('/');
   };
 
   const handleAddCharacter = () => {
@@ -52,10 +59,25 @@ export default function CharactersPage() {
     }
   };
 
-  const handleSaveCharacter = (character: Character) => {
+  const handleSaveCharacter = async (character: Character) => {
     CharacterLoader.addCharacter(character); // CharacterLoaderで追加/更新
     loadCharacters(); // リストを再ロード
     setIsModalOpen(false);
+    
+    // 新規作成時はZustandストアも更新
+    setCurrentCharacter(character);
+    
+    // Supabaseに保存
+    try {
+      const result = await saveCharacterToCloud(character);
+      if (result.success) {
+        console.log('✅ キャラクターをSupabaseに保存しました:', character.name);
+      } else {
+        console.warn('⚠️ Supabase保存に失敗:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Supabase保存エラー:', error);
+    }
   };
 
   const handleCloseModal = () => {
@@ -88,6 +110,7 @@ export default function CharactersPage() {
             onEditCharacter={handleEditCharacter} // 編集ハンドラ
             onDeleteCharacter={handleDeleteCharacter} // 削除ハンドラ
             onImportExport={() => { /* インポート/エクスポートは別途実装 */ }} // TODO: 後で実装
+            onClose={() => {}} // このページでは閉じる処理は不要
           />
         </div>
       </div>

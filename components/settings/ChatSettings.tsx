@@ -172,6 +172,23 @@ export default function ChatSettings({ formSettings, setFormSettings }: ChatSett
           </p>
         </div>
 
+        {/* 履歴の自動読み込み */}
+        <div className="flex items-center justify-between">
+          <label htmlFor="autoLoadHistory" className="block text-sm font-medium text-gray-700">
+            履歴の自動読み込み
+          </label>
+          <input
+            type="checkbox"
+            id="autoLoadHistory"
+            checked={formSettings.autoLoadHistory !== false}
+            onChange={(e) => setFormSettings(prev => ({ ...prev, autoLoadHistory: e.target.checked }))}
+            className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          無効にすると、アプリ起動時に履歴が自動で読み込まれません。
+        </p>
+
         {/* チャット通知音 */}
         <div className="flex items-center justify-between">
           <label htmlFor="chatNotificationSound" className="block text-sm font-medium text-gray-700">

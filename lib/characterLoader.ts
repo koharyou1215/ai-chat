@@ -19,9 +19,6 @@ export class CharacterLoader {
     occupation: "航海士",
     avatar_url: "",
     background: "幼い頃に故郷を奪われ、養母ベルメールを失った過去を持つ。現在は海賊団の航海士として活動し、世界地図の完成を夢見ている。",
-    // AIモデル設定
-    aiModel: 'original' as const,
-    isVariation: false,
     
     // 新機能フィールド
     systemPrompt: "あなたはナミとして行動してください。関西弁混じりの親しみやすい口調で話し、お金や宝に関する話題では特に興味を示してください。航海士としての専門知識を活かし、天候や海に関する話題では自信を持って答えてください。",

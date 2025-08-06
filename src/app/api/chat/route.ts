@@ -56,7 +56,38 @@ export async function POST(request: NextRequest) {
     });
     
     const response = await result.response;
-    const text = response.text();
+    
+    // テキスト抽出の堅牢化
+    let text = '';
+    try {
+      text = response.text() || '';
+      console.log('✅ テキスト抽出成功:', text.length, '文字');
+    } catch (textError) {
+      console.error('❌ テキスト抽出エラー:', textError);
+      
+      // candidatesから直接抽出を試行
+      try {
+        const candidate = response.candidates?.[0];
+        if (candidate?.content?.parts) {
+          text = candidate.content.parts
+            .map((part: { text?: string }) => part.text || '')
+            .join('')
+            .trim();
+          console.log(`🔍 候補から直接抽出: ${text.length}文字`);
+        }
+      } catch (directExtractError) {
+        console.warn('⚠️ 直接抽出にも失敗:', directExtractError);
+        text = '';
+      }
+    }
+
+    if (!text) {
+      console.warn('⚠️ 返却テキストが空です（Chat API）');
+      return NextResponse.json({
+        error: 'AI応答が空です',
+        success: false
+      }, { status: 500 });
+    }
 
     // プレースホルダ置換 {{char}}, {{user}}
     const userName = 'あなた';

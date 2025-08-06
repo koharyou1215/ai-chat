@@ -149,31 +149,33 @@ export default function CharacterTrackerDisplay({
                 animatingTrackers.has(tracker.name) 
                   ? 'animate-pulse scale-110 shadow-lg ring-2 ring-white/50' 
                   : 'scale-100'
+              } ${
+                !readOnly && tracker.type === 'numeric' ? 'hover:scale-105 hover:shadow-md' : ''
               }`}
             >
               {getTrackerIcon(tracker.name)}
               <span>{tracker.display_name}</span>
               <span className="font-bold">{displayValue}</span>
               
-              {/* コンパクトモード用調整ボタン */}
+              {/* コンパクトモード用の簡易編集ボタン */}
               {!readOnly && tracker.type === 'numeric' && (
-                <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-1">
+                <div className="ml-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleValueChange(tracker.name, -1);
                     }}
-                    className="p-0.5 text-red-500 hover:bg-red-50 rounded transition-colors"
+                    className="w-4 h-4 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
                     title="1減らす"
                   >
-                    <TrendingDown className="w-2.5 h-2.5" />
+                    <Minus className="w-2.5 h-2.5" />
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleValueChange(tracker.name, 1);
                     }}
-                    className="p-0.5 text-green-500 hover:bg-green-50 rounded transition-colors"
+                    className="w-4 h-4 flex items-center justify-center text-green-500 hover:bg-green-50 rounded-full transition-colors"
                     title="1増やす"
                   >
                     <TrendingUp className="w-2.5 h-2.5" />
@@ -201,7 +203,7 @@ export default function CharacterTrackerDisplay({
           // 表示値を取得
           let displayValue: string;
           let numericValue = 0;
-          let maxValue = tracker.max_value || 100;
+          const maxValue = tracker.max_value || 100;
           
           if (!trackerValue) {
             // 初期値を使用

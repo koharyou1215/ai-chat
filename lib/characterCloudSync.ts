@@ -35,6 +35,7 @@ export const saveCharacterToCloud = async (character: Character) => {
       character_definition: string | null | undefined
       trackers: unknown | null | undefined
       example_dialogue: string | null | undefined
+      chatBackgroundUrl: string | null | undefined
     }
     const dataJson: CharacterDataJSON = {
       tags: Array.isArray(character.tags) ? character.tags : [],
@@ -59,7 +60,8 @@ export const saveCharacterToCloud = async (character: Character) => {
       character_definition: (character as unknown as { character_definition?: unknown }).character_definition as string | null | undefined ?? null,
       trackers: (character as Partial<Record<'trackers', unknown | null>>).trackers ?? null,
       // 例示対話は配列で保持される想定だが、最小スキーマでは任意（型は広めに保持）
-      example_dialogue: (character as unknown as { example_dialogue?: unknown }).example_dialogue as string | null | undefined ?? null
+      example_dialogue: (character as unknown as { example_dialogue?: unknown }).example_dialogue as string | null | undefined ?? null,
+      chatBackgroundUrl: (character as Partial<Record<'chatBackgroundUrl', string | null>>).chatBackgroundUrl ?? null
     }
     const payload = {
       user_id: user.id,
@@ -131,6 +133,7 @@ export const loadCharactersFromCloud = async (): Promise<Character[]> => {
         character_definition: string | null
         trackers: unknown | null
         example_dialogue: string | null
+        chatBackgroundUrl: string | null
       }>
     }
     return (data as CharacterRow[]).map((item) => {
@@ -156,7 +159,8 @@ export const loadCharactersFromCloud = async (): Promise<Character[]> => {
         occupation: (d.occupation as string) || '',
         hobbies: Array.isArray(d.hobbies) ? (d.hobbies as string[]) : [],
         likes: Array.isArray(d.likes) ? (d.likes as string[]) : [],
-        dislikes: Array.isArray(d.dislikes) ? (d.dislikes as string[]) : []
+        dislikes: Array.isArray(d.dislikes) ? (d.dislikes as string[]) : [],
+        chatBackgroundUrl: (d.chatBackgroundUrl as string | null) ?? null
       }
       return restored as Character
     })

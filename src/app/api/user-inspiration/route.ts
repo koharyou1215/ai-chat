@@ -1,196 +1,273 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AppSettings } from '../../../../types/app';
-import { Character } from '../../../../types/character';
-import { chatCompletion } from '../../../../lib/openRouter';
-import { GeminiApiManager } from '../../../../lib/geminiApiManager';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
-export async function POST(req: NextRequest) {
-  console.log('[/api/user-inspiration] POSTリクエストを受信しました');
+export async function POST(request: NextRequest) {
+  console.log('🔍 User Inspiration API 開始');
+  
   try {
-    const { message, settings, character }: { 
-      message: string; 
-      settings: AppSettings; 
-      character?: Character;
-    } = await req.json();
+    const body = await request.json();
+    const { 
+      message, 
+      settings
+    } = body;
 
-    // 設定画面を優先で取得
-    const envApiKey = process.env.OPENROUTER_API_KEY;
-    const settingsApiKey = settings?.openRouterApiKey as string | undefined;
-    const openRouterApiKey = settingsApiKey || envApiKey;
+    console.log('🔍 リクエストデータ:', {
+      hasMessage: !!message,
+      messageLength: message?.length || 0,
+      hasSettings: !!settings,
+      settingsType: typeof settings,
+      settingsKeys: settings ? Object.keys(settings) : []
+    });
+
+    if (!message) {
+      console.error('❌ メッセージがありません');
+      return NextResponse.json({
+        success: false,
+        error: 'メッセージが必要です'
+      }, { status: 400 });
+    }
+
+    // プロンプトを設定から取得（設定画面のもののみ使用）
+    const inspirationPrompt = settings?.inspirationPrompt;
     
-    console.log('[/api/user-inspiration] OpenRouter API Key check:', {
-      hasSettingsApiKey: !!settingsApiKey,
-      hasEnvApiKey: !!envApiKey,
-      settingsApiKeyLength: settingsApiKey?.length || 0,
-      envApiKeyLength: envApiKey?.length || 0,
-      finalApiKeyLength: openRouterApiKey?.length || 0,
-      finalApiKeyStart: openRouterApiKey?.substring(0, 15) || 'none',
-      envApiKeyStart: envApiKey?.substring(0, 15) || 'none',
-      isProduction: process.env.NODE_ENV === 'production',
-      apiKeyFormat: openRouterApiKey?.startsWith('sk-or-v1-') ? 'valid' : 'invalid'
+    console.log(`🔍 設定データ詳細:`, {
+      settingsExists: !!settings,
+      inspirationPromptExists: !!inspirationPrompt,
+      inspirationPromptLength: inspirationPrompt?.length || 0,
+      settingsKeys: settings ? Object.keys(settings) : [],
+      inspirationPromptPreview: inspirationPrompt ? inspirationPrompt.substring(0, 100) + '...' : 'なし',
+      inspirationPromptType: typeof inspirationPrompt
     });
     
-    if (!openRouterApiKey) {
-      console.warn('[/api/user-inspiration] OpenRouter API Keyが設定されていません');
-      return NextResponse.json({ error: 'OpenRouter API Key is not set.' }, { status: 400 });
+    if (!inspirationPrompt || typeof inspirationPrompt !== 'string' || inspirationPrompt.trim().length === 0) {
+      console.error('❌ インスピレーションプロンプトが無効:', {
+        value: inspirationPrompt,
+        type: typeof inspirationPrompt,
+        isString: typeof inspirationPrompt === 'string',
+        length: inspirationPrompt?.length || 0,
+        isEmpty: inspirationPrompt?.trim().length === 0
+      });
+      return NextResponse.json({
+        success: false,
+        error: '設定画面でインスピレーションプロンプトを設定してください'
+      }, { status: 400 });
     }
 
-    // APIキーの形式チェック
-    if (!openRouterApiKey.startsWith('sk-or-v1-')) {
-      return NextResponse.json({ error: 'OpenRouter APIキーの形式が正しくありません。' }, { status: 400 });
-    }
-
-    const model = settings?.model || 'openai/gpt-4o-mini';
+    // プロンプトを構築（複数のプレースホルダーパターンに対応）
+    let finalPrompt = inspirationPrompt;
     
-    // インスピレーション用の専用トークン数設定（デフォルト500）
-    const inspirationMaxTokens = settings?.inspirationMaxTokens || 1500; // thinking系モデル対応で増加
-
-    console.log(`[/api/user-inspiration] OpenRouterモデル: ${model}`);
-    console.log(`[/api/user-inspiration] インスピレーション用トークン数: ${inspirationMaxTokens}`);
-    console.log(`[/api/user-inspiration] プロンプトメッセージの長さ: ${message.length}`);
-    console.log(`[/api/user-inspiration] キャラクター情報:`, character ? {
-      name: character.name,
-      personality: character.personality?.substring(0, 100) + '...',
-      hasCharacterDefinition: !!character.character_definition
-    } : 'なし');
-
-    // キャラクター設定を組み込んだプロンプトを作成
-    let characterPrompt = '';
-    if (character) {
-      characterPrompt = `
-あなたは「${character.name}」というキャラクターです。
-
-${character.personality ? `性格: ${character.personality}` : ''}
-${character.character_definition ? `キャラクター設定: ${JSON.stringify(character.character_definition)}` : ''}
-${character.speaking_style ? `話し方: ${character.speaking_style}` : ''}
-${character.scenario ? `シナリオ: ${character.scenario}` : ''}
-
-上記の設定に従って、キャラクターとして自然な返信を生成してください。
-`;
-    }
-
-    // 設定画面のプロンプトを使用、デフォルトプロンプトをフォールバック
-    const customPrompt = settings?.inspirationPrompt;
-    console.log('[/api/user-inspiration] カスタムプロンプト確認:', {
-      hasCustomPrompt: !!customPrompt,
-      customPromptLength: customPrompt?.length || 0,
-      customPromptPreview: customPrompt ? customPrompt.substring(0, 100) + '...' : 'なし'
+    // 会話履歴の置換（複数パターン対応）
+    finalPrompt = finalPrompt.replace(/\{\{conversation\}\}/g, message);
+    finalPrompt = finalPrompt.replace(/\{\{user\}\}と\{\{char\}\}間の会話履歴/g, message);
+    finalPrompt = finalPrompt.replace(/会話履歴:/g, `会話履歴:\n${message}`);
+    
+    console.log(`🔍 プロンプト置換確認:`, {
+      originalPromptLength: inspirationPrompt.length,
+      messageLength: message.length,
+      finalPromptLength: finalPrompt.length,
+      hasConversationPlaceholder: inspirationPrompt.includes('{{conversation}}'),
+      hasUserCharPlaceholder: inspirationPrompt.includes('{{user}}と{{char}}間の会話履歴'),
+      hasGenericHistoryPattern: inspirationPrompt.includes('会話履歴:'),
+      replacementOccurred: inspirationPrompt !== finalPrompt,
+      messageSample: message.substring(0, 100) + '...'
     });
-    const basePrompt = customPrompt || `# ユーザー返信生成AI
-
-あなたは自然で魅力的なユーザー返信を生成する専門AIです。与えられた情報を基に、ユーザーが実際に返しそうなリアルな返信を1つ作成してください。
-
-## 入力情報
-
-### キャラクター情報
-- **名前**: {{char}}
-- **性格・特徴**: {character.character_definition || character.description || '不明'}
-
-### ユーザー情報
-- **名前**: {persona.name}
-- **性格**: {persona.description}
-- **好み**: {persona.likes?.join(', ') || 'なし'}
-- **苦手**: {persona.dislikes?.join(', ') || 'なし'}
-- **口調・特徴**: {persona.other_settings || 'なし'}
-
-### 会話データ
-- **キャラクターの最新発言**: 「{lastCharacterMessage}」
-- **直近の会話流れ**: {recentConversation}
-
-## 生成要件
-
-### 必須条件
-1. **文字数**: 100～150文字（句読点含む）
-2. **口調**: ユーザーの設定された口調・性格を忠実に反映
-3. **会話継続**: 自然に会話が発展する内容
-4. **関係性**: {{char}}との親しみ度に適した表現
-5. **自然性**: 実際の人間が返しそうなリアルな反応
-
-### 避けるべき表現
-- 「そうなんですね」「なるほど」
-- 「詳しく聞かせて」「教えて」
-- 「{{char}}さんらしい」「さすが」
-- その他の定型的・機械的な相槌
-
-### 推奨する要素
-- ユーザーの個性が表れる独特な反応
-- 感情や驚き、興味を自然に表現
-- 会話に新しい要素や視点を加える
-- キャラクターの発言への具体的な反応や感想
-
-## 出力要件
-**返信候補のみを1つ出力してください。説明や解説は不要です。**`;
-
-    const hasConversation = message && message.trim();
-    const actionType = hasConversation ? '会話に適した返信' : '初回挨拶';
-    const generalActionType = hasConversation ? '返信' : '挨拶';
     
-    const prompt = `${characterPrompt}${basePrompt}
-
-${hasConversation ? `会話履歴:\n${message}\n` : ''}
-${character ? `「${character.name}」との${actionType}を提案してください。` : `ユーザーが送信できる自然な${generalActionType}を生成してください。`}`;
-
-    // 複数候補を生成（順次リクエスト - レート制限対策）
-    const candidateCount = Math.min(settings?.candidateCount || 1, 5); // 最大5個まで
-    console.log(`[/api/user-inspiration] ${candidateCount}個の候補を順次生成開始`);
+    // プレースホルダーが見つからない場合は、プロンプトの末尾に会話履歴を追加
+    if (inspirationPrompt === finalPrompt) {
+      console.log('⚠️ プレースホルダーが見つかりませんでした。会話履歴をプロンプト末尾に追加します。');
+      finalPrompt = `${inspirationPrompt}\n\n**会話履歴:**\n${message}\n\n上記の会話履歴を分析して返信候補を生成してください。`;
+      console.log(`🔧 フォールバック後のプロンプト長: ${finalPrompt.length}文字`);
+    }
     
-    const inspirationTexts: string[] = [];
+    console.log(`🔍 プロンプト長: ${finalPrompt.length}文字`);
+    // 詳細ログを削減してメモリ使用量を抑制
+    if (finalPrompt.length > 1000) {
+      console.log(`⚠️ プロンプトが長すぎます (${finalPrompt.length}文字) - 短縮を推奨`);
+    }
+
+    // Gemini API直接呼び出し
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
     
+    console.log('🔍 Gemini APIキー確認:', {
+      hasGeminiKey: !!process.env.GEMINI_API_KEY,
+      hasGoogleKey: !!process.env.GOOGLE_API_KEY,
+      hasAnyKey: !!geminiApiKey
+    });
+    
+    if (!geminiApiKey) {
+      console.error('❌ Gemini APIキーが設定されていません');
+      return NextResponse.json({
+        success: false,
+        error: 'Gemini APIキーが設定されていません'
+      }, { status: 500 });
+    }
+
+    const maxTokens = settings?.maxTokens || 1500;
+    const selectedModel = settings?.model || 'gemini-1.5-flash';
+    console.log(`🔹 Gemini API直接呼び出し開始（model: ${selectedModel}, maxTokens: ${maxTokens}）`);
+    
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: selectedModel.includes('gemini-') ? selectedModel : 'gemini-1.5-flash',  // Geminiモデルのみ対応
+      generationConfig: {
+        maxOutputTokens: maxTokens,  // 設定値をそのまま使用
+        temperature: 0.7,
+      },
+      // 安全設定を緩和
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, 
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ]
+    });
+
+    console.log(`🚀 Gemini API実行中...`);
+    
+    let result;
     try {
-      for (let i = 0; i < candidateCount; i++) {
-        console.log(`[/api/user-inspiration] 候補${i + 1}/${candidateCount}を生成中...`);
-        
-        try {
-          // Gemini API優先システムを使用
-          const response = await GeminiApiManager.generateWithPriority(
-            [{ role: 'user', content: prompt }],
-            {
-              model: model,
-              maxTokens: inspirationMaxTokens,
-              temperature: 0.7,
-              openRouterApiKey
-            }
-          );
-          
-          if (response.success && response.content && response.content.trim()) {
-            inspirationTexts.push(response.content.trim());
-            console.log(`[/api/user-inspiration] ✅ 候補${i + 1}生成完了 (${response.provider}): ${response.content.trim().substring(0, 50)}...`);
-          } else {
-            console.warn(`[/api/user-inspiration] ⚠️ 候補${i + 1}の生成に失敗: ${response.error}`);
-          }
-          
-          // レート制限対策として各リクエスト間に1秒の遅延
-          if (i < candidateCount - 1) {
-            console.log('[/api/user-inspiration] ⏱️ レート制限対策として1秒待機中...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        } catch (candidateError) {
-          console.warn(`[/api/user-inspiration] ⚠️ 候補${i + 1}の生成に失敗:`, candidateError);
-          // 1つでも成功していれば継続、全て失敗の場合は下でエラーハンドリング
-        }
-      }
-      
-      if (inspirationTexts.length === 0) {
-        throw new Error('All inspiration candidate requests failed');
-      }
-      
-      console.log(`[/api/user-inspiration] ✅ ${inspirationTexts.length}/${candidateCount}個の候補生成完了`);
-      
-      return NextResponse.json({ 
-        candidates: inspirationTexts,
-        directResponse: true 
+      result = await model.generateContent(finalPrompt);
+      console.log('✅ Gemini API呼び出し成功');
+    } catch (generateError) {
+      console.error('❌ Gemini generateContent エラー:', {
+        errorMessage: generateError instanceof Error ? generateError.message : String(generateError),
+        errorName: generateError instanceof Error ? generateError.name : undefined,
+        stack: generateError instanceof Error ? generateError.stack : undefined
       });
-      
-    } catch (error) {
-      console.error('[/api/user-inspiration] 候補生成中にエラー:', error);
-      return NextResponse.json({ 
-        candidates: ["会話の流れを理解できませんでした。もう一度お聞かせください。"],
-        fallback: true 
-      });
+      throw generateError;
     }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[/api/user-inspiration] APIエラー: ${errorMessage}`);
-    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
+    
+    console.log(`📨 レスポンス受信`);
+    const response = await result.response;
+    
+    console.log(`🔍 レスポンス詳細:`, {
+      candidates: response.candidates?.length || 0,
+      finishReason: response.candidates?.[0]?.finishReason,
+      // メモリ使用量削減のため、usageMetadataの詳細ログを削減
+      promptTokens: response.usageMetadata?.promptTokenCount,
+      responseTokens: response.usageMetadata?.candidatesTokenCount,
+      totalTokens: response.usageMetadata?.totalTokenCount,
+      hasText: !!response.text
+    });
+    
+    // フィニッシュリーズンのチェック
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (finishReason) {
+      console.log(`🏁 終了理由: ${finishReason}`);
+      if (finishReason === 'SAFETY') {
+        console.warn(`⚠️ 安全フィルターで停止されました`);
+        return NextResponse.json({
+          success: false,
+          error: `安全フィルターで停止されました: ${finishReason}`
+        }, { status: 500 });
+      }
+    }
+
+    // メインテキスト抽出
+    let content = '';
+    try {
+      content = response.text() || '';
+      console.log('✅ テキスト抽出成功:', content.length, '文字');
+    } catch (textError) {
+      console.error('❌ テキスト抽出エラー:', textError);
+      content = '';
+    }
+
+    // MAX_TOKENSエラーの場合、部分的な結果でも処理を続行
+    if (!content && finishReason === 'MAX_TOKENS') {
+      console.log(`🔍 MAX_TOKENSエラー時の詳細データ:`, {
+        candidatesLength: response.candidates?.length,
+        firstCandidate: response.candidates?.[0],
+        contentParts: response.candidates?.[0]?.content?.parts?.length
+      });
+      
+      // candidatesから部分的な結果を抽出を試行
+      try {
+        const candidate = response.candidates?.[0];
+        if (candidate?.content?.parts) {
+          content = candidate.content.parts
+            .map((part: { text?: string }) => part.text || '')
+            .join('')
+            .trim();
+          console.log(`🔍 MAX_TOKENS時の部分結果を取得: ${content.length}文字`);
+          if (content.length > 0) {
+            console.log(`🔍 部分結果内容:`, content.substring(0, 200) + '...');
+          }
+        }
+      } catch (extractError) {
+        console.warn('⚠️ 部分結果の抽出に失敗:', extractError);
+      }
+    }
+
+    // 通常のテキスト抽出でも失敗した場合、candidatesから直接抽出を試行
+    if (!content) {
+      console.log(`🔧 通常のテキスト抽出も失敗、candidatesから直接抽出を試行...`);
+      try {
+        const candidate = response.candidates?.[0];
+        if (candidate?.content?.parts) {
+          content = candidate.content.parts
+            .map((part: { text?: string }) => part.text || '')
+            .join('')
+            .trim();
+          console.log(`🔍 直接抽出で取得: ${content.length}文字`);
+        }
+      } catch (directExtractError) {
+        console.warn('⚠️ 直接抽出にも失敗:', directExtractError);
+      }
+    }
+
+    if (!content) {
+      console.warn('⚠️ 返却テキストが空です（Gemini）');
+      return NextResponse.json({
+        success: false,
+        error: 'Gemini応答が空です（finishReasonやsafetyRatingsを確認してください）'
+      }, { status: 500 });
+    }
+
+    console.log(`✅ Gemini API成功 - レスポンス文字数: ${content.length}`);
+    // 大量のコンテンツログを削減してメモリリークを防止
+    
+    // 候補を抽出
+    const candidates = content.split('\n')
+      .filter((line: string) => line.match(/^\d+\./))
+      .map((line: string) => line.replace(/^\d+\.\s*/, '').trim())
+      .filter((candidate: string) => candidate.length > 0);
+
+    console.log(`🔍 抽出した候補数: ${candidates.length}`);
+    // 候補内容の詳細ログを削減
+
+    console.log(`✅ インスピレーション生成成功（Gemini直接）:`, {
+      candidateCount: candidates.length,
+      // 大量のデータログを削減してメモリ効率化
+      success: true
+    });
+
+    return NextResponse.json({
+      success: true,
+      candidates: candidates.length > 0 ? candidates : [content.trim()]
+    });
+
+  } catch (error) {
+    console.error('❌ User inspiration API error:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : '予期しないエラーが発生しました'
+    }, { status: 500 });
   }
 }

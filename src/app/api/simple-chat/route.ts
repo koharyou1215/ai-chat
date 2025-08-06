@@ -3,7 +3,6 @@ import { MemoryManager } from '../../../../lib/memoryManager';
 import { CharacterLoader } from '../../../../lib/characterLoader';
 import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
-import { chatCompletion as callOpenRouter } from '../../../../lib/openRouter';
 import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
 
@@ -52,31 +51,63 @@ export async function POST(request: NextRequest) {
       console.log('Fallback to default character:', character?.name);
     }
     
-    // プロバイダを決定
-    let provider: 'gemini' | 'openrouter' = settings?.provider || 'openrouter'; // デフォルトをopenrouterに
+    // プロバイダを決定 - Geminiを優先
+    let provider: 'gemini' | 'openrouter' = 'gemini'; // デフォルトをgeminiに変更
     
-    // 設定されたモデルがOpenRouterのGeminiモデルの場合、プロバイダを強制的にopenrouterに
+    // Gemini APIが利用できない場合はOpenRouterに切り替え
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!geminiApiKey) {
+      provider = 'openrouter';
+      console.log('🔄 Gemini APIキーが設定されていないため、OpenRouterを使用します');
+    }
+    
+    // ユーザー設定でプロバイダが指定されている場合はそれを優先
+    if (settings?.provider) {
+      provider = settings.provider;
+      console.log(`⚙️ ユーザー設定によりプロバイダを${provider}に設定`);
+    }
+    
+    // 設定されたモデルがGeminiモデルで、Gemini APIキーがある場合は直接Gemini API使用
+    const directGeminiModels = [
+      'gemini-1.5-flash',
+      'gemini-1.5-pro', 
+      'gemini-2.5-flash',
+      'gemini-2.5-pro'
+    ];
     const openRouterGeminiModels = [
       'google/gemini-2.5-flash',
       'google/gemini-2.5-pro',
     ];
-    if (settings?.model && openRouterGeminiModels.includes(settings.model)) {
+    
+    // Geminiモデルの場合のプロバイダ判定
+    if (settings?.model && directGeminiModels.includes(settings.model) && geminiApiKey) {
+      provider = 'gemini';
+      console.log(`🔄 直接Geminiモデル指定のため、プロバイダをgeminiに変更`);
+    } else if (settings?.model && openRouterGeminiModels.includes(settings.model)) {
       provider = 'openrouter';
+      console.log(`🔄 OpenRouter Geminiモデル指定のため、プロバイダをopenrouterに変更`);
     }
 
     // モデル設定（Gemini/OpenRouter 共通で使うパラメータをまとめて保持）
     const modelConfig = {
-      model: settings?.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'openai/gpt-4o-mini'),
+      model: settings?.model || (provider === 'gemini' ? 'gemini-1.5-flash' : 'openai/gpt-4o-mini'),
       generationConfig: {
         temperature: settings?.temperature || 0.7,
         topP: settings?.topP || 0.9,
         maxOutputTokens: settings?.maxTokens || 2048,
-        ...(settings?.presencePenalty !== undefined && !(settings?.model || 'gemini-2.5-flash').includes('flash') ? {
+        ...(settings?.presencePenalty !== undefined && !(settings?.model || 'gemini-1.5-flash').includes('flash') ? {
           presencePenalty: settings?.presencePenalty ?? 0.6,
           frequencyPenalty: settings?.frequencyPenalty ?? 0.4,
         } : {})
       }
     };
+
+    console.log('✅ プロバイダとモデル設定:', {
+      provider,
+      model: modelConfig.model,
+      hasGeminiKey: !!geminiApiKey,
+      hasOpenRouterKey: !!(settings?.openRouterApiKey || process.env.OPENROUTER_API_KEY)
+    });
 
     console.log('Model config maxOutputTokens:', modelConfig.generationConfig.maxOutputTokens); // デバッグログ追加
 
@@ -219,13 +250,14 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // 会話履歴をテキスト化（空文字やundefinedを除外）
     // ---- プロンプト短縮 ----
     // 1) 空行除去 2) 直近の履歴を適切に制限 3) 長すぎるメッセージは要約
+    console.log(`📚 元の会話履歴件数: ${conversation ? conversation.length : 0}`);
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
           .filter((msg: { role: string; content: string }) => msg && msg.content?.trim())
-          .slice(-(settings?.historySize || 8)) // 履歴サイズを8件に増加
+          .slice(-(Math.min(settings?.historySize || 8, 8))) // 履歴サイズを最大8件に制限
           .map((msg: { role: string; content: string }) => {
             // 長すぎるメッセージは要約
-            if (msg.content.length > 500) {
+            if (msg.content.length > 300) {
               return {
                 role: msg.role as 'user' | 'assistant',
                 content: msg.content.substring(0, 500) + '...'
@@ -237,6 +269,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             };
           })
       : [];
+
+    console.log(`📏 フィルター後の会話履歴件数: ${filteredConversation.length}`);
 
     let historyText = filteredConversation.map((msg: { role: string; content: string }) => {
       const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
@@ -252,10 +286,12 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       fullPrompt += '\n【重要】この続きでは、ユーザーの思考・行動・セリフは一切含めず、{{char}}（キャラクター）の返答・独白・行動・心情描写のみを自然に書き続けてください。物語や会話が進行するようにしてください。';
     }
     
-    // プロンプト長が15,000文字を超える場合は古い履歴から削除（より厳しい制限）
-    const MAX_PROMPT_CHARS = 15000;
+    console.log(`📄 プロンプト生成完了 - 文字数: ${fullPrompt.length}`);
+    
+    // プロンプト長が2000文字を超える場合は古い履歴から削除
+    const MAX_PROMPT_CHARS = 2000;
     if (fullPrompt.length > MAX_PROMPT_CHARS) {
-      console.warn('プロンプトが長すぎるため履歴を削除して短縮します');
+      console.warn(`⚠️ プロンプトが長すぎます（${fullPrompt.length}文字）履歴を削除して短縮します`);
       // 履歴を古い順に削除しながら短縮
       while (fullPrompt.length > MAX_PROMPT_CHARS && filteredConversation.length > 0) {
         filteredConversation.shift();
@@ -265,9 +301,82 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         }).join('\n');
         fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
       }
+      
+      // それでも長い場合は各メッセージを短縮
+      if (fullPrompt.length > MAX_PROMPT_CHARS) {
+        const shortenedConversation = filteredConversation.map((msg: { role: string; content: string }) => ({
+          ...msg,
+          content: msg.content.length > 150 ? msg.content.substring(0, 150) + '...' : msg.content
+        }));
+        historyText = shortenedConversation.map((msg: { role: string; content: string }) => {
+          const speaker = msg.role === 'user' ? '{{user}}' : '{{char}}';
+          return `${speaker}: ${msg.content}`;
+        }).join('\n');
+        fullPrompt = `${basePrompt}\n\n${historyText}${historyText ? '\n' : ''}${userLine}{{char}}:`;
+      }
+      
+      console.log(`🔧 プロンプト短縮完了 - 最終文字数: ${fullPrompt.length}`);
     }
     
     console.log('Final prompt:', fullPrompt);
+
+    // ---------- Gemini API 直接呼び出し ----------
+    if (provider === 'gemini') {
+      try {
+        console.log('🔹 Gemini API直接呼び出し開始');
+        
+        if (!geminiApiKey) {
+          return NextResponse.json({
+            success: false,
+            error: 'Gemini APIキーが設定されていません。環境変数GEMINI_API_KEYまたはGOOGLE_API_KEYを設定してください。'
+          }, { status: 500 });
+        }
+
+        // メッセージを統合してGemini形式に変換
+        const messagesForGemini = [
+          { role: 'system', content: basePrompt },
+          ...filteredConversation.map((msg: { role: 'user' | 'assistant'; content: string }) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          ...(doContinue ? [] : [{ role: 'user' as const, content: message }])
+        ];
+
+        // Gemini API優先システムを使用
+        const response = await GeminiApiManager.generateWithPriority(
+          modelConfig.model,
+          messagesForGemini,
+          {
+            maxTokens: modelConfig.generationConfig.maxOutputTokens,
+            temperature: modelConfig.generationConfig.temperature,
+            openRouterApiKey: settings?.openRouterApiKey // フォールバック用
+          }
+        );
+        
+        if (!response.success || !response.content) {
+          throw new Error(`Gemini生成失敗: ${response.error || 'レスポンスが空です'}`);
+        }
+
+        console.log(`✅ Gemini API成功（${response.provider}）:`, response.content.substring(0, 100) + '...');
+
+        const userName = persona?.name || 'あなた';
+        const replaced = response.content
+          .replace(/\{\{char}}/g, character.name)
+          .replace(/\{\{user}}/g, userName);
+
+        return NextResponse.json({
+          success: true,
+          content: replaced,
+          candidates: [replaced]
+        });
+      } catch (geminiError) {
+        console.error('❌ Gemini API error:', geminiError);
+        return NextResponse.json({
+          success: false,
+          error: geminiError instanceof Error ? geminiError.message : 'Gemini APIとの通信に失敗しました'
+        }, { status: 500 });
+      }
+    }
 
     // ---------- OpenRouter 経由の応答 ----------
     if (provider === 'openrouter') {
@@ -371,6 +480,14 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
                 }
               );
               
+              console.log(`🔍 generateWithPriority結果:`, {
+                success: response.success,
+                provider: response.provider,
+                hasContent: !!response.content,
+                contentLength: response.content?.length || 0,
+                error: response.error
+              });
+              
               if (response.success && response.content) {
                 generatedTexts.push(response.content);
                 console.log(`✅ 候補${i + 1}生成完了 (${response.provider}): ${response.content.substring(0, 50)}...`);
@@ -447,7 +564,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             );
 
             if (!response.success || !response.content) {
-              throw new Error(`AI生成失敗: ${response.error}`);
+              throw new Error(`AI生成失敗: ${response.error || 'レスポンスが空です'}`);
             }
 
             console.log(`✅ 単一候補生成完了（${response.provider}）:`, response.content.substring(0, 100) + '...');

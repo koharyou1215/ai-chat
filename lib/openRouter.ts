@@ -81,8 +81,43 @@ export async function chatCompletion(options: OpenRouterOptions): Promise<string
       status: response.status,
       statusText: response.statusText,
       errorText: errorText,
-      url: response.url
+      url: response.url,
+      model: model
     });
+    
+    // lynn/soliloquy-v3の特別処理
+    if (model === 'lynn/soliloquy-v3' && response.status === 404) {
+      console.warn('⚠️ lynn/soliloquy-v3 が一時的に利用できません。代替モデルで処理します。');
+      
+      // 代替モデルで再試行
+      const fallbackModel = 'openai/gpt-4o-mini';
+      console.log(`🔄 代替モデル ${fallbackModel} で再試行中...`);
+      
+      const fallbackRequestBody = {
+        ...requestBody,
+        model: fallbackModel
+      };
+      
+      const fallbackResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://ai-chat-6ntorx1qj-kous-projects-ba188115.vercel.app',
+          'X-Title': process.env.OPENROUTER_TITLE || 'AI Chat App',
+        },
+        body: JSON.stringify(fallbackRequestBody),
+      });
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        const fallbackContent = fallbackData?.choices?.[0]?.message?.content;
+        if (fallbackContent) {
+          console.log('✅ 代替モデルでの処理が成功しました');
+          return fallbackContent;
+        }
+      }
+    }
     
     throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
   }

@@ -95,4 +95,7 @@ export interface AppSettings {
   emotionDetectionSensitivity?: number;
   scenarioDetectionEnabled?: boolean;
   customQualityTags?: string;
+  
+  // 履歴関連設定
+  autoLoadHistory?: boolean;
 }
