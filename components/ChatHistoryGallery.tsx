@@ -217,14 +217,20 @@ function ChatHistoryCard({
 }: {
   session: SessionSummary;
   isSelected: boolean;
-  onSelect: (sessionId: string) => void;
+  onSelect: (session: SessionSummary) => void;
   onDelete: (sessionId: string) => void;
   formatDuration: (minutes: number) => string;
   formatDate: (timestamp?: number) => string;
 }) {
   return (
     <div
-      onClick={() => onSelect(session.id)}
+      onClick={() => {
+        if (session.id) {
+          onSelect(session);
+        } else {
+          console.warn('セッションIDが無効です:', session);
+        }
+      }}
       className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border-2 ${
         isSelected ? 'border-green-500 ring-2 ring-green-200' : 'border-gray-200 hover:border-gray-300'
       }`}

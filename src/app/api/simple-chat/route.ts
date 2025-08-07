@@ -739,12 +739,13 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
           // トラッカー更新情報を抽出
           let extractedTrackers: any[] = [];
+          let cleanedResponse = candidates[0];
           
           if (candidates.length > 0) {
             const mainResponse = candidates[0];
             console.log('📊 トラッカー更新情報を抽出中:', mainResponse.substring(0, 200));
             
-            // JSONブロックの抽出
+            // JSONブロックの抽出と除去
             const jsonMatches = mainResponse.match(/```json\s*([\s\S]*?)\s*```/g);
             if (jsonMatches) {
               for (const jsonMatch of jsonMatches) {
@@ -755,6 +756,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
                   if (parsed.tracker_updates && Array.isArray(parsed.tracker_updates)) {
                     console.log('📊 トラッカー更新指示を発見:', parsed.tracker_updates);
                     extractedTrackers = parsed.tracker_updates;
+                    
+                    // 応答からJSONブロックを削除
+                    cleanedResponse = mainResponse.replace(jsonMatch, '').trim();
+                    console.log('🧹 JSON除去後の応答長:', cleanedResponse.length);
                     break;
                   }
                 } catch (parseError) {
@@ -763,7 +768,7 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
               }
             }
             
-            // JSONが見つからない場合、テキストから自動推測
+            // JSONが見つからない場合、自動推測
             if (extractedTrackers.length === 0 && trackers) {
               console.log('📊 JSONが見つからない、自動推測を試行');
               extractedTrackers = autoDetectTrackerChanges(mainResponse, trackers);
@@ -772,8 +777,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
           return NextResponse.json({
             success: true,
-            content: candidates[0], // 最初の候補をメインとして使用
-            candidates: candidates,
+            content: cleanedResponse, // クリーンアップされた応答を使用
+            candidates: [cleanedResponse], // 候補もクリーンアップ
             trackers: extractedTrackers // 更新されたトラッカー情報を返す
           });
         } catch (multipleRequestError) {

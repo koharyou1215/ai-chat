@@ -23,22 +23,20 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
     // OpenRouter Models - オリジナル設定
     // ⚠️ 重要: このモデルリストは変更しないでください！
     // すべて実動確認済みの安定版です
-    'openai/gpt-4o-mini',
-    'openai/gpt-4o',
-    'lynn/soliloquy-v3', // 元のまま維持
-    'qwen/qwen3-30b-a3b-instruct-2507', // 追加
-    'qwen/qwen3-235b-a22b-thinking-2507',
-    'moonshotai/kimi-k2', // 単体版のみ
-    'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
-    'x-ai/grok-4',
     'google/gemini-2.5-flash',
-    'google/gemini-2.5-pro',
-    'google/gemini-2.5-flash-lite-preview-06-17',
-    'deepseek/deepseek-chat-v3-0324:free',
-    'anthropic/claude-3.5-sonnet',
+    'google/gemini-2.5-pro', 
     'anthropic/claude-opus-4',
     'anthropic/claude-sonnet-4',
-    'anthropic/claude-3.7-sonnet:thinking'
+    'x-ai/grok-4',
+    'deepseek/deepseek-chat-v3-0324',
+    'mistralai/devstral-medium',
+    'qwen/qwen3-30b-a3b-instruct-2507', // 追加
+    'qwen/qwen3-235b-a22b-thinking-2507',
+    'moonshotai/kimi-k2',
+    // 'shisa-ai/shisa-v2-llama3.3-70b', // 文字化け報告により一時的に無効化
+    // 'thedrummer/anubis-70b-v1.1', // 文字化け報告により一時的に無効化
+    'meta-llama/llama-4-maverick', 
+    'openrouter/horizon-beta'
     // ⚠️ このリスト以外のモデルは追加しないでください
   ];
 

@@ -131,7 +131,7 @@ export async function loadAllCharactersFromPublic(): Promise<Character[]> {
 /**
  * public/personas/ から全ペルソナJSONを自動読み込み
  */
-export async function loadAllPersonasFromPublic(): Promise<UserPersona[]> {
+export const loadAllPersonas = async (): Promise<UserPersona[]> => {
   try {
     // public/personas/ の一覧を取得
     const response = await fetch('/api/list-personas');
@@ -149,7 +149,7 @@ export async function loadAllPersonasFromPublic(): Promise<UserPersona[]> {
       
       try {
         console.log(`📁 ペルソナファイル読み込み中: ${filename}`);
-        const personaResponse = await fetch(`/personas/personas/${filename}`);
+        const personaResponse = await fetch(`/personas/${filename}`);
         console.log(`📊 ペルソナレスポンス状態: ${personaResponse.status} ${personaResponse.statusText}`);
         
         if (personaResponse.ok) {

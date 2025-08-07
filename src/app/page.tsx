@@ -710,8 +710,10 @@ export default function ChatPage() {
     }
 
     const messageContent = message.trim();
+    // ユニークなIDでメッセージを作成（重複を避けるため）
+    const messageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       role: 'user',
       content: messageContent,
       timestamp: Date.now()
@@ -721,7 +723,7 @@ export default function ChatPage() {
     setMessage('');
     
     // ユーザーメッセージを追加
-    console.log('📝 ユーザーメッセージ追加:', newMessage.content);
+    console.log('📝 ユーザーメッセージ追加:', messageId, newMessage.content.substring(0, 50));
     setMessages(prev => [...prev, newMessage]);
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
 
@@ -775,14 +777,15 @@ export default function ChatPage() {
       });
 
       let aiContent = '';
+      const aiResponseId = `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const aiResponse: Message = {
-        id: Date.now().toString(),
+        id: aiResponseId,
         role: 'assistant',
         content: '', // Start with an empty message, content will be streamed
         timestamp: Date.now(),
       };
       
-      console.log('🤖 AI応答スロット作成:', aiResponse.id);
+      console.log('🤖 AI応答スロット作成:', aiResponseId);
       setMessages(prev => [...prev, aiResponse]); // 先に追加しておく
 
       const contentType = chatResponse.headers.get('Content-Type') || '';
@@ -848,7 +851,7 @@ export default function ChatPage() {
             // 部分的に表示を更新（ID指定で安全に）
             setMessages(prev => {
               const updated = [...prev];
-              const targetIndex = updated.findIndex(m => m.id === aiResponse.id);
+              const targetIndex = updated.findIndex(m => m.id === aiResponseId);
               if (targetIndex >= 0) {
                 updated[targetIndex] = { ...updated[targetIndex], content: aiContent };
                 return updated;
@@ -864,14 +867,14 @@ export default function ChatPage() {
       const finalUpdateSuccess = await new Promise<boolean>((resolve) => {
         setMessages(prev => {
           const updated = [...prev];
-          const targetIndex = updated.findIndex(m => m.id === aiResponse.id);
+          const targetIndex = updated.findIndex(m => m.id === aiResponseId);
           if (targetIndex >= 0) {
             updated[targetIndex] = { ...updated[targetIndex], content: aiContent };
-            console.log('✅ 最終メッセージ更新完了:', aiResponse.id, aiContent.length, '文字');
+            console.log('✅ 最終メッセージ更新完了:', aiResponseId, aiContent.length, '文字');
             resolve(true);
             return updated;
           } else {
-            console.error('❌ 対象メッセージが見つかりません:', aiResponse.id);
+            console.error('❌ 対象メッセージが見つかりません:', aiResponseId);
             resolve(false);
             return prev;
           }
@@ -913,9 +916,10 @@ export default function ChatPage() {
       
       // エラー時は空のAI応答を削除して新しいエラーメッセージを追加
       setMessages(prev => {
-        const filtered = prev.filter(m => m.id !== aiResponse.id);
+        // 最後に追加されたAI応答を削除
+        const filtered = prev.filter(m => m.role !== 'assistant' || m.content !== '');
         const errorResponse: Message = {
-          id: Date.now().toString(),
+          id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           role: 'assistant',
           content: 'ごめんなさい、エラーが発生しました。もう一度お試しください。',
           timestamp: Date.now()
@@ -2017,44 +2021,44 @@ export default function ChatPage() {
         }}>
           <div className="min-w-80 flex flex-col h-full">
             {/* タブナビゲーション */}
-            <div className="flex-shrink-0 border-b border-white/30">
+            <div className="flex-shrink-0 border-b border-white/30 relative z-10 bg-black/20 backdrop-blur-sm">
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('characters')}
-                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 py-4 px-4 text-sm font-medium transition-colors relative z-20 ${
                     activeTab === 'characters' 
-                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      ? 'text-white border-b-2 border-blue-400 bg-white/20' 
+                      : 'text-white/80 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   👤 キャラクター
                 </button>
                 <button
                   onClick={() => setActiveTab('personas')}
-                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 py-4 px-4 text-sm font-medium transition-colors relative z-20 ${
                     activeTab === 'personas' 
-                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      ? 'text-white border-b-2 border-blue-400 bg-white/20' 
+                      : 'text-white/80 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   🎭 ペルソナ
                 </button>
                 <button
                   onClick={() => setActiveTab('history')}
-                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 py-4 px-4 text-sm font-medium transition-colors relative z-20 ${
                     activeTab === 'history' 
-                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      ? 'text-white border-b-2 border-blue-400 bg-white/20' 
+                      : 'text-white/80 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   📚 履歴
                 </button>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  className={`flex-1 py-4 px-4 text-sm font-medium transition-colors relative z-20 ${
                     activeTab === 'settings' 
-                      ? 'text-white border-b-2 border-blue-400 bg-white/10' 
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      ? 'text-white border-b-2 border-blue-400 bg-white/20' 
+                      : 'text-white/80 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   ⚙️ 設定
@@ -2324,9 +2328,9 @@ export default function ChatPage() {
                 className="touch-target theme-text-primary hover:bg-white/10 p-1.5 md:p-2 rounded-lg transition-colors"
                 title={isSidebarOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
               >
-                <Menu size={18} />
+                <Menu size={24} />
               </button>
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 to-pink-400 flex items-center justify-center">
                 {currentCharacter?.avatar_url ? (
                   <img
                     src={currentCharacter.avatar_url}
@@ -2353,11 +2357,17 @@ export default function ChatPage() {
                     {currentCharacter?.name || 'キャラクター'}
                   </h3>
                   <p className="text-white/70 text-xs md:text-sm truncate">{currentCharacter?.tags[0] || '航海士'}</p>
+                  {/* 現在のペルソナ表示 */}
+                  {currentPersona && (
+                    <p className="text-blue-300 text-xs truncate mt-1">
+                      👤 {currentPersona.name}
+                    </p>
+                  )}
                 </button>
                 
                 {/* トラッカー表示（コンパクト） */}
                 {showTrackers && currentCharacter?.trackers && currentSessionId && (
-                  <div className="mt-1 transition-all duration-300 ease-in-out">
+                  <div className="mt-1 transition-all duration-300 ease-in-out relative z-0">
                     <CharacterTrackerDisplay
                       trackers={currentCharacter.trackers}
                       currentValues={getTrackerValues(currentSessionId)}
@@ -2394,21 +2404,21 @@ export default function ChatPage() {
                   className="touch-target text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
                   title="クイック設定"
                 >
-                  <Zap size={16} />
+                  <Zap size={20} />
                 </button>
                 <button
                   onClick={() => setIsChatHistoryOpen(true)}
                   className="touch-target text-green-400 hover:text-green-300 hover:bg-green-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
                   title="チャット履歴"
                 >
-                  <MessageSquare size={16} />
+                  <MessageSquare size={20} />
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}
                   className="touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 md:hidden shadow-sm"
                   title="詳細設定"
                 >
-                  <Settings size={16} />
+                  <Settings size={20} />
                 </button>
                 <button
                   onClick={() => setIsCharacterGalleryOpen(true)}
@@ -2978,6 +2988,7 @@ export default function ChatPage() {
         <ChatHistoryGallery
           sessions={sessions}
           characters={allCharacters}
+          currentSessionId={currentSessionId}
           onSelectSession={async (session) => {
             try {
               // セッション履歴を読み込み
