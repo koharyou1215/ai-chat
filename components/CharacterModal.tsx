@@ -5,6 +5,7 @@ import { X, Save, User, Heart, Tag, MessageSquare, TrendingUp } from 'lucide-rea
 import { Character } from '../types/character';
 import { ImageCompressor } from '../lib/imageCompressor';
 import TrackerEditor from './TrackerEditor';
+import { BackgroundManager } from '../lib/backgroundManager';
 
 interface CharacterModalProps {
   isOpen: boolean;
@@ -115,6 +116,16 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         
         // 圧縮された画像のBase64データを直接formDataに設定
         setFormData(prev => ({ ...prev, avatar_url: compressionResult.dataUrl }));
+
+        // 可能ならcharacter.nameをキーにして即時保存（新規作成時はonSaveで再保存される）
+        const charId = (character?.name || formData.name || '').trim();
+        if (charId) {
+          try {
+            localStorage.setItem(`ai-chat-char-avatar:${charId}`, compressionResult.dataUrl);
+          } catch (e) {
+            console.warn('アバター保存に失敗（localStorage容量等）:', e);
+          }
+        }
         
         console.log(`アバター画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
       } catch (error) {
@@ -140,6 +151,16 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         
         // 圧縮された画像のBase64データを直接formDataに設定
         setFormData(prev => ({ ...prev, chatBackgroundUrl: compressionResult.dataUrl }));
+
+        // 即時保存（既存キャラ名があれば）。新規時はonSaveで再保存
+        const charName = (character?.name || formData.name || '').trim();
+        if (charName) {
+          try {
+            await BackgroundManager.saveCharacterBackground(charName, compressionResult.dataUrl);
+          } catch (e) {
+            console.warn('背景保存に失敗:', e);
+          }
+        }
         
         console.log(`背景画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
       } catch (error) {
@@ -159,6 +180,27 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       ...formData,
       first_message: formData.first_message?.trim() || ''
     };
+
+    // 最終保存の確実化（アイコン/背景）
+    try {
+      const id = characterData.name.trim();
+      if (id && characterData.avatar_url) {
+        try {
+          localStorage.setItem(`ai-chat-char-avatar:${id}`, characterData.avatar_url);
+        } catch (e) {
+          console.warn('アバター保存に失敗（localStorage容量等）:', e);
+        }
+      }
+      if (id && characterData.chatBackgroundUrl) {
+        try {
+          await BackgroundManager.saveCharacterBackground(id, characterData.chatBackgroundUrl);
+        } catch (e) {
+          console.warn('背景保存に失敗:', e);
+        }
+      }
+    } catch (e) {
+      console.warn('最終保存時の例外:', e);
+    }
     
     onSave(characterData);
     onClose();
@@ -686,4 +728,4 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       </div>
     </div>
   );
-} 
+}
