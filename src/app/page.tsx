@@ -692,6 +692,9 @@ export default function ChatPage() {
       console.log('❌ 送信条件未満: メッセージが空またはロード中');
       return;
     }
+
+    // 送信ボタンを即座に無効化（重複送信防止）
+    setIsLoading(true);
     
     // キャラクターが選択されていない場合は、デフォルトキャラクターを設定
     if (!currentCharacter) {
@@ -701,20 +704,25 @@ export default function ChatPage() {
         setCurrentCharacter(defaultCharacter);
       } else {
         alert('キャラクターが選択されていません。サイドバーからキャラクターを選択してください。');
+        setIsLoading(false); // エラー時はロード状態を解除
         return;
       }
     }
 
+    const messageContent = message.trim();
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: message,
+      content: messageContent,
       timestamp: Date.now()
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    // メッセージを即座にクリア（重複送信防止）
     setMessage('');
-    setIsLoading(true);
+    
+    // ユーザーメッセージを追加
+    console.log('📝 ユーザーメッセージ追加:', newMessage.content);
+    setMessages(prev => [...prev, newMessage]);
     if (settings.enableImageGeneration) setIsGeneratingImage(true);
 
     try {
@@ -738,7 +746,18 @@ export default function ChatPage() {
         return tracker;
       }) || [];
 
+      // 現在のメッセージ履歴にユーザーメッセージを含めて会話コンテキストを構築
+      const currentMessages = [...messages, newMessage];
+      const conversationContext = currentMessages.slice(-(settings.historySize || 8));
+      
+      console.log('📊 会話コンテキスト:', {
+        totalMessages: currentMessages.length,
+        contextMessages: conversationContext.length,
+        lastUserMessage: newMessage.content.substring(0, 50) + '...'
+      });
+
       // Gemini APIでチャット応答を生成（簡単版）
+      console.log('🌐 API呼び出し開始');
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -749,7 +768,7 @@ export default function ChatPage() {
           characterId: currentCharacter?.name,
           character: currentCharacter,
           memos,
-          conversation: [...messages, newMessage].slice(-(settings.historySize || 8)),
+          conversation: conversationContext,
           // 現在のトラッカー状態を送信
           trackers: trackersWithCurrentState
         }),
@@ -762,6 +781,8 @@ export default function ChatPage() {
         content: '', // Start with an empty message, content will be streamed
         timestamp: Date.now(),
       };
+      
+      console.log('🤖 AI応答スロット作成:', aiResponse.id);
       setMessages(prev => [...prev, aiResponse]); // 先に追加しておく
 
       const contentType = chatResponse.headers.get('Content-Type') || '';
@@ -770,28 +791,21 @@ export default function ChatPage() {
         // JSON形式（通常 or インスピレーション）
         const chatData = await chatResponse.json();
         if (chatData.success) {
-          // サーバーからトラッカー状態を受信した場合は更新
+          // サーバーからトラッカー更新情報を受信した場合は適用
           if (chatData.trackers && Array.isArray(chatData.trackers) && currentSessionId && currentCharacter) {
-            chatData.trackers.forEach((tracker: Record<string, unknown>) => {
-              if (tracker.name && tracker.current_state !== undefined) {
-                // state型トラッカーの更新
-                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_state as string, currentCharacter);
-                console.log(`🔄 トラッカー状態更新: ${tracker.name} = ${tracker.current_state}`);
-              }
-              if (tracker.name && tracker.current_value !== undefined) {
-                // numeric型トラッカーの更新
-                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_value as number, currentCharacter);
-                console.log(`🔄 トラッカー値更新: ${tracker.name} = ${tracker.current_value}`);
-              }
-              if (tracker.name && tracker.current_boolean !== undefined) {
-                // boolean型トラッカーの更新
-                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_boolean as boolean, currentCharacter);
-                console.log(`🔄 トラッカーブール更新: ${tracker.name} = ${tracker.current_boolean}`);
-              }
-              if (tracker.name && tracker.current_text !== undefined) {
-                // text型トラッカーの更新
-                updateTrackerValue(currentSessionId, tracker.name as string, tracker.current_text as string, currentCharacter);
-                console.log(`🔄 トラッカーテキスト更新: ${tracker.name} = ${tracker.current_text}`);
+            console.log('📊 トラッカー更新情報を受信:', chatData.trackers);
+            
+            chatData.trackers.forEach((update: Record<string, unknown>) => {
+              if (update.name && update.value !== undefined) {
+                const trackerName = update.name as string;
+                const newValue = update.value as string | number | boolean;
+                const changeInfo = update.change || '';
+                
+                console.log(`🔄 トラッカー更新適用: ${trackerName} = ${newValue} (${changeInfo})`);
+                updateTrackerValue(currentSessionId, trackerName, newValue, currentCharacter);
+                
+                // アニメーション用の追加ログ
+                console.log(`✨ トラッカー「${trackerName}」の値が変更されました: ${changeInfo}`);
               }
             });
           }
@@ -820,18 +834,53 @@ export default function ChatPage() {
         const reader = chatResponse.body?.getReader();
         const decoder = new TextDecoder();
         if (reader) {
+          console.log('📡 ストリーミング開始');
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
-            aiContent += decoder.decode(value, { stream: true });
-            // 部分的に表示を更新
-            setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+            if (done) {
+              console.log('✅ ストリーミング完了');
+              break;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            aiContent += chunk;
+            console.log('💬 ストリーム受信:', chunk.length, '文字, 累計:', aiContent.length);
+            
+            // 部分的に表示を更新（ID指定で安全に）
+            setMessages(prev => {
+              const updated = [...prev];
+              const targetIndex = updated.findIndex(m => m.id === aiResponse.id);
+              if (targetIndex >= 0) {
+                updated[targetIndex] = { ...updated[targetIndex], content: aiContent };
+                return updated;
+              }
+              return prev;
+            });
           }
         }
       }
 
-      // 最終更新
-      setMessages(prev => prev.map(m => (m.id === aiResponse.id ? { ...m, content: aiContent } : m)));
+      
+      // 最終更新（ID指定で安全に更新）
+      const finalUpdateSuccess = await new Promise<boolean>((resolve) => {
+        setMessages(prev => {
+          const updated = [...prev];
+          const targetIndex = updated.findIndex(m => m.id === aiResponse.id);
+          if (targetIndex >= 0) {
+            updated[targetIndex] = { ...updated[targetIndex], content: aiContent };
+            console.log('✅ 最終メッセージ更新完了:', aiResponse.id, aiContent.length, '文字');
+            resolve(true);
+            return updated;
+          } else {
+            console.error('❌ 対象メッセージが見つかりません:', aiResponse.id);
+            resolve(false);
+            return prev;
+          }
+        });
+      });
+
+      if (!finalUpdateSuccess) {
+        console.error('❌ メッセージ更新に失敗しました');
+      }
 
       if (aiContent && aiContent.trim()) {
         
@@ -860,14 +909,19 @@ export default function ChatPage() {
         setMessages(prev => [...prev, errorResponse]);
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'エラーが発生しました。もう一度お試しください。',
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, errorResponse]);
+      console.error('❌ チャットエラー:', error);
+      
+      // エラー時は空のAI応答を削除して新しいエラーメッセージを追加
+      setMessages(prev => {
+        const filtered = prev.filter(m => m.id !== aiResponse.id);
+        const errorResponse: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: 'ごめんなさい、エラーが発生しました。もう一度お試しください。',
+          timestamp: Date.now()
+        };
+        return [...filtered, errorResponse];
+      });
     } finally {
       setIsLoading(false);
     }

@@ -188,18 +188,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (existing) type = existing.type;
 
     const oldValue = session[name]?.value;
-    session[name] = toTrackerValue(value as number | string | boolean, type);
+    const newTrackerValue = toTrackerValue(value as number | string | boolean, type);
+    session[name] = newTrackerValue;
     map[sessionId] = session;
 
     console.log(`🔄 トラッカー値更新完了:`, {
       name,
       oldValue,
-      newValue: session[name].value,
-      changed: oldValue !== session[name].value
+      newValue: newTrackerValue.value,
+      changed: oldValue !== newTrackerValue.value
     });
 
-    set({ trackerValues: map });
-    state._persist(map);
+    // 値が実際に変更された場合のみ状態更新とアニメーション通知
+    if (oldValue !== newTrackerValue.value) {
+      console.log(`✨ トラッカー「${name}」アニメーション開始準備: ${oldValue} → ${newTrackerValue.value}`);
+      set({ trackerValues: map });
+      state._persist(map);
+    } else {
+      console.log(`📊 トラッカー「${name}」値は変更されませんでした: ${oldValue}`);
+    }
   },
 
   getTrackerValues: (sessionId) => {

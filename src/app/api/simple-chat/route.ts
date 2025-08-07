@@ -5,6 +5,89 @@ import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
+// トラッカー更新の自動検出
+function autoDetectTrackerChanges(aiResponse: string, trackers: any[]): any[] {
+  const updates: any[] = [];
+  const response = aiResponse.toLowerCase();
+  
+  console.log('🔍 自動検出開始:', response.substring(0, 100));
+  
+  trackers.forEach(tracker => {
+    if (!tracker || !tracker.name) return;
+    
+    if (tracker.type === 'numeric') {
+      let change = 0;
+      
+      // 好感度系の検出
+      if (tracker.name.includes('affection') || tracker.name.includes('好感度')) {
+        if (response.includes('嬉しい') || response.includes('ありがと') || response.includes('素敵')) {
+          change = Math.floor(Math.random() * 10) + 5; // +5~15
+        } else if (response.includes('悲しい') || response.includes('がっかり') || response.includes('冷たい')) {
+          change = -(Math.floor(Math.random() * 15) + 5); // -5~-20
+        }
+      }
+      
+      // 信頼度系の検出
+      if (tracker.name.includes('trust') || tracker.name.includes('信頼')) {
+        if (response.includes('信じ') || response.includes('頼りになる') || response.includes('安心')) {
+          change = Math.floor(Math.random() * 8) + 3; // +3~10
+        } else if (response.includes('疑') || response.includes('怪しい') || response.includes('不安')) {
+          change = -(Math.floor(Math.random() * 10) + 5); // -5~-15
+        }
+      }
+      
+      if (change !== 0) {
+        const currentValue = tracker.current_value ?? tracker.initial_value ?? 0;
+        const newValue = Math.max(
+          tracker.min_value || 0, 
+          Math.min(tracker.max_value || 100, currentValue + change)
+        );
+        
+        updates.push({
+          name: tracker.name,
+          type: 'numeric',
+          value: newValue,
+          change: change > 0 ? `+${change}` : `${change}`
+        });
+        console.log(`📊 ${tracker.name}: ${currentValue} → ${newValue} (${change > 0 ? '+' : ''}${change})`);
+      }
+    } else if (tracker.type === 'state') {
+      // 気分系の検出
+      if (tracker.name.includes('mood') || tracker.name.includes('気分')) {
+        let newState = '';
+        
+        if (response.includes('嬉しい') || response.includes('楽しい') || response.includes('幸せ')) {
+          newState = '嬉しい';
+        } else if (response.includes('悲しい') || response.includes('落ち込ん')) {
+          newState = '悲しい';
+        } else if (response.includes('怒') || response.includes('イライラ')) {
+          newState = '怒り';
+        } else if (response.includes('驚') || response.includes('びっくり')) {
+          newState = '驚き';
+        } else if (response.includes('普通') || response.includes('平気')) {
+          newState = '普通';
+        }
+        
+        if (newState && tracker.possible_states?.includes(newState)) {
+          const currentState = tracker.current_state ?? tracker.initial_state ?? '普通';
+          if (currentState !== newState) {
+            updates.push({
+              name: tracker.name,
+              type: 'state',
+              value: newState,
+              change: `${currentState}→${newState}`
+            });
+            console.log(`📊 ${tracker.name}: ${currentState} → ${newState}`);
+          }
+        }
+      }
+    }
+  });
+  
+  console.log('🔍 自動検出結果:', updates.length, '個の更新');
+  return updates;
+}
+
 
 // NOTE: セキュリティのため API キーはハードコードしない
 
@@ -216,7 +299,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
     // パラメータトラッカー情報を追加
     if (trackers && Array.isArray(trackers) && trackers.length > 0) {
       let trackerInfo = '\n\n## 📊 パラメータトラッカー\n';
-      trackerInfo += '以下のパラメータを参考にして、キャラクターの状態を反映した返答をしてください：\n\n';
+      trackerInfo += '以下のパラメータを参考にして、キャラクターの状態を反映した返答をしてください。\n';
+      trackerInfo += '**重要**: 会話内容に応じてパラメータを自然に変動させ、最終的にJSON形式で更新指示を返してください。\n\n';
       
       trackers.forEach(tracker => {
         if (tracker && tracker.display_name) {
@@ -224,22 +308,26 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
           
           switch (tracker.type) {
             case 'numeric':
-              const value = tracker.initial_value || 0;
+              // 現在値を使用（tracker.current_valueまたはinitial_value）
+              const currentValue = tracker.current_value ?? tracker.initial_value ?? 0;
               const min = tracker.min_value || 0;
               const max = tracker.max_value || 100;
-              trackerInfo += `${value}/${max} (${min}-${max})`;
+              trackerInfo += `${currentValue}/${max} (範囲: ${min}-${max})`;
               break;
             case 'state':
-              trackerInfo += `${tracker.initial_state || '不明'}`;
+              const currentState = tracker.current_state ?? tracker.initial_state ?? '不明';
+              trackerInfo += `${currentState}`;
               if (tracker.possible_states && tracker.possible_states.length > 0) {
                 trackerInfo += ` (可能な状態: ${tracker.possible_states.join(', ')})`;
               }
               break;
             case 'boolean':
-              trackerInfo += `${tracker.initial_boolean ? '有効' : '無効'}`;
+              const currentBoolean = tracker.current_boolean ?? tracker.initial_boolean ?? false;
+              trackerInfo += `${currentBoolean ? '有効' : '無効'}`;
               break;
             case 'text':
-              trackerInfo += `${tracker.initial_text || '(空)'}`;
+              const currentText = tracker.current_text ?? tracker.initial_text ?? '';
+              trackerInfo += `${currentText || '(空)'}`;
               break;
           }
           
@@ -251,7 +339,26 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         }
       });
       
+      // AI用の更新指示を追加
+      trackerInfo += `\n**トラッカー更新指示**:\n`;
+      trackerInfo += `会話の内容に基づいて、適切なパラメータを変更してください。例:\n`;
+      trackerInfo += `- ユーザーが優しい言葉をかけた → 好感度+5～15\n`;
+      trackerInfo += `- ユーザーが冷たい態度を取った → 好感度-10～20\n`;
+      trackerInfo += `- 楽しい会話 → 気分を「楽しい」や「嬉しい」に\n`;
+      trackerInfo += `- 信頼できる行動 → 信頼度+5～10\n\n`;
+      
+      trackerInfo += `変更がある場合、応答の最後に以下の形式でJSONを含めてください:\n`;
+      trackerInfo += `\`\`\`json\n`;
+      trackerInfo += `{\n`;
+      trackerInfo += `  "tracker_updates": [\n`;
+      trackerInfo += `    {"name": "affection", "type": "numeric", "value": 75, "change": "+5"},\n`;
+      trackerInfo += `    {"name": "mood", "type": "state", "value": "嬉しい", "change": "楽しい→嬉しい"}\n`;
+      trackerInfo += `  ]\n`;
+      trackerInfo += `}\n`;
+      trackerInfo += `\`\`\`\n`;
+      
       basePrompt += trackerInfo;
+      console.log('📊 トラッカー情報をプロンプトに追加:', trackers.length, '個');
     }
 
     // 追加のユーザー設定プロンプト
@@ -630,12 +737,44 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
           console.log(`✅ AI API: ${candidateCount}個の候補を生成しました`);
 
+          // トラッカー更新情報を抽出
+          let extractedTrackers: any[] = [];
+          
+          if (candidates.length > 0) {
+            const mainResponse = candidates[0];
+            console.log('📊 トラッカー更新情報を抽出中:', mainResponse.substring(0, 200));
+            
+            // JSONブロックの抽出
+            const jsonMatches = mainResponse.match(/```json\s*([\s\S]*?)\s*```/g);
+            if (jsonMatches) {
+              for (const jsonMatch of jsonMatches) {
+                try {
+                  const jsonContent = jsonMatch.replace(/```json\s*|\s*```/g, '').trim();
+                  const parsed = JSON.parse(jsonContent);
+                  
+                  if (parsed.tracker_updates && Array.isArray(parsed.tracker_updates)) {
+                    console.log('📊 トラッカー更新指示を発見:', parsed.tracker_updates);
+                    extractedTrackers = parsed.tracker_updates;
+                    break;
+                  }
+                } catch (parseError) {
+                  console.warn('⚠️ JSON解析失敗:', parseError);
+                }
+              }
+            }
+            
+            // JSONが見つからない場合、テキストから自動推測
+            if (extractedTrackers.length === 0 && trackers) {
+              console.log('📊 JSONが見つからない、自動推測を試行');
+              extractedTrackers = autoDetectTrackerChanges(mainResponse, trackers);
+            }
+          }
+
           return NextResponse.json({
             success: true,
             content: candidates[0], // 最初の候補をメインとして使用
             candidates: candidates,
-            // 簡単な方法：現在受信したトラッカーをそのまま返す（クライアント側で状態更新処理）
-            trackers: trackers || []
+            trackers: extractedTrackers // 更新されたトラッカー情報を返す
           });
         } catch (multipleRequestError) {
           console.warn('❌ 順次候補生成に失敗、単一候補で再試行:', multipleRequestError);
