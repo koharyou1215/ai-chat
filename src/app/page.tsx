@@ -412,6 +412,28 @@ export default function ChatPage() {
         
         // キャラクター一覧を最初に読み込み
         const characters = CharacterLoader.getAllCharacters();
+        
+        // 🚨 初期読み込み直後のcharactersをデバッグ 🚨
+        const targetChars = characters.filter(c => 
+          c.name.includes('マーフィン') || c.name.includes('グレイス') || 
+          c.name.includes('澪') || c.name.includes('ミオ') || 
+          c.name.includes('アン')
+        );
+        if (targetChars.length > 0) {
+          console.log('🔍🔍🔍 初期読み込み直後のcharacters対象数:', targetChars.length);
+          targetChars.forEach((c, index) => {
+            console.log(`🔍🔍🔍 初期[${index}] ${c.name}:`, {
+              name: c.name,
+              systemPrompt: c.systemPrompt?.substring(0, 50) + '...',
+              appearanceNegativePrompt: c.appearanceNegativePrompt?.substring(0, 50) + '...',
+              first_message: c.first_message?.substring(0, 50) + '...',
+              nsfw_profile: typeof c.nsfw_profile === 'object' ? '[object]' : c.nsfw_profile?.substring(0, 50) + '...',
+              hasCharacterDefinition: !!c.character_definition,
+              allKeys: Object.keys(c)
+            });
+          });
+        }
+        
         setAllCharacters(characters);
         console.log('📋 キャラクター一覧読み込み完了:', characters.length, '個');
         
@@ -2536,17 +2558,36 @@ export default function ChatPage() {
             </div>
             
             {/* トラッカー表示（独立した行） */}
-            {showTrackers && currentCharacter?.trackers && currentSessionId && (
-              <div className="mt-2 transition-all duration-300 ease-in-out relative z-0">
-                <CharacterTrackerDisplay
-                  trackers={currentCharacter.trackers}
-                  currentValues={getTrackerValues(currentSessionId) || {}}
-                  onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
-                  readOnly={false}
-                  compact={true}
-                />
-              </div>
-            )}
+            {(() => {
+              const hasTrackers = showTrackers && currentCharacter?.trackers && currentSessionId;
+              const trackerValues = hasTrackers ? getTrackerValues(currentSessionId) || {} : {};
+              
+              // デバッグログ
+              if (currentCharacter?.name === 'マーフィン・グレイス' || currentCharacter?.name.includes('マーフィン')) {
+                console.log('🔍 マーフィン・グレイストラッカー表示条件チェック:', {
+                  showTrackers,
+                  hasCharacter: !!currentCharacter,
+                  characterName: currentCharacter?.name,
+                  hasTrackers: !!currentCharacter?.trackers,
+                  trackerCount: currentCharacter?.trackers?.length || 0,
+                  currentSessionId,
+                  trackerValuesKeys: Object.keys(trackerValues),
+                  willShow: hasTrackers
+                });
+              }
+              
+              return hasTrackers ? (
+                <div className="mt-2 transition-all duration-300 ease-in-out relative z-0">
+                  <CharacterTrackerDisplay
+                    trackers={currentCharacter.trackers}
+                    currentValues={trackerValues}
+                    onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
+                    readOnly={false}
+                    compact={true}
+                  />
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* AI候補選択エリア */}
@@ -2996,30 +3037,86 @@ export default function ChatPage() {
       {/* 5. キャラクターギャラリーモーダル (User) */}
       {isCharacterGalleryOpen && (
         <CharacterGallery
-          characters={allCharacters}
+          characters={(() => {
+            // 🚨 CharacterGallery に渡す直前のallCharactersをデバッグ 🚨
+            const targetCharacters = allCharacters.filter(c => 
+              c.name.includes('マーフィン') || c.name.includes('グレイス') || 
+              c.name.includes('澪') || c.name.includes('ミオ') || 
+              c.name.includes('アン')
+            );
+            if (targetCharacters.length > 0) {
+              console.log('🔍🔍🔍 CharacterGallery渡し直前のallCharacters対象数:', targetCharacters.length);
+              targetCharacters.forEach((c, index) => {
+                console.log(`🔍🔍🔍 [${index}] ${c.name}:`, {
+                  name: c.name,
+                  systemPrompt: c.systemPrompt?.substring(0, 50) + '...',
+                  appearanceNegativePrompt: c.appearanceNegativePrompt?.substring(0, 50) + '...',
+                  first_message: c.first_message?.substring(0, 50) + '...',
+                  nsfw_profile: typeof c.nsfw_profile === 'object' ? '[object]' : c.nsfw_profile?.substring(0, 50) + '...',
+                  hasCharacterDefinition: !!c.character_definition,
+                  allKeys: Object.keys(c)
+                });
+              });
+            }
+            return allCharacters;
+          })()}
           currentCharacter={currentCharacter}
-          onSelectCharacter={(character) => {
+          onSelectCharacter={async (character) => {
             console.log('ギャラリーからキャラクター変更:', character.name);
             
-            // キャラクターを設定
-            setCurrentCharacter(character);
+            // 🚨 キャラクター選択時データ確認 🚨
+            if (character.name.includes('マーフィン') || character.name.includes('グレイス') || 
+                character.name.includes('澪') || character.name.includes('ミオ') ||
+                character.name.includes('アン')) {
+              console.log('🔍🔍🔍 キャラクター選択時データ:', {
+                name: character.name,
+                systemPrompt: character.systemPrompt,
+                appearanceNegativePrompt: character.appearanceNegativePrompt, 
+                first_message: character.first_message,
+                nsfw_profile: character.nsfw_profile,
+                hasCharacterDefinition: !!character.character_definition,
+                allKeys: Object.keys(character)
+              });
+            }
             
-            // 現在のセッションをクリア
-            setCurrentSessionId(null);
+            // 🚨 重要フィールドが空の場合は緊急修復処理 🚨
+            if (!character.first_message || !character.systemPrompt || !character.appearanceNegativePrompt || !character.nsfw_profile) {
+              console.log('⚠️ 重要フィールドが空のため修復処理を実行:', character.name);
+              try {
+                await CharacterLoader.repairAll();
+                const updatedCharacters = CharacterLoader.getAllCharacters();
+                const updatedCharacter = updatedCharacters.find(c => c.name === character.name);
+                if (updatedCharacter) {
+                  character = updatedCharacter;
+                  console.log('✅ キャラクター修復完了:', character.name);
+                }
+              } catch (error) {
+                console.error('❌ キャラクター修復エラー:', error);
+              }
+            }
             
             // 音声再生を停止
             VoiceManager.stopAudio();
             
+            // 新しいセッションID生成（先に生成）
+            const newSessionId = crypto.randomUUID();
+            
+            // キャラクターを設定
+            setCurrentCharacter(character);
+            
+            // セッションIDを設定（Nullになる時間を最小化）
+            setCurrentSessionId(newSessionId);
+            
             // キャラクター個別の背景を適用
             loadCharacterBackground(character.name);
             
-            // 新しいセッションID生成
-            const newSessionId = crypto.randomUUID();
-            setCurrentSessionId(newSessionId);
-            
-            // トラッカー初期化
-            if (character.trackers) {
+            // トラッカー初期化（デバッグログ追加）
+            if (character.trackers && character.trackers.length > 0) {
+              console.log(`🔧 ${character.name}のトラッカー初期化開始:`, character.trackers);
               initializeTrackersForSession(newSessionId, character);
+              console.log(`✅ ${character.name}のトラッカー初期化完了`);
+            } else {
+              console.log(`⚠️ ${character.name}にはトラッカーが定義されていません`);
             }
             
             // 初回メッセージを設定
@@ -3032,6 +3129,21 @@ export default function ChatPage() {
             setIsCharacterGalleryOpen(false);
           }}
           onEditCharacter={(character) => {
+            // 🚨 CharacterModal開く直前のデータ確認 🚨
+            if (character.name.includes('マーフィン') || character.name.includes('グレイス') || 
+                character.name.includes('澪') || character.name.includes('ミオ') ||
+                character.name.includes('アン')) {
+              console.log('🔍🔍🔍 CharacterModal開く直前データ:', {
+                name: character.name,
+                systemPrompt: character.systemPrompt,
+                appearanceNegativePrompt: character.appearanceNegativePrompt, 
+                first_message: character.first_message,
+                nsfw_profile: character.nsfw_profile,
+                hasCharacterDefinition: !!character.character_definition,
+                allKeys: Object.keys(character)
+              });
+            }
+            
             setEditingCharacter(character);
             setIsCharacterModalOpen(true);
             setIsCharacterGalleryOpen(false);
@@ -3045,20 +3157,24 @@ export default function ChatPage() {
               if (currentCharacter?.name === character.name) {
                 const firstCharacter = updatedCharacters[0];
                 if (firstCharacter) {
+                  // 新しいセッションID生成（先に生成）
+                  const newSessionId = crypto.randomUUID();
+                  
                   setCurrentCharacter(firstCharacter);
-                  setCurrentSessionId(null);
+                  setCurrentSessionId(newSessionId);
                   loadCharacterBackground(firstCharacter.name);
                   
-                  // 新しいセッションID生成とトラッカー初期化
-                  const newSessionId = crypto.randomUUID();
-                  setCurrentSessionId(newSessionId);
-                  if (firstCharacter.trackers) {
+                  // トラッカー初期化（デバッグログ追加）
+                  if (firstCharacter.trackers && firstCharacter.trackers.length > 0) {
+                    console.log(`🔧 削除後の${firstCharacter.name}のトラッカー初期化開始:`, firstCharacter.trackers);
                     initializeTrackersForSession(newSessionId, firstCharacter);
+                    console.log(`✅ 削除後の${firstCharacter.name}のトラッカー初期化完了`);
                   }
                   
                   setInitialMessage(firstCharacter);
                 } else {
                   setCurrentCharacter(null);
+                  setCurrentSessionId(null);
                   setMessages([]);
                   handleThemeChange('default', undefined);
                 }

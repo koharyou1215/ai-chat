@@ -239,6 +239,34 @@ export class CharacterLoader {
             const characterData = await charResponse.json();
             console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
             
+            // 🚨 重要フィールドの読み込み直後チェック 🚨
+            console.log(`🔍 ${filename} 読み込み直後の重要フィールド:`, {
+              name: characterData.name,
+              first_message: characterData.first_message,
+              systemPrompt: characterData.systemPrompt,
+              appearanceNegativePrompt: characterData.appearanceNegativePrompt,
+              nsfw_profile: characterData.nsfw_profile,
+              nsfwType: typeof characterData.nsfw_profile,
+              hasSystemPrompt: !!characterData.systemPrompt,
+              hasFirstMessage: !!characterData.first_message,
+              hasAppearanceNegative: !!characterData.appearanceNegativePrompt,
+              hasNsfw: !!characterData.nsfw_profile
+            });
+            
+            // 🚨 マーフィン・グレイスの場合はデバッグログを追加 🚨
+            if (filename.includes('マーフィン') || filename.includes('グレイス')) {
+              console.log('🔍🔍🔍 マーフィン・グレイス fetch直後データ:', {
+                filename,
+                rawData: characterData,
+                systemPrompt: characterData.systemPrompt,
+                appearanceNegativePrompt: characterData.appearanceNegativePrompt,
+                first_message: characterData.first_message,
+                nsfw_profile: characterData.nsfw_profile,
+                hasCharacterDefinition: !!characterData.character_definition,
+                allKeys: Object.keys(characterData)
+              });
+            }
+            
             // シルヴィアの場合はデバッグログを追加
             if (filename.includes('シルヴィア')) {
               console.log('🔍 シルヴィア読み込み詳細:', {
@@ -253,6 +281,35 @@ export class CharacterLoader {
             // 簡易形式のキャラクターファイルを完全形式に変換
             const { normalizeCharacterData } = await import('./autoLoader');
             const normalizedCharacter = normalizeCharacterData(characterData, filename);
+            
+            // 🚨 正規化後の重要フィールドチェック 🚨
+            console.log(`🔧 ${filename} 正規化後の重要フィールド:`, {
+              name: normalizedCharacter.name,
+              first_message: normalizedCharacter.first_message,
+              systemPrompt: normalizedCharacter.systemPrompt,
+              appearanceNegativePrompt: normalizedCharacter.appearanceNegativePrompt,
+              nsfw_profile: normalizedCharacter.nsfw_profile,
+              nsfwType: typeof normalizedCharacter.nsfw_profile,
+              hasSystemPrompt: !!normalizedCharacter.systemPrompt,
+              hasFirstMessage: !!normalizedCharacter.first_message,
+              hasAppearanceNegative: !!normalizedCharacter.appearanceNegativePrompt,
+              hasNsfw: !!normalizedCharacter.nsfw_profile,
+              trackers: normalizedCharacter.trackers?.length || 0
+            });
+            
+            // 🚨 マーフィン・グレイスの正規化後も確認 🚨
+            if (filename.includes('マーフィン') || filename.includes('グレイス')) {
+              console.log('🔍🔍🔍 マーフィン・グレイス正規化後最終データ:', {
+                filename,
+                finalData: normalizedCharacter,
+                systemPrompt: normalizedCharacter.systemPrompt,
+                appearanceNegativePrompt: normalizedCharacter.appearanceNegativePrompt,
+                first_message: normalizedCharacter.first_message,
+                nsfw_profile: normalizedCharacter.nsfw_profile,
+                hasCharacterDefinition: !!normalizedCharacter.character_definition,
+                allKeys: Object.keys(normalizedCharacter)
+              });
+            }
             
             // シルヴィアの正規化後も確認
             if (filename.includes('シルヴィア')) {
@@ -310,6 +367,41 @@ export class CharacterLoader {
     try {
       const saved = localStorage.getItem('ai-chat-characters');
       const characters = saved ? JSON.parse(saved) : [];
+      
+      // アンとマーフィン・グレイスのローカルストレージデータをデバッグ
+      const ann = characters.find((c: Character) => c.name === 'アン');
+      if (ann) {
+        console.log('🔍 localStorage アン詳細:', {
+          name: ann.name,
+          systemPrompt: ann.systemPrompt,
+          appearancePrompt: ann.appearancePrompt,
+          appearanceNegativePrompt: ann.appearanceNegativePrompt,
+          first_message: ann.first_message,
+          nsfw_profile: ann.nsfw_profile,
+          nsfwType: typeof ann.nsfw_profile,
+          hasSystemPrompt: !!ann.systemPrompt,
+          hasAppearancePrompt: !!ann.appearancePrompt,
+          hasFirstMessage: !!ann.first_message,
+          allKeys: Object.keys(ann)
+        });
+      }
+      
+      const murphine = characters.find((c: Character) => c.name.includes('マーフィン') || c.name.includes('グレイス'));
+      if (murphine) {
+        console.log('🔍 localStorage マーフィン・グレイス詳細:', {
+          name: murphine.name,
+          systemPrompt: murphine.systemPrompt,
+          appearancePrompt: murphine.appearancePrompt,
+          appearanceNegativePrompt: murphine.appearanceNegativePrompt,
+          first_message: murphine.first_message,
+          nsfw_profile: murphine.nsfw_profile,
+          nsfwType: typeof murphine.nsfw_profile,
+          hasSystemPrompt: !!murphine.systemPrompt,
+          hasAppearancePrompt: !!murphine.appearancePrompt,
+          hasFirstMessage: !!murphine.first_message,
+          allKeys: Object.keys(murphine)
+        });
+      }
       
       // シルヴィアのローカルストレージデータをデバッグ
       const silvia = characters.find((c: Character) => c.name === 'シルヴィア');
@@ -465,14 +557,25 @@ export class CharacterLoader {
       const fixed: string[] = [];
       const raw = isPublic && char['file-name'] ? await loadRawPublic(char['file-name']!) : null;
 
+      console.log(`🔧 ${char.name} 修復処理開始:`, {
+        hasFirstMessage: !!char.first_message,
+        hasSystemPrompt: !!char.systemPrompt,
+        hasAppearanceNegative: !!char.appearanceNegativePrompt,
+        hasNsfw: !!char.nsfw_profile,
+        isPublic,
+        hasRaw: !!raw
+      });
+
       // first_message 修復
       if (!char.first_message || char.first_message.trim() === '') {
         let candidate = '';
         if (raw) {
-          const rf = (raw as { first_message?: unknown; greeting?: unknown }).first_message;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rf = (raw as any).first_message;
           if (Array.isArray(rf)) candidate = rf[0] || '';
           else if (typeof rf === 'string') candidate = rf;
-          if (!candidate && typeof raw.greeting === 'string') candidate = raw.greeting;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (!candidate && typeof (raw as any).greeting === 'string') candidate = (raw as any).greeting;
         }
         if (!candidate && Array.isArray(char.example_dialogue) && char.example_dialogue.length > 0) {
           candidate = char.example_dialogue[0].char;
@@ -480,32 +583,40 @@ export class CharacterLoader {
         if (candidate) {
           char.first_message = candidate;
           fixed.push('first_message');
-        }
-      }
-
-      // appearanceNegativePrompt 修復
-      if (!char.appearanceNegativePrompt || char.appearanceNegativePrompt.trim() === '') {
-        const neg = char.character_definition?.appearance?.negativePrompt || (raw?.character_definition?.appearance?.negativePrompt);
-        if (neg && typeof neg === 'string') {
-          char.appearanceNegativePrompt = neg;
-          fixed.push('appearanceNegativePrompt');
+          console.log(`✅ ${char.name} first_message修復:`, candidate);
         }
       }
 
       // systemPrompt 修復
       if (!char.systemPrompt || char.systemPrompt.trim() === '') {
-        const rawSys = raw?.systemPrompt || raw?.character_definition?.systemPrompt;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawSys = (raw as any)?.systemPrompt;
         if (rawSys && typeof rawSys === 'string') {
           char.systemPrompt = rawSys;
           fixed.push('systemPrompt');
+          console.log(`✅ ${char.name} systemPrompt修復:`, rawSys);
         } else {
           // 擬似生成: personality + scenario
-            const personality = char.personality || raw?.personality || '';
-            const scenario = char.scenario || raw?.scenario || '';
-            if (personality || scenario) {
-              char.systemPrompt = `キャラクター指示: ${char.name}\n性格: ${personality}\n状況: ${scenario}`.trim();
-              fixed.push('systemPrompt(generated)');
-            }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const personality = char.personality || (raw as any)?.personality || '';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const scenario = char.scenario || (raw as any)?.scenario || '';
+          if (personality || scenario) {
+            char.systemPrompt = `キャラクター指示: ${char.name}\n性格: ${personality}\n状況: ${scenario}`.trim();
+            fixed.push('systemPrompt(generated)');
+            console.log(`✅ ${char.name} systemPrompt自動生成完了`);
+          }
+        }
+      }
+
+      // appearanceNegativePrompt 修復
+      if (!char.appearanceNegativePrompt || char.appearanceNegativePrompt.trim() === '') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const neg = char.character_definition?.appearance?.negativePrompt || (raw as any)?.appearanceNegativePrompt;
+        if (neg && typeof neg === 'string') {
+          char.appearanceNegativePrompt = neg;
+          fixed.push('appearanceNegativePrompt');
+          console.log(`✅ ${char.name} appearanceNegativePrompt修復:`, neg);
         }
       }
 
@@ -519,10 +630,12 @@ export class CharacterLoader {
       };
 
       if (!char.nsfw_profile || (typeof char.nsfw_profile === 'object' && isEmptyObj(char.nsfw_profile))) {
-        const rawNsfw = raw?.nsfw_profile || raw?.character_definition?.nsfw_profile;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawNsfw = (raw as any)?.nsfw_profile;
         if (rawNsfw) {
           char.nsfw_profile = rawNsfw;
           fixed.push('nsfw_profile');
+          console.log(`✅ ${char.name} nsfw_profile修復完了`);
         }
       }
 

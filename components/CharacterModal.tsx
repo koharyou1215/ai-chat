@@ -46,63 +46,60 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
 
   useEffect(() => {
     if (character) {
-      // 新しいフォーマット（CharacterDefinition）と従来フォーマットの両方に対応
+      console.log('🔍 CharacterModal キャラクター設定開始:', character.name);
+      console.log('🔍 キャラクター生データ:', {
+        first_message: character.first_message,
+        systemPrompt: character.systemPrompt,
+        appearanceNegativePrompt: character.appearanceNegativePrompt,
+        nsfw_profile: character.nsfw_profile,
+        character_definition: character.character_definition
+      });
+      
+      // CharacterDefinition形式の場合の値取得
       const characterDef = character.character_definition;
       
-      // デバッグログ追加 - normalizeCharacterData後のデータ確認
-      console.log('🔍 CharacterModal デバッグ:', {
-        characterName: character.name,
-        appearanceNegativePrompt: character.appearanceNegativePrompt,
-        first_message: character.first_message,
-        nsfw_profile: character.nsfw_profile,
-        characterDef: characterDef
-      });
-
-      // 正規化後のデータ確認
-      console.log('📊 正規化後のデータ:', {
-        negPrompt: character.appearanceNegativePrompt,
-        firstMsg: character.first_message,
-        nsfw: character.nsfw_profile
-      });
-      
-      // 正規化されたデータから値を取得（優先度付き）
-      const negFromProps = 
-        character.appearanceNegativePrompt ?? 
-        character.character_definition?.appearance?.negativePrompt ?? 
+      // 1. first_message の正規化処理  
+      const firstMsgFromProps = Array.isArray(character.first_message) 
+        ? character.first_message[0] || '' 
+        : character.first_message || 
+        characterDef?.scenario?.initial_situation ||
         '';
 
-      // first_messageの処理 - より詳細な確認
-      const firstMsgFromProps = (() => {
-        console.log('🔍 first_message受信確認:', {
-          raw: character.first_message,
-          type: typeof character.first_message,
-          isArray: Array.isArray(character.first_message),
-          hasValue: character.first_message !== undefined && character.first_message !== null
-        });
-        
-        if (character.first_message !== undefined && character.first_message !== null) {
-          if (Array.isArray(character.first_message)) {
-            return character.first_message.length > 0 ? character.first_message[0] : '';
-          } else {
-            return String(character.first_message);
-          }
-        }
-        return '';
-      })();
+      // 2. systemPrompt の正規化処理
+      const systemPromptFromProps = 
+        character.systemPrompt || 
+        '';
 
+      // 3. appearanceNegativePrompt の正規化処理
+      const negFromProps = 
+        character.appearanceNegativePrompt || 
+        characterDef?.appearance?.negativePrompt ||
+        '';
+
+      // 4. nsfw_profile の正規化処理
       const nsfwFromProps = 
-        character.character_definition?.nsfw_profile ??
-        character.nsfw_profile ??
+        character.nsfw_profile ||
+        characterDef?.nsfw_profile ||
         undefined;
-      
-      // systemPromptの処理
-      const systemPromptFromProps = character.systemPrompt ?? '';
 
-      console.log('📊 モーダル初期化値:', {
-        negativePrompt: negFromProps,
-        firstMessage: firstMsgFromProps,
-        nsfw: nsfwFromProps,
-        systemPrompt: systemPromptFromProps
+      console.log('📊 モーダル正規化後の値:', {
+        firstMsgFromProps,
+        systemPromptFromProps,
+        negFromProps,
+        nsfwFromProps
+      });
+
+      // 🚨 カスタムキャラクター4項目が空の場合の緊急フォールバック 🚨
+      const emergencyFirstMessage = firstMsgFromProps || character.first_message || 'こんにちは！';
+      const emergencySystemPrompt = systemPromptFromProps || character.systemPrompt || '';
+      const emergencyNegPrompt = negFromProps || character.appearanceNegativePrompt || '';
+      const emergencyNsfw = nsfwFromProps || character.nsfw_profile || '';
+
+      console.log('🚨 緊急フォールバック後の値:', {
+        emergencyFirstMessage,
+        emergencySystemPrompt, 
+        emergencyNegPrompt,
+        emergencyNsfw
       });
       
       setFormData({
@@ -118,32 +115,28 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         speaking_style: characterDef?.speaking_style?.base || character.speaking_style || '',
         scenario: characterDef?.scenario?.initial_situation || character.scenario || '',
         
-        // first_messageは正規化された値を使用
-        first_message: firstMsgFromProps,
+        // 🚨 4項目を緊急フォールバック値で確実に設定 🚨
+        first_message: emergencyFirstMessage,
+        systemPrompt: emergencySystemPrompt, 
+        appearanceNegativePrompt: emergencyNegPrompt,
         
-        // systemPromptは正規化された値を使用
-        systemPrompt: systemPromptFromProps,
-        
-        // appearanceNegativePromptは正規化された値を使用
-        appearanceNegativePrompt: negFromProps,
-        
-        // nsfw_profileの処理 - オブジェクト形式を優先的に処理
+        // nsfw_profileの処理 - 緊急フォールバック値を使用
         nsfw_profile: (() => {
           console.log('🔍 NSFWプロファイル処理確認:', {
-            nsfwFromProps: nsfwFromProps,
-            type: typeof nsfwFromProps,
-            isObject: typeof nsfwFromProps === 'object' && nsfwFromProps !== null,
-            keys: nsfwFromProps && typeof nsfwFromProps === 'object' ? Object.keys(nsfwFromProps) : 'N/A'
+            emergencyNsfw: emergencyNsfw,
+            type: typeof emergencyNsfw,
+            isObject: typeof emergencyNsfw === 'object' && emergencyNsfw !== null,
+            keys: emergencyNsfw && typeof emergencyNsfw === 'object' ? Object.keys(emergencyNsfw) : 'N/A'
           });
 
-          // 正規化済みの値があればそれを使用
-          if (nsfwFromProps !== undefined && nsfwFromProps !== null) {
-            if (typeof nsfwFromProps === 'object') {
+          // 緊急フォールバック値があればそれを使用
+          if (emergencyNsfw !== undefined && emergencyNsfw !== null) {
+            if (typeof emergencyNsfw === 'object') {
               // オブジェクト形式 - JSONとして整形
-              return JSON.stringify(nsfwFromProps, null, 2);
-            } else if (typeof nsfwFromProps === 'string' && nsfwFromProps.trim() !== '') {
+              return JSON.stringify(emergencyNsfw, null, 2);
+            } else if (typeof emergencyNsfw === 'string' && emergencyNsfw.trim() !== '') {
               // 文字列形式で値がある場合はそのまま
-              return nsfwFromProps;
+              return emergencyNsfw;
             }
           }
 

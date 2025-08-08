@@ -413,14 +413,24 @@ export const useChatStore = create<ChatStore>()(
       },
 
       initializeTrackersForSession: (sessionId, character) => {
-        if (!character.trackers) return;
+        console.log(`🔧 トラッカー初期化開始: ${character.name}, セッション: ${sessionId}`);
+        
+        if (!character.trackers || character.trackers.length === 0) {
+          console.log(`⚠️ ${character.name}にトラッカーがありません`);
+          return;
+        }
         
         const { trackerValues, persistentTrackerValues } = get();
-        if (trackerValues[sessionId]) return; // 既に初期化済み
+        if (trackerValues[sessionId]) {
+          console.log(`ℹ️ セッション${sessionId}のトラッカーは既に初期化済み`);
+          return; // 既に初期化済み
+        }
 
         const characterId = character.name;
         const persistentValues = persistentTrackerValues[characterId] || {};
         const initialValues: Record<string, TrackerValue> = {};
+
+        console.log(`📊 ${character.name}のトラッカー定義:`, character.trackers);
 
         character.trackers.forEach(tracker => {
           // 永続化されている値があり、persistent=true の場合はそれを使用
@@ -429,6 +439,7 @@ export const useChatStore = create<ChatStore>()(
 
           if (usePersistent) {
             initialValues[tracker.name] = existingPersistent;
+            console.log(`🔄 トラッカー「${tracker.name}」: 永続値を使用`, existingPersistent);
           } else {
             // 初期値を設定
             let initialValue: number | string | boolean;
@@ -454,6 +465,7 @@ export const useChatStore = create<ChatStore>()(
               value: initialValue,
               lastUpdate: Date.now(),
             };
+            console.log(`✨ トラッカー「${tracker.name}」: 初期値設定`, initialValue);
           }
         });
 
@@ -463,6 +475,8 @@ export const useChatStore = create<ChatStore>()(
             [sessionId]: initialValues,
           },
         }));
+
+        console.log(`✅ ${character.name}のトラッカー初期化完了:`, initialValues);
       },
 
       analyzeMessageForTrackerUpdates: (sessionId, message, character) => {

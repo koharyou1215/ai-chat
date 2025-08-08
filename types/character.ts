@@ -102,7 +102,8 @@ export interface Character {
   appearance?: string;
   speaking_style?: string;
   scenario?: string;
-  nsfw_profile?: string;
+  // 🚨 nsfw_profile: stringまたはobjectどちらでも対応 🚨
+  nsfw_profile?: string | object | NSFWProfile;
   age?: string;
   occupation?: string;
   hobbies: string[];

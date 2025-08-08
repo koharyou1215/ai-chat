@@ -54,6 +54,18 @@ export default function CharacterTrackerDisplay({
   const [animatingTrackers, setAnimatingTrackers] = useState<Set<string>>(new Set());
   const [previousValues, setPreviousValues] = useState<Record<string, TrackerValue>>({});
 
+  // デバッグログ追加
+  useEffect(() => {
+    console.log('🔍 CharacterTrackerDisplay props変更:', {
+      trackerCount: trackers?.length || 0,
+      trackerNames: trackers?.map(t => t.name) || [],
+      currentValuesKeys: Object.keys(currentValues || {}),
+      hasCurrentValues: !!currentValues && Object.keys(currentValues).length > 0,
+      compact,
+      readOnly
+    });
+  }, [trackers, currentValues, compact, readOnly]);
+
   // 値が変更された時のアニメーション
   useEffect(() => {
     // currentValuesが安全でない場合は早期リターン
@@ -107,6 +119,7 @@ export default function CharacterTrackerDisplay({
   }, [currentValues, trackers, previousValues]);
 
   if (!trackers || trackers.length === 0) {
+    console.log('⚠️ CharacterTracker: trackersが空またはundefined', { trackers, length: trackers?.length });
     return null;
   }
 
