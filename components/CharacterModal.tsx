@@ -15,7 +15,7 @@ interface CharacterModalProps {
 }
 
 export default function CharacterModal({ isOpen, onClose, character, onSave }: CharacterModalProps) {
-  const [formData, setFormData] = useState<Character>({
+  const [formData, setFormData] = useState<Character & { nsfw_profile: string | object }>({
     name: '',
     personality: '',
     appearance: '',
@@ -46,31 +46,144 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
 
   useEffect(() => {
     if (character) {
-      // 安全にデータを設定（配列が未定義の場合は空配列に）
+      // 新しいフォーマット（CharacterDefinition）と従来フォーマットの両方に対応
+      const characterDef = character.character_definition;
+      
+      // デバッグログ追加 - normalizeCharacterData後のデータ確認
+      console.log('🔍 CharacterModal デバッグ:', {
+        characterName: character.name,
+        appearanceNegativePrompt: character.appearanceNegativePrompt,
+        first_message: character.first_message,
+        nsfw_profile: character.nsfw_profile,
+        characterDef: characterDef
+      });
+
+      // 正規化後のデータ確認
+      console.log('📊 正規化後のデータ:', {
+        negPrompt: character.appearanceNegativePrompt,
+        firstMsg: character.first_message,
+        nsfw: character.nsfw_profile
+      });
+      
+      // 正規化されたデータから値を取得（優先度付き）
+      const negFromProps = 
+        character.appearanceNegativePrompt ?? 
+        character.character_definition?.appearance?.negativePrompt ?? 
+        '';
+
+      // first_messageの処理 - より詳細な確認
+      const firstMsgFromProps = (() => {
+        console.log('🔍 first_message受信確認:', {
+          raw: character.first_message,
+          type: typeof character.first_message,
+          isArray: Array.isArray(character.first_message),
+          hasValue: character.first_message !== undefined && character.first_message !== null
+        });
+        
+        if (character.first_message !== undefined && character.first_message !== null) {
+          if (Array.isArray(character.first_message)) {
+            return character.first_message.length > 0 ? character.first_message[0] : '';
+          } else {
+            return String(character.first_message);
+          }
+        }
+        return '';
+      })();
+
+      const nsfwFromProps = 
+        character.character_definition?.nsfw_profile ??
+        character.nsfw_profile ??
+        undefined;
+      
+      // systemPromptの処理
+      const systemPromptFromProps = character.systemPrompt ?? '';
+
+      console.log('📊 モーダル初期化値:', {
+        negativePrompt: negFromProps,
+        firstMessage: firstMsgFromProps,
+        nsfw: nsfwFromProps,
+        systemPrompt: systemPromptFromProps
+      });
+      
       setFormData({
         ...character,
         tags: Array.isArray(character.tags) ? character.tags : [],
         hobbies: Array.isArray(character.hobbies) ? character.hobbies : [],
         likes: Array.isArray(character.likes) ? character.likes : [],
         dislikes: Array.isArray(character.dislikes) ? character.dislikes : [],
-        first_message: Array.isArray(character.first_message) 
-          ? character.first_message[0] || '' 
-          : character.first_message || '',
-        personality: character.personality || '',
-        appearance: character.appearance || '',
-        speaking_style: character.speaking_style || '',
-        scenario: character.scenario || '',
-        nsfw_profile: character.nsfw_profile || '',
+        
+        // 新しいフォーマット（CharacterDefinition）から読み込み
+        personality: characterDef?.personality?.summary || character.personality || '',
+        appearance: characterDef?.appearance?.description || character.appearance || '',
+        speaking_style: characterDef?.speaking_style?.base || character.speaking_style || '',
+        scenario: characterDef?.scenario?.initial_situation || character.scenario || '',
+        
+        // first_messageは正規化された値を使用
+        first_message: firstMsgFromProps,
+        
+        // systemPromptは正規化された値を使用
+        systemPrompt: systemPromptFromProps,
+        
+        // appearanceNegativePromptは正規化された値を使用
+        appearanceNegativePrompt: negFromProps,
+        
+        // nsfw_profileの処理 - オブジェクト形式を優先的に処理
+        nsfw_profile: (() => {
+          console.log('🔍 NSFWプロファイル処理確認:', {
+            nsfwFromProps: nsfwFromProps,
+            type: typeof nsfwFromProps,
+            isObject: typeof nsfwFromProps === 'object' && nsfwFromProps !== null,
+            keys: nsfwFromProps && typeof nsfwFromProps === 'object' ? Object.keys(nsfwFromProps) : 'N/A'
+          });
+
+          // 正規化済みの値があればそれを使用
+          if (nsfwFromProps !== undefined && nsfwFromProps !== null) {
+            if (typeof nsfwFromProps === 'object') {
+              // オブジェクト形式 - JSONとして整形
+              return JSON.stringify(nsfwFromProps, null, 2);
+            } else if (typeof nsfwFromProps === 'string' && nsfwFromProps.trim() !== '') {
+              // 文字列形式で値がある場合はそのまま
+              return nsfwFromProps;
+            }
+          }
+
+          // フォールバック
+          if (characterDef?.nsfw_profile) {
+            return JSON.stringify(characterDef.nsfw_profile, null, 2);
+          } else if (typeof character.nsfw_profile === 'object' && character.nsfw_profile) {
+            return JSON.stringify(character.nsfw_profile, null, 2);
+          } else if (typeof character.nsfw_profile === 'string' && character.nsfw_profile) {
+            return character.nsfw_profile;
+          }
+          
+          return '';
+        })(),
+        
         age: character.age || '',
         occupation: character.occupation || '',
-        background: character.background || '',
+        background: characterDef?.background || character.background || '',
         avatar_url: character.avatar_url || '',
-        systemPrompt: character.systemPrompt || '',
-        appearancePrompt: character.appearancePrompt || '',
-        appearanceNegativePrompt: character.appearanceNegativePrompt || '',
+        appearancePrompt: characterDef?.appearance?.prompt || character.appearancePrompt || '',
         chatBackgroundUrl: character.chatBackgroundUrl || '',
         trackers: Array.isArray(character.trackers) ? character.trackers : []
       });
+
+      // シルヴィア専用デバッグログ
+      if (character.name === 'シルヴィア') {
+        console.log('🔍 CharacterModal シルヴィア詳細:', {
+          originalCharacter: {
+            systemPrompt: character.systemPrompt,
+            appearancePrompt: character.appearancePrompt,
+            first_message: character.first_message
+          },
+          characterDef: characterDef,
+          formDataSet: {
+            systemPrompt: character.systemPrompt || '',
+            appearancePrompt: characterDef?.appearance?.prompt || character.appearancePrompt || '',
+            first_message: character.first_message || ''
+          }
+        });
+      }
     } else {
       // 新規作成時はリセット
       setFormData({
@@ -96,7 +209,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         trackers: []
       });
     }
-  }, [character, isOpen]);
+  }, [character]);
 
 
 
@@ -176,10 +289,25 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       return;
     }
 
+    // nsfw_profileの処理：JSONとして有効なら解析、そうでなければ文字列として保持
+    let processedNsfwProfile: string | Record<string, unknown> = formData.nsfw_profile;
+    try {
+      if (typeof formData.nsfw_profile === 'string' && formData.nsfw_profile.trim().startsWith('{')) {
+        processedNsfwProfile = JSON.parse(formData.nsfw_profile);
+      } else if (typeof formData.nsfw_profile === 'string') {
+        processedNsfwProfile = formData.nsfw_profile;
+      }
+    } catch {
+      // JSON解析に失敗した場合は文字列として保持
+      console.log('nsfw_profileをJSONとして解析できませんでした。文字列として保存します。');
+      processedNsfwProfile = typeof formData.nsfw_profile === 'string' ? formData.nsfw_profile : '';
+    }
+
     const characterData: Character = {
       ...formData,
-      first_message: formData.first_message?.trim() || ''
-    };
+      first_message: formData.first_message?.trim() || '',
+      nsfw_profile: processedNsfwProfile as string | Record<string, unknown>
+    } as Character;
 
     // 最終保存の確実化（アイコン/背景）
     try {

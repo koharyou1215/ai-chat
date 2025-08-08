@@ -129,6 +129,13 @@ export class CharacterLoader {
   static addCharacter(character: Character): void {
     this.initialize();
     
+    // キャラクター名の正規化（キー不整合対策）
+    const normalizedName = character.name.trim();
+    if (!normalizedName) {
+      throw new Error('キャラクター名が空です');
+    }
+    character.name = normalizedName;
+    
     // 既存のキャラクターをチェック（カスタム + public）
     const allCharacters = [...this.characters, ...this.publicCharacters];
     const existingIndex = allCharacters.findIndex(char => char['file-name'] === character['file-name']);
@@ -168,8 +175,12 @@ export class CharacterLoader {
       this.characters.push(character);
     }
     
-    // ローカルストレージに保存
+    // ローカルストレージに即座保存
     this.saveToLocalStorage();
+    
+    // デバッグ情報
+    console.log('📊 現在のキャラクター総数:', this.characters.length + this.publicCharacters.length);
+    console.log('📋 カスタムキャラクター:', this.characters.map(c => c.name));
   }
 
   static updateCharacter(character: Character): void {
@@ -228,9 +239,31 @@ export class CharacterLoader {
             const characterData = await charResponse.json();
             console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
             
+            // シルヴィアの場合はデバッグログを追加
+            if (filename.includes('シルヴィア')) {
+              console.log('🔍 シルヴィア読み込み詳細:', {
+                filename,
+                systemPrompt: characterData.systemPrompt,
+                appearancePrompt: characterData.appearancePrompt,
+                first_message: characterData.first_message,
+                hasCharacterDefinition: !!characterData.character_definition
+              });
+            }
+            
             // 簡易形式のキャラクターファイルを完全形式に変換
             const { normalizeCharacterData } = await import('./autoLoader');
             const normalizedCharacter = normalizeCharacterData(characterData, filename);
+            
+            // シルヴィアの正規化後も確認
+            if (filename.includes('シルヴィア')) {
+              console.log('🔍 シルヴィア正規化後:', {
+                systemPrompt: normalizedCharacter.systemPrompt,
+                appearancePrompt: normalizedCharacter.appearancePrompt,
+                first_message: normalizedCharacter.first_message,
+                hasCharacterDefinition: !!normalizedCharacter.character_definition
+              });
+            }
+            
             console.log(`🔄 正規化完了: ${normalizedCharacter.name}`);
             newPublicCharacters.push(normalizedCharacter);
           } else {
@@ -276,7 +309,26 @@ export class CharacterLoader {
   private static loadFromLocalStorage(): Character[] {
     try {
       const saved = localStorage.getItem('ai-chat-characters');
-      return saved ? JSON.parse(saved) : [];
+      const characters = saved ? JSON.parse(saved) : [];
+      
+      // シルヴィアのローカルストレージデータをデバッグ
+      const silvia = characters.find((c: Character) => c.name === 'シルヴィア');
+      if (silvia) {
+        console.log('🔍 localStorage シルヴィア詳細:', {
+          name: silvia.name,
+          systemPrompt: silvia.systemPrompt,
+          appearancePrompt: silvia.appearancePrompt,
+          appearanceNegativePrompt: silvia.appearanceNegativePrompt,
+          first_message: silvia.first_message,
+          nsfw_profile: silvia.nsfw_profile,
+          nsfwType: typeof silvia.nsfw_profile,
+          hasSystemPrompt: !!silvia.systemPrompt,
+          hasAppearancePrompt: !!silvia.appearancePrompt,
+          hasFirstMessage: !!silvia.first_message
+        });
+      }
+      
+      return characters;
     } catch (error) {
       console.error('カスタムキャラクター読み込みエラー:', error);
       return [];
@@ -321,6 +373,28 @@ export class CharacterLoader {
     console.log('✅ 非同期キャラクター初期化完了');
   }
 
+  // 強制的にキャラクターリストを再読み込み
+  static async forceReload() {
+    console.log('🔄 キャラクターリスト強制再読み込み開始...');
+    
+    // ローカルストレージをクリア
+    try {
+      localStorage.removeItem('ai-chat-public-characters');
+      console.log('🗑️ publicキャラクターキャッシュをクリア');
+    } catch (error) {
+      console.warn('ローカルストレージクリアに失敗:', error);
+    }
+    
+    // 内部キャッシュをクリア
+    this.publicCharacters = [];
+    
+    // サーバーから最新のキャラクターリストを取得
+    await this.loadPublicCharacters();
+    
+    console.log('✅ キャラクターリスト強制再読み込み完了');
+    return this.getAllCharacters();
+  }
+
   static removeCharacter(id: string): boolean {
     this.initialize();
     
@@ -345,30 +419,131 @@ export class CharacterLoader {
 
   // JSONファイルからキャラクターを読み込む（ファイルアップロード用）
   static async loadCharacterFromFile(file: File): Promise<Character> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          const character: Character = JSON.parse(content);
-          
-          // 基本的なバリデーション
-          if (!character.name || !character['file-name'] || !character.character_definition) {
-            throw new Error('無効なキャラクターファイル形式です');
-          }
-          
-          resolve(character);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = () => reject(new Error('ファイル読み込みエラー'));
-      reader.readAsText(file);
-    });
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      // ファイル名を設定
+      data["file-name"] = file.name;
+      
+      return data as Character;
+    } catch (error) {
+      console.error('キャラクターファイル読み込みエラー:', error);
+      throw new Error('キャラクターファイルの読み込みに失敗しました');
+    }
   }
 
   // キャラクターをJSONとしてエクスポート
   static exportCharacter(character: Character): string {
     return JSON.stringify(character, null, 2);
   }
-} 
+
+  // 全キャラクターの不足フィールド自動修復
+  static async repairAll() {
+    this.initialize();
+    const report: { name: string; fixed: string[] }[] = [];
+
+    // publicキャラの元JSONを後でまとめて取得するためのマップ
+    const publicRawCache: Record<string, unknown> = {};
+
+    const loadRawPublic = async (fileName: string) => {
+      if (publicRawCache[fileName]) return publicRawCache[fileName];
+      try {
+        const res = await fetch(`/characters/${fileName}`);
+        if (res.ok) {
+          const data = await res.json();
+          publicRawCache[fileName] = data;
+          return data;
+        }
+      } catch (e) {
+        console.warn('raw取得失敗:', fileName, e);
+      }
+      return null;
+    };
+
+    const process = async (char: Character, isPublic: boolean) => {
+      const fixed: string[] = [];
+      const raw = isPublic && char['file-name'] ? await loadRawPublic(char['file-name']!) : null;
+
+      // first_message 修復
+      if (!char.first_message || char.first_message.trim() === '') {
+        let candidate = '';
+        if (raw) {
+          const rf = (raw as { first_message?: unknown; greeting?: unknown }).first_message;
+          if (Array.isArray(rf)) candidate = rf[0] || '';
+          else if (typeof rf === 'string') candidate = rf;
+          if (!candidate && typeof raw.greeting === 'string') candidate = raw.greeting;
+        }
+        if (!candidate && Array.isArray(char.example_dialogue) && char.example_dialogue.length > 0) {
+          candidate = char.example_dialogue[0].char;
+        }
+        if (candidate) {
+          char.first_message = candidate;
+          fixed.push('first_message');
+        }
+      }
+
+      // appearanceNegativePrompt 修復
+      if (!char.appearanceNegativePrompt || char.appearanceNegativePrompt.trim() === '') {
+        const neg = char.character_definition?.appearance?.negativePrompt || (raw?.character_definition?.appearance?.negativePrompt);
+        if (neg && typeof neg === 'string') {
+          char.appearanceNegativePrompt = neg;
+          fixed.push('appearanceNegativePrompt');
+        }
+      }
+
+      // systemPrompt 修復
+      if (!char.systemPrompt || char.systemPrompt.trim() === '') {
+        const rawSys = raw?.systemPrompt || raw?.character_definition?.systemPrompt;
+        if (rawSys && typeof rawSys === 'string') {
+          char.systemPrompt = rawSys;
+          fixed.push('systemPrompt');
+        } else {
+          // 擬似生成: personality + scenario
+            const personality = char.personality || raw?.personality || '';
+            const scenario = char.scenario || raw?.scenario || '';
+            if (personality || scenario) {
+              char.systemPrompt = `キャラクター指示: ${char.name}\n性格: ${personality}\n状況: ${scenario}`.trim();
+              fixed.push('systemPrompt(generated)');
+            }
+        }
+      }
+
+      // nsfw_profile 修復
+      const isEmptyObj = (v: unknown) => {
+        if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+        const rec = v as Record<string, unknown>;
+        const keys = Object.keys(rec);
+        if (keys.length === 0) return true;
+        return keys.every(k => ['situation','mental_state','status'].includes(k) && (!rec[k] || rec[k] === ''));
+      };
+
+      if (!char.nsfw_profile || (typeof char.nsfw_profile === 'object' && isEmptyObj(char.nsfw_profile))) {
+        const rawNsfw = raw?.nsfw_profile || raw?.character_definition?.nsfw_profile;
+        if (rawNsfw) {
+          char.nsfw_profile = rawNsfw;
+          fixed.push('nsfw_profile');
+        }
+      }
+
+      if (fixed.length > 0) {
+        report.push({ name: char.name, fixed });
+      }
+    };
+
+    // custom + public 両方処理
+    for (const c of this.characters) {
+      await process(c, false);
+    }
+    for (const c of this.publicCharacters) {
+      await process(c, true);
+    }
+
+    // 保存
+    this.saveToLocalStorage();
+    this.savePublicCharactersToLocalStorage();
+
+    console.log('🛠 修復結果:', report);
+    return { updated: report.length, total: this.characters.length + this.publicCharacters.length, details: report };
+  }
+}

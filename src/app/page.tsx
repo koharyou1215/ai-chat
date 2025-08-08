@@ -1,5 +1,21 @@
 'use client';
 
+// ==========================================
+// 🚨 重要：このファイルにはチャット機能の基幹機能が含まれています 🚨
+// ==========================================
+// 
+// 【絶対に削除・変更してはいけない重要な機能】:
+// 1. MessageEditorModal（テキスト編集モーダル）関連のすべてのコード
+// 2. CharacterImportExport（キャラクターインポート）関連のすべてのコード  
+// 3. selectInspirationCandidate（インスピレーション選択）機能
+// 4. handleUserInspiration（ユーザーインスピレーション）機能
+// 5. handleUserTextEnhancement（テキスト強化）機能
+//
+// これらの機能は何度も消失する問題が発生しており、
+// 保護コメントブロックで囲まれています。
+// 修正や変更は慎重に行い、機能を失わないよう注意してください。
+// ==========================================
+
 // crypto.randomUUID ポリフィル
 import '../../lib/uuidPolyfill';
 
@@ -8,6 +24,9 @@ import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, 
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
+// 直接インポートに変更（ChunkLoadError回避）
+import CharacterGallery from '../../components/CharacterGallery';
+import CharacterImportExport from '../../components/CharacterImportExport';
 // ThemeManagerは削除 - シンプルなローカルストレージ管理に変更
 import { VoiceManager } from '../../lib/voiceManager';
 import SettingsModal from '../../components/SettingsModal';
@@ -19,30 +38,20 @@ import PersonaModal from '../../components/PersonaModal';
 import PersonaSelector from '../../components/PersonaSelector';
 import { MessageMemoButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
+import { MessageEditorModal } from '../../components/MessageEditorModal';
 // ThemeModal削除 - インライン実装に変更
 import AuthModal from '../../components/AuthModal';
 import { useChatStore } from '../../stores/chatStore';
 import FormattedText from '../../components/FormattedText';
 import Image from 'next/image';
 
-import dynamic from 'next/dynamic';
 import { BackgroundManager } from '../../lib/backgroundManager';
 import CharacterTrackerDisplay from '../../components/CharacterTracker';
 import Typewriter from '../../components/Typewriter';
 import { saveCharacterToCloud } from '../../lib/characterCloudSync';
 
 
-interface CharacterGalleryProps {
-  characters: Character[];
-  currentCharacter: Character | null;
-  onSelectCharacter: (character: Character) => void;
-  onAddCharacter: () => void;
-  onEditCharacter: (character: Character) => void;
-  onDeleteCharacter: (character: Character) => void;
-  onImportExport?: () => void;
-  onManualLoad?: () => void;
-  onClose: () => void;
-}
+
 
 interface ChatImpression {
   title: string;
@@ -80,31 +89,6 @@ interface ChatSummary {
   generatedAt: number;
 }
 
-// 動的インポート（初期バンドル削減）
-const CharacterGallery = dynamic(() => import('../../components/CharacterGallery').then((mod: { default?: React.ComponentType<CharacterGalleryProps>; CharacterGallery?: React.ComponentType<CharacterGalleryProps> }) => (mod.default ?? mod.CharacterGallery) as React.ComponentType<CharacterGalleryProps>), { ssr: false });
-// 動的 import の default/export 両対応（ChunkLoadError 対策）
-const EnhancedImpressionModal = dynamic(() => import('../../components/EnhancedImpressionModal').then((m: { default?: React.ComponentType<any>; EnhancedImpressionModal?: React.ComponentType<any> } & Record<string, unknown>) => (m.default ?? m.EnhancedImpressionModal ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ChatHistoryGallery = dynamic<{
-  sessions: SessionSummary[];
-  characters: Character[];
-  onSelectSession: (session: SessionSummary) => Promise<void>;
-  onDeleteSession: (sessionId: string) => Promise<void>;
-}>(() => import('../../components/ChatHistoryGallery'), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const InspirationModal = dynamic(() => import('../../components/InspirationModal').then((m: { InspirationModal?: React.ComponentType<any>; default?: React.ComponentType<any> } & Record<string, unknown>) => (m.InspirationModal ?? m.default ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const UserInspirationModal = dynamic(() => import('../../components/UserInspirationModal').then((m: { UserInspirationModal?: React.ComponentType<any>; default?: React.ComponentType<any> } & Record<string, unknown>) => (m.UserInspirationModal ?? m.default ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CharacterImportExport = dynamic(() => import('../../components/CharacterImportExport').then((m: { default?: React.ComponentType<any>; CharacterImportExport?: React.ComponentType<any> } & Record<string, unknown>) => (m.default ?? m.CharacterImportExport ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const PersonaImportExport = dynamic(() => import('../../components/PersonaImportExport').then((m: { default?: React.ComponentType<any>; PersonaImportExport?: React.ComponentType<any> } & Record<string, unknown>) => (m.default ?? m.PersonaImportExport ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
-const MessageEditorModal = dynamic(() => import('../../components/MessageEditorModal').then((m: { MessageEditorModal?: React.ComponentType<any>; default?: React.ComponentType<any> } & Record<string, unknown>) => (m.MessageEditorModal ?? m.default ?? (m as unknown as React.ComponentType<any>))), { ssr: false });
-
 export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -114,8 +98,6 @@ export default function ChatPage() {
 
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
@@ -162,9 +144,6 @@ export default function ChatPage() {
   const [bulbButtonClicked, setBulbButtonClicked] = useState(false);
   const [sparkleButtonClicked, setSparkleButtonClicked] = useState(false);
   
-  // トラッカー表示の制御
-  const [showTrackers, setShowTrackers] = useState(true);
-  
   // タブ管理
   const [activeTab, setActiveTab] = useState<'characters' | 'personas' | 'history' | 'settings'>('characters');
 
@@ -191,15 +170,28 @@ export default function ChatPage() {
 
   // Personaインポート/エクスポート
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // 🚨 画面右上5つのアイコン関連State変数 - 重要機能保護開始 🚨
+  // これらのstate変数は何度も消失しています。絶対に削除・変更しないでください！
+  
+  // 1. 詳細設定関連
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // 2. クイック設定関連  
+  const [isQuickSettingsOpen, setIsQuickSettingsOpen] = useState(false);
+  // 3. チャット履歴関連
+  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
+  // 4. キャラクターギャラリー関連
+  const [isCharacterGalleryOpen, setIsCharacterGalleryOpen] = useState(false);
+  // 5. トラッカー表示制御
+  const [showTrackers, setShowTrackers] = useState(true);
+  
+  // 🚨 画面右上5つのアイコン関連State変数 - 重要機能保護終了 🚨
+
   const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isCharacterGalleryOpen, setIsCharacterGalleryOpen] = useState(false);
   const [isEnhancedImpressionOpen, setIsEnhancedImpressionOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentImpressions, setCurrentImpressions] = useState<ChatImpression[]>([]);
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
   // Zustandストアから設定を取得
@@ -711,6 +703,9 @@ export default function ChatPage() {
     return () => clearTimeout(timer);
   }, [messages, currentCharacter, currentSessionId]);
 
+  // 🚨 チャット機能（handleSend） - 重要機能保護開始 🚨
+  // この機能は何度も消失しています。絶対に削除・変更しないでください！
+  // メインチャット機能の核心部分です。
   const handleSend = async () => {
     // ボタンアニメーション実行
     setSendButtonClicked(true);
@@ -1024,6 +1019,7 @@ export default function ChatPage() {
       setIsGeneratingImage(false);
     }
   };
+  // 🚨 チャット機能（handleSend） - 重要機能保護終了 🚨
 
   // 画像生成テスト用関数（調査用）
   const handleImageTest = async () => {
@@ -1094,6 +1090,12 @@ export default function ChatPage() {
     }
   };
 
+  /* ================================================
+   * 【重要】返信提案機能 - 絶対に変更・削除禁止
+   * 
+   * この機能はuser-inspiration APIと連携してMessageEditorModalを表示します。
+   * 変更するとモーダルが表示されなくなります。
+   * ================================================ */
   // ユーザーインスピレーション機能
   const handleUserInspiration = async () => {
     if (!currentCharacter || isLoadingUserInspiration) return;
@@ -1203,16 +1205,34 @@ export default function ChatPage() {
       setIsLoadingUserInspiration(false);
     }
   };
+  /* ================================================ */
 
+  /* ================================================
+   * 【重要】返答候補選択関数 - 絶対に変更・削除禁止
+   * 
+   * この関数はMessageEditorModalの表示に必要です。
+   * 変更するとモーダルが表示されなくなります。
+   * ================================================ */
   // 返答候補を選択する関数
   const selectInspirationCandidate = (candidate: string) => {
+    console.log('🔍 selectInspirationCandidate実行:', { candidate, candidateLength: candidate.length });
     setEditorInitialText(candidate);
     setShowInspirationCandidates(false);
     setUserInspirationCandidates([]);
     // モーダルを開く（state反映後の次フレームで実行）
-    setTimeout(() => setIsMessageEditorOpen(true), 0);
+    setTimeout(() => {
+      console.log('🔍 MessageEditorModal表示開始');
+      setIsMessageEditorOpen(true);
+    }, 0);
   };
+  /* ================================================ */
 
+  /* ================================================
+   * 【重要】文章強化機能 - 絶対に変更・削除禁止
+   * 
+   * この機能はMessageEditorModalと連携しています。
+   * 変更するとモーダルが表示されなくなります。
+   * ================================================ */
   // ユーザー文章強化実行
   const handleUserTextEnhancement = async () => {
     if (!message.trim()) {
@@ -1295,6 +1315,7 @@ export default function ChatPage() {
       setIsEnhancingUserText(false);
     }
   };
+  /* ================================================ */
 
   // 文章選択ハンドラー
   const handleTextSelection = (messageId: string) => {
@@ -1976,11 +1997,18 @@ export default function ChatPage() {
     }
   };
 
+  /* ================================================
+   * 【重要】MessageEditorModal関連の状態変数 - 絶対に変更・削除禁止
+   * 
+   * これらの変数はMessageEditorModalの動作に必要です。
+   * 削除・変更するとモーダルが表示されなくなります。
+   * ================================================ */
   // メッセージ編集モーダル
   const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
   // const [messageDraft, setMessageDraft] = useState('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editorInitialText, setEditorInitialText] = useState('');
+  /* ================================================ */
 
   // キャラクター選択時の処理
   const onSelectCharacter = (character: Character) => {
@@ -2343,6 +2371,25 @@ export default function ChatPage() {
                     キャラクターギャラリー
                   </button>
                   <button 
+                    onClick={async () => {
+                      console.log('🔄 キャラクターリスト更新開始...');
+                      try {
+                        const { CharacterLoader } = await import('../../lib/characterLoader');
+                        const updatedCharacters = await CharacterLoader.forceReload();
+                        setAllCharacters(updatedCharacters);
+                        console.log('✅ キャラクターリスト更新完了:', updatedCharacters.length, '件');
+                        alert(`キャラクターリストを更新しました（${updatedCharacters.length}件）`);
+                      } catch (error) {
+                        console.error('❌ キャラクターリスト更新エラー:', error);
+                        alert('キャラクターリストの更新に失敗しました');
+                      }
+                    }}
+                    className="w-full bg-green-500/20 backdrop-blur-sm text-green-200 py-3 px-4 rounded-lg hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2 font-medium"
+                  >
+                    <RefreshCw size={16} />
+                    キャラクターリスト更新
+                  </button>
+                  <button 
                     onClick={handleImageTest}
                     disabled={isGeneratingImage}
                     className="w-full bg-yellow-500/20 backdrop-blur-sm text-yellow-200 py-3 px-4 rounded-lg hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
@@ -2379,6 +2426,7 @@ export default function ChatPage() {
         <div className="flex-1 flex flex-col w-full md:w-auto h-full max-h-screen">
           {/* ヘッダー - 固定 */}
           <div className="bg-transparent p-2 md:p-4 safe-area-top flex-shrink-0 fixed top-0 left-0 right-0 z-50 md:relative md:sticky">
+            {/* メインヘッダー行 */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
@@ -2425,18 +2473,6 @@ export default function ChatPage() {
                   )}
                 </button>
                 
-                {/* トラッカー表示（コンパクト） */}
-                {showTrackers && currentCharacter?.trackers && currentSessionId && (
-                  <div className="mt-1 transition-all duration-300 ease-in-out relative z-0">
-                    <CharacterTrackerDisplay
-                      trackers={currentCharacter.trackers}
-                      currentValues={getTrackerValues(currentSessionId)}
-                      onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
-                      readOnly={false}
-                      compact={true}
-                    />
-                  </div>
-                )}
                 {/* デバッグ情報 */}
                 {process.env.NODE_ENV === 'development' && (
                   <div className="text-xs text-white/50 mt-1">
@@ -2444,7 +2480,15 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
+                {/* 🚨 画面右上5つのアイコン - 重要機能保護開始 🚨 */}
+                {/* これらのアイコンは何度も消失しています。絶対に削除・変更しないでください！ */}
+                {/* 1. トラッカートグルボタン (Activity) */}
+                {/* 2. クイック設定 (Zap) */}
+                {/* 3. チャット履歴 (MessageSquare) */}
+                {/* 4. 詳細設定 (Settings) */}
+                {/* 5. キャラクターギャラリー (User) */}
+                
                 {/* トラッカートグルボタン - 条件を緩和してデバッグ */}
                 {(currentCharacter?.trackers || process.env.NODE_ENV === 'development') && (
                   <button
@@ -2487,8 +2531,22 @@ export default function ChatPage() {
                 >
                   <User size={16} />
                 </button>
+                {/* 🚨 画面右上5つのアイコン - 重要機能保護終了 🚨 */}
               </div>
             </div>
+            
+            {/* トラッカー表示（独立した行） */}
+            {showTrackers && currentCharacter?.trackers && currentSessionId && (
+              <div className="mt-2 transition-all duration-300 ease-in-out relative z-0">
+                <CharacterTrackerDisplay
+                  trackers={currentCharacter.trackers}
+                  currentValues={getTrackerValues(currentSessionId) || {}}
+                  onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
+                  readOnly={false}
+                  compact={true}
+                />
+              </div>
+            )}
           </div>
 
           {/* AI候補選択エリア */}
@@ -2500,29 +2558,34 @@ export default function ChatPage() {
                   <span>AIが{inspirationCandidates.length}つの返答候補を生成しました。お選びください：</span>
                 </div>
                 <div className="space-y-2">
-                  {inspirationCandidates.map((candidate, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        // 選択された候補をメッセージに追加
-                        const aiResponse = {
-                          id: crypto.randomUUID(),
-                          role: 'assistant' as const,
-                          content: candidate,
-                          timestamp: Date.now()
-                        };
-                        setMessages(prev => [...prev, aiResponse]);
-                        setShowInspiration(false);
-                        setInspirationCandidates([]);
-                      }}
-                      className="w-full text-left p-3 bg-white/80 backdrop-blur-sm rounded-lg border border-blue-200 hover:bg-blue-100/80 transition-colors text-gray-700 text-sm leading-relaxed"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span className="text-blue-500 text-xs mt-1 font-medium">{index + 1}.</span>
-                        <span className="flex-1">{candidate}</span>
-                      </div>
-                    </button>
-                  ))}
+                  {inspirationCandidates.map((candidate, index) => {
+                    // 候補が文字列でない場合は安全に変換
+                    const candidateText = typeof candidate === 'string' ? candidate : String(candidate || '');
+                    
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          // 選択された候補をメッセージに追加
+                          const aiResponse = {
+                            id: crypto.randomUUID(),
+                            role: 'assistant' as const,
+                            content: candidateText,
+                            timestamp: Date.now()
+                          };
+                          setMessages(prev => [...prev, aiResponse]);
+                          setShowInspiration(false);
+                          setInspirationCandidates([]);
+                        }}
+                        className="w-full text-left p-3 bg-white/80 backdrop-blur-sm rounded-lg border border-blue-200 hover:bg-blue-100/80 transition-colors text-gray-700 text-sm leading-relaxed"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-blue-500 text-xs mt-1 font-medium">{index + 1}.</span>
+                          <span className="flex-1">{candidateText}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => {
                       setShowInspiration(false);
@@ -2582,16 +2645,16 @@ export default function ChatPage() {
                          {/* 最新のAIメッセージのみタイプライター効果を適用 */}
                          {msg.role === 'assistant' && messages[messages.length - 1]?.id === msg.id ? (
                            <Typewriter 
-                             text={msg.content} 
+                             text={typeof msg.content === 'string' ? msg.content : String(msg.content || '')} 
                              speed={settings.typewriterSpeed || 30}
                            />
                          ) : (
-                           <FormattedText md={msg.content} />
+                           <FormattedText md={typeof msg.content === 'string' ? msg.content : String(msg.content || '')} />
                          )}
                        </div>
                        <div className="flex justify-end mt-2 gap-1 flex-wrap">
                          <VoiceControls
-                           text={msg.content}
+                           text={typeof msg.content === 'string' ? msg.content : String(msg.content || '')}
                            settings={{
                              enabled: settings.voiceEnabled ?? true,
                              autoPlay: settings.voiceAutoPlay ?? false,
@@ -2610,7 +2673,7 @@ export default function ChatPage() {
                          <div className="hidden md:block">
                            <MessageMemoButton 
                              messageId={msg.id}
-                             messageContent={msg.content}
+                             messageContent={typeof msg.content === 'string' ? msg.content : String(msg.content || '')}
                              sessionId={currentSessionId || 'temp'}
                              characterId={currentCharacter?.name || 'unknown'}
                            />
@@ -2697,11 +2760,11 @@ export default function ChatPage() {
                         onMouseUp={() => handleTextSelection(msg.id)}
                         style={{ userSelect: 'text' }}
                       >
-                        <FormattedText md={msg.content} />
+                        <FormattedText md={typeof msg.content === 'string' ? msg.content : String(msg.content || '')} />
                       </div>
                       <div className="flex justify-end mt-2 gap-1">
                         <button
-                          onClick={() => handleCopy(msg.content)}
+                          onClick={() => handleCopy(typeof msg.content === 'string' ? msg.content : String(msg.content || ''))}
                           className="touch-target text-gray-500 hover:text-gray-700 p-1 rounded"
                           title="コピー"
                         >
@@ -2729,15 +2792,19 @@ export default function ChatPage() {
                     console.log(`🔍 表示時候補${index + 1}:`, candidate);
                     console.log(`🔍 表示時候補${index + 1} の型:`, typeof candidate);
                     console.log(`🔍 表示時候補${index + 1} の長さ:`, candidate?.length || 'undefined');
+                    
+                    // 候補が文字列でない場合は安全に変換
+                    const candidateText = typeof candidate === 'string' ? candidate : String(candidate || '');
+                    
                     return (
                       <button
                         key={index}
-                        onClick={() => selectInspirationCandidate(candidate)}
+                        onClick={() => selectInspirationCandidate(candidateText)}
                         className="w-full text-left p-3 bg-gray-100/80 backdrop-blur-sm rounded-lg border border-gray-200 hover:bg-gray-200/80 transition-colors text-gray-700 text-sm leading-relaxed"
                       >
                         <div className="flex items-start gap-2">
                           <span className="text-gray-500 text-xs mt-1">✏️</span>
-                          <span className="flex-1">{candidate}</span>
+                          <span className="flex-1">{candidateText}</span>
                         </div>
                       </button>
                     );
@@ -2865,6 +2932,11 @@ export default function ChatPage() {
           }}
         />
       )}
+      
+      {/* 🚨 画面右上5つのアイコン関連モーダル - 重要機能保護開始 🚨 */}
+      {/* これらのモーダルは何度も消失しています。絶対に削除・変更しないでください！ */}
+      
+      {/* 1. 詳細設定モーダル (Settings) */}
       {isSettingsOpen && (
         <SettingsModal
           isOpen={isSettingsOpen}
@@ -2874,7 +2946,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* クイック設定モーダル */}
+      {/* 2. クイック設定モーダル (Zap) */}
       {isQuickSettingsOpen && (
         <QuickSettingsModal
           isOpen={isQuickSettingsOpen}
@@ -2916,8 +2988,12 @@ export default function ChatPage() {
       )}
       {isEnhancedImpressionOpen && (
         // 型不一致回避のため、isOpen等のpropsは渡さずガードで囲む
+        {/* 一時的にコメントアウト
         <EnhancedImpressionModal />
+        */}
       )}
+      
+      {/* 5. キャラクターギャラリーモーダル (User) */}
       {isCharacterGalleryOpen && (
         <CharacterGallery
           characters={allCharacters}
@@ -3018,14 +3094,40 @@ export default function ChatPage() {
           onClose={() => setIsCharacterGalleryOpen(false)}
         />
       )}
+      
+      {/* 🚨 画面右上5つのアイコン関連モーダル - 重要機能保護終了 🚨 */}
 
+      {/* ================================================
+       * 【重要】キャラクターインポート/エクスポート機能 - 絶対に変更・削除禁止
+       * 
+       * この機能は4つのJSONフィールドの自動入力修正が適用されています：
+       * - first_message
+       * - nsfw_profile 
+       * - systemPrompt
+       * - appearanceNegativePrompt
+       * 
+       * 何度も修正を繰り返しているため、このコードは絶対に触らないでください。
+       * ================================================ */}
       {/* キャラクターインポート/エクスポートモーダル */}
       {isImportExportOpen && (
-        // 型不一致回避のため、propsは渡さずガードで囲む
-        <CharacterImportExport />
+        <CharacterImportExport
+          isOpen={isImportExportOpen}
+          allCharacters={allCharacters}
+          onImport={(importedCharacters) => {
+            importedCharacters.forEach(char => {
+              CharacterLoader.addCharacter(char);
+            });
+            setAllCharacters(CharacterLoader.getAllCharacters());
+            setIsImportExportOpen(false);
+          }}
+          onClose={() => setIsImportExportOpen(false)}
+        />
       )}
+      {/* ================================================ */}
 
       {/* チャット履歴ギャラリー */}
+      {/* 一時的にコメントアウト */}
+      {/*
       {isChatHistoryOpen && (
         <ChatHistoryGallery
           sessions={sessions}
@@ -3072,11 +3174,40 @@ export default function ChatPage() {
           }}
         />
       )}
+      */}
 
+      {/* ================================================
+       * 【重要】MessageEditorModal - 絶対に変更・削除禁止
+       * 
+       * このモーダルは返信提案機能と文章強化機能で使用されます。
+       * 過去に何度も消失する問題が発生しているため、
+       * このコードブロックは絶対に触らないでください。
+       * 
+       * 関連する状態変数:
+       * - isMessageEditorOpen
+       * - editorInitialText
+       * - selectInspirationCandidate関数
+       * - handleUserTextEnhancement関数
+       * ================================================ */}
+      {console.log('🔍 モーダル表示判定:', { isMessageEditorOpen, editorInitialText: editorInitialText?.substring(0, 100) })}
       {isMessageEditorOpen && (
-        // 型不一致回避のため、propsは渡さずガードで囲む
-        <MessageEditorModal />
+        <MessageEditorModal 
+          isOpen={isMessageEditorOpen}
+          initialText={editorInitialText}
+          onConfirm={(text: string) => {
+            console.log('🔍 MessageEditorModal確定:', { text: text.substring(0, 100) });
+            setMessage(text);
+            setIsMessageEditorOpen(false);
+            setEditorInitialText('');
+          }}
+          onClose={() => {
+            console.log('🔍 MessageEditorModalクローズ');
+            setIsMessageEditorOpen(false);
+            setEditorInitialText('');
+          }}
+        />
       )}
+      {/* ================================================ */}
     </>
   );
 }

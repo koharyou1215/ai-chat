@@ -56,6 +56,12 @@ export default function CharacterTrackerDisplay({
 
   // 値が変更された時のアニメーション
   useEffect(() => {
+    // currentValuesが安全でない場合は早期リターン
+    if (!currentValues || typeof currentValues !== 'object') {
+      console.warn('⚠️ CharacterTracker: currentValuesが無効です', currentValues);
+      return;
+    }
+    
     console.log('🔍 CharacterTracker useEffect実行:', {
       trackerCount: trackers.length,
       currentValuesKeys: Object.keys(currentValues),
@@ -124,7 +130,9 @@ export default function CharacterTrackerDisplay({
     return (
       <div className="flex flex-wrap gap-2">
         {trackers.map(tracker => {
-          const trackerValue = currentValues[tracker.name];
+          const trackerValue = (currentValues && typeof currentValues === 'object') 
+            ? currentValues[tracker.name] 
+            : null;
           
           // 表示値を取得
           let displayValue: string;
