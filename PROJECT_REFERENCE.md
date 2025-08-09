@@ -4,12 +4,17 @@
 
 **AI Chat** - Next.js 15.3.4 ベースのAIチャットアプリケーション
 - キャラクターとの会話機能
-- 音声出力機能（ElevenLabs）
+- 音声出力機能（ElevenLabs, Voicevox）
 - 画像生成機能（Runware/Stable Diffusion）
 - インスピレーション機能（💡返信サポート、💖ハートマーク）
 - Persona設定機能
 - メモ機能
 - テーマ設定
+- クラウド同期機能（Supabase）
+- 認証機能（Supabase Auth）
+- データバックアップ・インポート機能
+- キャラクタートラッキング機能
+- Live2Dアバター対応
 
 ## 🏗️ プロジェクト構造
 
@@ -18,35 +23,61 @@ ai-chat/
 ├── src/app/                    # Next.js App Router
 │   ├── api/                    # API Routes
 │   │   ├── chat/              # チャットAPI
+│   │   ├── enhance-text/      # テキスト強化
 │   │   ├── enhanced-impression/ # ハートマーク機能
+│   │   ├── export-data/       # データエクスポート
 │   │   ├── generate-image/    # 画像生成
+│   │   ├── generate-memo-title/ # メモタイトル生成
+│   │   ├── list-characters/   # キャラクター一覧
+│   │   ├── list-personas/     # Persona一覧
+│   │   ├── save-background/   # 背景保存
 │   │   ├── simple-chat/       # メインチャットAPI
+│   │   ├── summarize-chat/    # チャット要約
+│   │   ├── test-*             # テスト用API群
 │   │   ├── user-inspiration/  # 💡機能
-│   │   └── ...
+│   │   └── voicevox*/         # Voicevox関連API
+│   ├── auth/callback/         # 認証コールバック
 │   ├── characters/            # キャラクター管理ページ
 │   ├── history/               # 履歴ページ
 │   ├── personas/              # Persona管理ページ
 │   ├── settings/              # 設定ページ
 │   └── page.tsx               # メインページ
-├── components/                 # React コンポーネント
-│   ├── SettingsModal.tsx      # 設定モーダル
-│   ├── CharacterSelector.tsx  # キャラクター選択
-│   ├── PersonaSelector.tsx    # Persona選択
-│   ├── VoiceControls.tsx      # 音声制御
-│   ├── UserInspirationModal.tsx # 💡機能モーダル
-│   ├── EnhancedImpressionModal.tsx # 💖機能モーダル
+├── src/components/             # React コンポーネント
+│   ├── *Modal.tsx             # 各種モーダル
+│   ├── *Selector.tsx          # セレクター系
+│   ├── *Gallery.tsx           # ギャラリー系
+│   ├── settings/              # 設定画面コンポーネント群
+│   │   ├── ApiSettings.tsx    
+│   │   ├── ChatSettings.tsx   
+│   │   ├── ModelSettings.tsx  
+│   │   └── ...
 │   └── ...
+├── components/                 # ルート階層のコンポーネント（重複）
 ├── lib/                       # ユーティリティライブラリ
 │   ├── openRouter.ts          # OpenRouter API
-│   ├── voiceManager.ts        # 音声管理
+│   ├── geminiApi*.ts          # Gemini API関連
+│   ├── runwareApi.ts          # Runware API
+│   ├── stableDiffusionApi.ts  # Stable Diffusion API
+│   ├── voiceManager.ts        # ElevenLabs音声管理
+│   ├── voicevoxManager.ts     # Voicevox音声管理
 │   ├── memoryManager.ts       # メモリ管理
+│   ├── historyManager.ts      # 履歴管理
 │   ├── characterLoader.ts     # キャラクター読み込み
+│   ├── *CloudSync.ts          # クラウド同期関連
+│   ├── supabase.ts           # Supabase設定
+│   ├── themes.ts             # テーマ管理
+│   ├── imageCompressor.ts    # 画像圧縮
 │   └── ...
 ├── types/                     # TypeScript型定義
 │   ├── app.ts                 # AppSettings型
-│   └── character.ts           # キャラクター型
-├── stores/                    # 状態管理
+│   ├── character.ts           # キャラクター型
+│   └── replicate.d.ts         # Replicate型定義
+├── src/stores/                # 状態管理（src内）
 │   └── chatStore.ts           # チャット状態
+├── stores/                    # 状態管理（重複・ルート階層）
+│   └── chatStore.ts           # チャット状態
+├── src/config/                # 設定ファイル
+│   └── model-config.ts        # モデル設定
 ├── public/                    # 静的ファイル
 │   ├── characters/            # キャラクターファイル
 │   └── personas/              # Personaファイル
@@ -59,6 +90,7 @@ ai-chat/
 - **API**: `src/app/api/simple-chat/route.ts`
 - **機能**: キャラクターとの会話、複数候補生成
 - **設定**: トークン数、温度、モデル選択
+- **サポート**: OpenRouter, Gemini API
 
 ### 2. 💡返信サポート機能
 - **API**: `src/app/api/user-inspiration/route.ts`
@@ -71,9 +103,10 @@ ai-chat/
 - **設定**: 専用トークン数（デフォルト1000）
 
 ### 4. 音声機能
-- **ライブラリ**: `lib/voiceManager.ts`
-- **機能**: ElevenLabs APIを使用した音声出力
+- **ライブラリ**: `lib/voiceManager.ts`, `lib/voicevoxManager.ts`
+- **機能**: ElevenLabs API、Voicevoxを使用した音声出力
 - **設定**: 音声ID、安定性、類似度ブースト
+- **API**: `src/app/api/voicevox*/route.ts`
 
 ### 5. 画像生成機能
 - **API**: `src/app/api/generate-image/route.ts`
@@ -84,14 +117,50 @@ ai-chat/
   - [API リファレンス](https://runware.ai/docs/en/image-inference/api-reference)
   - [Vercel AI ライブラリ](https://runware.ai/docs/en/libraries/vercel-ai)
 
+### 6. 認証・クラウド同期機能
+- **認証**: `src/app/auth/callback/page.tsx`
+- **API**: `lib/supabase.ts`
+- **機能**: Supabaseを使用したユーザー認証とデータ同期
+- **同期対象**: キャラクター、設定、履歴、メモ、Persona
+
+### 7. データ管理機能
+- **バックアップ**: `src/components/DataBackup.tsx`
+- **エクスポート**: `src/app/api/export-data/route.ts`
+- **インポート**: 各種ImportExportコンポーネント
+
+### 8. メモ・履歴機能
+- **メモ**: `src/components/Memo*.tsx`
+- **履歴**: `lib/historyManager.ts`
+- **要約**: `src/app/api/summarize-chat/route.ts`
+
+### 9. キャラクタートラッキング
+- **コンポーネント**: `src/components/CharacterTracker.tsx`
+- **機能**: キャラクターの使用状況追跡
+
+### 10. Live2Dアバター
+- **コンポーネント**: `src/components/Live2DAvatar.tsx`
+- **機能**: Live2Dモデル表示
+
 ## ⚙️ 重要な設定
 
 ### 環境変数（Vercel）
 ```bash
 # セキュリティのため、実際のAPIキーは環境変数で管理してください
+# AI API Keys
 # OPENROUTER_API_KEY=your_openrouter_api_key_here
+# GEMINI_API_KEY=your_gemini_api_key_here
+
+# 画像生成 API Keys
 # RUNWARE_MODEL_ID=your_runware_model_id_here
 # RUNWARE_API_KEY=your_runware_api_key_here
+# STABLE_DIFFUSION_API_KEY=your_stable_diffusion_api_key_here
+
+# 音声 API Keys
+# ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+
+# データベース・認証
+# NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 ```
 
 ### 型定義（types/app.ts）
@@ -115,6 +184,23 @@ export interface AppSettings {
   
   // インスピレーション設定
   inspirationMaxTokens?: number;
+  enhancedImpressionMaxTokens?: number;
+  
+  // テーマ・UI設定
+  theme?: string;
+  fontFamily?: string;
+  bubbleShape?: string;
+  backgroundType?: string;
+  
+  // 音声設定
+  voiceId?: string;
+  voiceStability?: number;
+  voiceSimilarityBoost?: number;
+  voicevoxSpeaker?: string;
+  
+  // クラウド同期設定
+  enableCloudSync?: boolean;
+  autoSave?: boolean;
   
   // その他
   [key: string]: unknown;
@@ -144,6 +230,13 @@ export interface AppSettings {
 - コンポーネント: PascalCase（例：`SettingsModal.tsx`）
 - API: kebab-case（例：`user-inspiration`）
 - 型定義: camelCase（例：`AppSettings`）
+- ライブラリ: camelCase（例：`voiceManager.ts`）
+- 設定ファイル: kebab-case（例：`model-config.ts`）
+
+### 2. 重複ファイルの扱い
+- `src/components/` と `components/` の重複は将来的に整理予定
+- `src/stores/` と `stores/` の重複は将来的に整理予定
+- バックアップファイル（.backup, .bak）は定期的に削除
 
 ### 2. コード規約
 - TypeScriptの型安全性を重視
@@ -186,5 +279,23 @@ export interface AppSettings {
 
 ---
 
-**最終更新**: 2025年7月24日
-**バージョン**: 1.0.0
+## 🧹 クリーンアップが必要な項目
+
+### 不要ファイル・バックアップファイル
+- `*.backup` ファイル（4個）
+- `*.bak` ファイル（1個）
+- `route.ts.new` ファイル
+- 重複したコンポーネントディレクトリ
+- 重複したstoresディレクトリ
+
+### 整理が必要な構造
+1. **コンポーネントの重複**: `src/components/` と `components/`
+2. **ストアの重複**: `src/stores/` と `stores/`
+3. **APIテストファイル**: test-* 系APIの整理
+4. **ドキュメント**: 多数のMDファイルの整理
+
+---
+
+**最終更新**: 2025年8月9日
+**バージョン**: 2.0.0
+**更新内容**: 現在のプロジェクト構造に合わせて全面改訂

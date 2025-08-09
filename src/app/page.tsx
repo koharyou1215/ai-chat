@@ -147,7 +147,6 @@ export default function ChatPage() {
   const [showEnhancementModal, setShowEnhancementModal] = useState(false);
 
   // Personaインポート/エクスポート
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   // 🚨 画面右上5つのアイコン関連State変数 - 重要機能保護開始 🚨
   // これらのstate変数は何度も消失しています。絶対に削除・変更しないでください！
   
@@ -1355,8 +1354,6 @@ export default function ChatPage() {
   };
 
   // 文章強化実行
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleTextEnhancement = async () => {
     if (!selectedText || !selectedMessageId || !currentCharacter) return;
     
@@ -1397,8 +1394,6 @@ export default function ChatPage() {
   };
 
   // 強化された文章を適用
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const applyEnhancement = () => {
     if (!enhancementResult) return;
     
@@ -1919,8 +1914,6 @@ export default function ChatPage() {
   };
 
   // 画像のみ再生成（ランダムシード）
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleImageReroll = async (msg: Message) => {
     if (!settings.enableImageGeneration || msg.role !== 'assistant' || isGeneratingImage) return;
 
@@ -2009,7 +2002,6 @@ export default function ChatPage() {
   // メッセージ編集モーダル
   const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
   // const [messageDraft, setMessageDraft] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editorInitialText, setEditorInitialText] = useState('');
   /* ================================================ */
 
@@ -2646,12 +2638,7 @@ export default function ChatPage() {
                     {/* メッセージバブル */}
                     <div 
                       className="relative z-10 rounded-xl p-2 md:p-3 lg:p-4 shadow-lg bg-white/70 backdrop-blur-sm"
-                      // style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})`, borderRadius: `${settings.bubbleCornerRadius}px` }}
                     >
-                      {/* <div 
-                        className="absolute -top-2 left-6 w-4 h-4 rotate-45"
-                        style={{ backgroundColor: `rgba(255, 255, 255, ${settings.bubbleOpacity})` }}
-                      ></div> */}
                        <div 
                          className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-xs md:text-sm lg:text-base"
                          onMouseUp={() => msg.role === 'user' ? handleTextSelection(msg.id) : undefined}
@@ -2764,12 +2751,7 @@ export default function ChatPage() {
                   <div className="max-w-2xl w-full flex justify-end">
                     <div 
                       className="relative z-10 rounded-xl p-2 md:p-3 lg:p-4 shadow-lg bg-blue-100/70 backdrop-blur-sm"
-                      // style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})`, borderRadius: `${settings.bubbleCornerRadius}px` }}
                     >
-                      {/* <div 
-                        className="absolute -top-2 right-6 w-4 h-4 rotate-45"
-                        style={{ backgroundColor: `rgba(210, 230, 255, ${settings.bubbleOpacity})` }}
-                      ></div> */}
                       <div 
                         className="text-gray-800 leading-relaxed whitespace-pre-wrap font-cute text-xs md:text-sm lg:text-base"
                         onMouseUp={() => handleTextSelection(msg.id)}

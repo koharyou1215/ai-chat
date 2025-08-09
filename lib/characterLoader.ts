@@ -143,7 +143,6 @@ export class CharacterLoader {
     const now = Date.now();
     
     if (existingIndex >= 0) {
-      console.log('🔄 既存キャラクター更新:', character.name);
       
       // 更新日時を設定
       character.updatedAt = now;
@@ -162,7 +161,6 @@ export class CharacterLoader {
         this.publicCharacters[publicIndex] = character;
       }
     } else {
-      console.log('➕ 新規キャラクター追加:', character.name);
       
       // 新規作成時は作成日時と更新日時を設定
       if (!character.createdAt) {
@@ -178,9 +176,6 @@ export class CharacterLoader {
     // ローカルストレージに即座保存
     this.saveToLocalStorage();
     
-    // デバッグ情報
-    console.log('📊 現在のキャラクター総数:', this.characters.length + this.publicCharacters.length);
-    console.log('📋 カスタムキャラクター:', this.characters.map(c => c.name));
   }
 
   static updateCharacter(character: Character): void {
@@ -212,7 +207,6 @@ export class CharacterLoader {
   // publicキャラクターを読み込んで永続化
   static async loadPublicCharacters(): Promise<void> {
     try {
-      console.log('🔄 publicキャラクター読み込み開始...');
       
       // public/characters/ の一覧を取得（キャッシュバスティング追加）
       const response = await fetch('/api/list-characters?t=' + Date.now());
@@ -222,7 +216,6 @@ export class CharacterLoader {
       }
       
       const fileList: string[] = await response.json();
-      console.log('📋 取得したファイル一覧:', fileList);
       const newPublicCharacters: Character[] = [];
       
       // 各JSONファイルを読み込み
@@ -230,98 +223,23 @@ export class CharacterLoader {
         if (!filename.endsWith('.json')) continue;
         
         try {
-          console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
 
           // 正しいパス( /characters/ ) を直接使用
           const charResponse = await fetch(`/characters/${filename}`);
 
           if (charResponse.ok) {
             const characterData = await charResponse.json();
-            console.log(`✅ キャラクター読み込み成功: ${filename}`, characterData.name);
             
-            // 🚨 重要フィールドの読み込み直後チェック 🚨
-            console.log(`🔍 ${filename} 読み込み直後の重要フィールド:`, {
-              name: characterData.name,
-              first_message: characterData.first_message,
-              systemPrompt: characterData.systemPrompt,
-              appearanceNegativePrompt: characterData.appearanceNegativePrompt,
-              nsfw_profile: characterData.nsfw_profile,
-              nsfwType: typeof characterData.nsfw_profile,
-              hasSystemPrompt: !!characterData.systemPrompt,
-              hasFirstMessage: !!characterData.first_message,
-              hasAppearanceNegative: !!characterData.appearanceNegativePrompt,
-              hasNsfw: !!characterData.nsfw_profile
-            });
             
-            // 🚨 マーフィン・グレイスの場合はデバッグログを追加 🚨
-            if (filename.includes('マーフィン') || filename.includes('グレイス')) {
-              console.log('🔍🔍🔍 マーフィン・グレイス fetch直後データ:', {
-                filename,
-                rawData: characterData,
-                systemPrompt: characterData.systemPrompt,
-                appearanceNegativePrompt: characterData.appearanceNegativePrompt,
-                first_message: characterData.first_message,
-                nsfw_profile: characterData.nsfw_profile,
-                hasCharacterDefinition: !!characterData.character_definition,
-                allKeys: Object.keys(characterData)
-              });
-            }
             
-            // シルヴィアの場合はデバッグログを追加
-            if (filename.includes('シルヴィア')) {
-              console.log('🔍 シルヴィア読み込み詳細:', {
-                filename,
-                systemPrompt: characterData.systemPrompt,
-                appearancePrompt: characterData.appearancePrompt,
-                first_message: characterData.first_message,
-                hasCharacterDefinition: !!characterData.character_definition
-              });
-            }
             
             // 簡易形式のキャラクターファイルを完全形式に変換
             const { normalizeCharacterData } = await import('./autoLoader');
             const normalizedCharacter = normalizeCharacterData(characterData, filename);
             
-            // 🚨 正規化後の重要フィールドチェック 🚨
-            console.log(`🔧 ${filename} 正規化後の重要フィールド:`, {
-              name: normalizedCharacter.name,
-              first_message: normalizedCharacter.first_message,
-              systemPrompt: normalizedCharacter.systemPrompt,
-              appearanceNegativePrompt: normalizedCharacter.appearanceNegativePrompt,
-              nsfw_profile: normalizedCharacter.nsfw_profile,
-              nsfwType: typeof normalizedCharacter.nsfw_profile,
-              hasSystemPrompt: !!normalizedCharacter.systemPrompt,
-              hasFirstMessage: !!normalizedCharacter.first_message,
-              hasAppearanceNegative: !!normalizedCharacter.appearanceNegativePrompt,
-              hasNsfw: !!normalizedCharacter.nsfw_profile,
-              trackers: normalizedCharacter.trackers?.length || 0
-            });
             
-            // 🚨 マーフィン・グレイスの正規化後も確認 🚨
-            if (filename.includes('マーフィン') || filename.includes('グレイス')) {
-              console.log('🔍🔍🔍 マーフィン・グレイス正規化後最終データ:', {
-                filename,
-                finalData: normalizedCharacter,
-                systemPrompt: normalizedCharacter.systemPrompt,
-                appearanceNegativePrompt: normalizedCharacter.appearanceNegativePrompt,
-                first_message: normalizedCharacter.first_message,
-                nsfw_profile: normalizedCharacter.nsfw_profile,
-                hasCharacterDefinition: !!normalizedCharacter.character_definition,
-                allKeys: Object.keys(normalizedCharacter)
-              });
-            }
             
-            // シルヴィアの正規化後も確認
-            if (filename.includes('シルヴィア')) {
-              console.log('🔍 シルヴィア正規化後:', {
-                systemPrompt: normalizedCharacter.systemPrompt,
-                appearancePrompt: normalizedCharacter.appearancePrompt,
-                first_message: normalizedCharacter.first_message,
-                hasCharacterDefinition: !!normalizedCharacter.character_definition
-              });
-            }
             
-            console.log(`🔄 正規化完了: ${normalizedCharacter.name}`);
             newPublicCharacters.push(normalizedCharacter);
           } else {
             console.error(`❌ キャラクター読み込み失敗 (全パス): ${filename} - ${charResponse.status}`);
@@ -335,8 +253,6 @@ export class CharacterLoader {
       this.publicCharacters = newPublicCharacters;
       this.savePublicCharactersToLocalStorage();
       
-      console.log(`✅ publicキャラクター読み込み完了: ${newPublicCharacters.length} 件`);
-      console.log('📊 読み込まれたキャラクター:', newPublicCharacters.map(c => c.name));
     } catch (error) {
       console.error('❌ publicキャラクター読み込みエラー:', error);
     }
@@ -345,9 +261,7 @@ export class CharacterLoader {
   private static saveToLocalStorage(): void {
     try {
       const customCharacters = this.characters;
-      console.log('💾 キャラクター保存中:', customCharacters.length, '件');
       localStorage.setItem('ai-chat-characters', JSON.stringify(customCharacters));
-      console.log('✅ カスタムキャラクター保存完了');
     } catch (error) {
       console.error('❌ カスタムキャラクター保存エラー:', error);
     }
@@ -355,9 +269,7 @@ export class CharacterLoader {
 
   private static savePublicCharactersToLocalStorage(): void {
     try {
-      console.log('💾 publicキャラクター保存中:', this.publicCharacters.length, '件');
       localStorage.setItem('ai-chat-public-characters', JSON.stringify(this.publicCharacters));
-      console.log('✅ publicキャラクター保存完了');
     } catch (error) {
       console.error('❌ publicキャラクター保存エラー:', error);
     }
@@ -368,57 +280,6 @@ export class CharacterLoader {
       const saved = localStorage.getItem('ai-chat-characters');
       const characters = saved ? JSON.parse(saved) : [];
       
-      // アンとマーフィン・グレイスのローカルストレージデータをデバッグ
-      const ann = characters.find((c: Character) => c.name === 'アン');
-      if (ann) {
-        console.log('🔍 localStorage アン詳細:', {
-          name: ann.name,
-          systemPrompt: ann.systemPrompt,
-          appearancePrompt: ann.appearancePrompt,
-          appearanceNegativePrompt: ann.appearanceNegativePrompt,
-          first_message: ann.first_message,
-          nsfw_profile: ann.nsfw_profile,
-          nsfwType: typeof ann.nsfw_profile,
-          hasSystemPrompt: !!ann.systemPrompt,
-          hasAppearancePrompt: !!ann.appearancePrompt,
-          hasFirstMessage: !!ann.first_message,
-          allKeys: Object.keys(ann)
-        });
-      }
-      
-      const murphine = characters.find((c: Character) => c.name.includes('マーフィン') || c.name.includes('グレイス'));
-      if (murphine) {
-        console.log('🔍 localStorage マーフィン・グレイス詳細:', {
-          name: murphine.name,
-          systemPrompt: murphine.systemPrompt,
-          appearancePrompt: murphine.appearancePrompt,
-          appearanceNegativePrompt: murphine.appearanceNegativePrompt,
-          first_message: murphine.first_message,
-          nsfw_profile: murphine.nsfw_profile,
-          nsfwType: typeof murphine.nsfw_profile,
-          hasSystemPrompt: !!murphine.systemPrompt,
-          hasAppearancePrompt: !!murphine.appearancePrompt,
-          hasFirstMessage: !!murphine.first_message,
-          allKeys: Object.keys(murphine)
-        });
-      }
-      
-      // シルヴィアのローカルストレージデータをデバッグ
-      const silvia = characters.find((c: Character) => c.name === 'シルヴィア');
-      if (silvia) {
-        console.log('🔍 localStorage シルヴィア詳細:', {
-          name: silvia.name,
-          systemPrompt: silvia.systemPrompt,
-          appearancePrompt: silvia.appearancePrompt,
-          appearanceNegativePrompt: silvia.appearanceNegativePrompt,
-          first_message: silvia.first_message,
-          nsfw_profile: silvia.nsfw_profile,
-          nsfwType: typeof silvia.nsfw_profile,
-          hasSystemPrompt: !!silvia.systemPrompt,
-          hasAppearancePrompt: !!silvia.appearancePrompt,
-          hasFirstMessage: !!silvia.first_message
-        });
-      }
       
       return characters;
     } catch (error) {
@@ -439,40 +300,31 @@ export class CharacterLoader {
 
   static initialize() {
     if (this.characters.length === 0) {
-      console.log('🔄 キャラクター初期化中...');
       const customCharacters = this.loadFromLocalStorage();
       const savedPublicCharacters = this.loadPublicCharactersFromLocalStorage();
-      
-      console.log('📚 読み込み済みカスタムキャラクター:', customCharacters.length, '件');
-      console.log('📚 読み込み済みpublicキャラクター:', savedPublicCharacters.length, '件');
       
       // デフォルトキャラクター(ナミ)が存在しない場合のみ追加
       const hasNami = customCharacters.some(c => c['file-name'] === 'nami.json');
       this.characters = hasNami ? [...customCharacters] : [this.defaultCharacter, ...customCharacters];
       this.publicCharacters = savedPublicCharacters;
       
-      console.log('✅ キャラクター初期化完了:', this.characters.length + this.publicCharacters.length, '件');
     }
   }
 
   // 非同期でpublicキャラクターを読み込む
   static async initializeAsync() {
-    console.log('🔄 非同期キャラクター初期化開始...');
     this.initialize(); // まず同期初期化
     
     // publicキャラクターを非同期で読み込み
     await this.loadPublicCharacters();
-    console.log('✅ 非同期キャラクター初期化完了');
   }
 
   // 強制的にキャラクターリストを再読み込み
   static async forceReload() {
-    console.log('🔄 キャラクターリスト強制再読み込み開始...');
     
     // ローカルストレージをクリア
     try {
       localStorage.removeItem('ai-chat-public-characters');
-      console.log('🗑️ publicキャラクターキャッシュをクリア');
     } catch (error) {
       console.warn('ローカルストレージクリアに失敗:', error);
     }
@@ -483,7 +335,6 @@ export class CharacterLoader {
     // サーバーから最新のキャラクターリストを取得
     await this.loadPublicCharacters();
     
-    console.log('✅ キャラクターリスト強制再読み込み完了');
     return this.getAllCharacters();
   }
 
@@ -557,14 +408,6 @@ export class CharacterLoader {
       const fixed: string[] = [];
       const raw = isPublic && char['file-name'] ? await loadRawPublic(char['file-name']!) : null;
 
-      console.log(`🔧 ${char.name} 修復処理開始:`, {
-        hasFirstMessage: !!char.first_message,
-        hasSystemPrompt: !!char.systemPrompt,
-        hasAppearanceNegative: !!char.appearanceNegativePrompt,
-        hasNsfw: !!char.nsfw_profile,
-        isPublic,
-        hasRaw: !!raw
-      });
 
       // first_message 修復
       if (!char.first_message || char.first_message.trim() === '') {
@@ -583,7 +426,6 @@ export class CharacterLoader {
         if (candidate) {
           char.first_message = candidate;
           fixed.push('first_message');
-          console.log(`✅ ${char.name} first_message修復:`, candidate);
         }
       }
 
@@ -594,7 +436,6 @@ export class CharacterLoader {
         if (rawSys && typeof rawSys === 'string') {
           char.systemPrompt = rawSys;
           fixed.push('systemPrompt');
-          console.log(`✅ ${char.name} systemPrompt修復:`, rawSys);
         } else {
           // 擬似生成: personality + scenario
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -604,7 +445,6 @@ export class CharacterLoader {
           if (personality || scenario) {
             char.systemPrompt = `キャラクター指示: ${char.name}\n性格: ${personality}\n状況: ${scenario}`.trim();
             fixed.push('systemPrompt(generated)');
-            console.log(`✅ ${char.name} systemPrompt自動生成完了`);
           }
         }
       }
@@ -616,7 +456,6 @@ export class CharacterLoader {
         if (neg && typeof neg === 'string') {
           char.appearanceNegativePrompt = neg;
           fixed.push('appearanceNegativePrompt');
-          console.log(`✅ ${char.name} appearanceNegativePrompt修復:`, neg);
         }
       }
 
@@ -635,7 +474,6 @@ export class CharacterLoader {
         if (rawNsfw) {
           char.nsfw_profile = rawNsfw;
           fixed.push('nsfw_profile');
-          console.log(`✅ ${char.name} nsfw_profile修復完了`);
         }
       }
 
@@ -656,7 +494,6 @@ export class CharacterLoader {
     this.saveToLocalStorage();
     this.savePublicCharactersToLocalStorage();
 
-    console.log('🛠 修復結果:', report);
     return { updated: report.length, total: this.characters.length + this.publicCharacters.length, details: report };
   }
 }

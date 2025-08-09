@@ -168,12 +168,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   updateTrackerValue: (sessionId, name, value) => {
-    console.log(`🔄 updateTrackerValue呼び出し:`, {
-      sessionId,
-      name,
-      value,
-      type: typeof value
-    });
     
     const state = get();
     const map = { ...state.trackerValues };
@@ -192,20 +186,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     session[name] = newTrackerValue;
     map[sessionId] = session;
 
-    console.log(`🔄 トラッカー値更新完了:`, {
-      name,
-      oldValue,
-      newValue: newTrackerValue.value,
-      changed: oldValue !== newTrackerValue.value
-    });
 
     // 値が実際に変更された場合のみ状態更新とアニメーション通知
     if (oldValue !== newTrackerValue.value) {
-      console.log(`✨ トラッカー「${name}」アニメーション開始準備: ${oldValue} → ${newTrackerValue.value}`);
       set({ trackerValues: map });
       state._persist(map);
     } else {
-      console.log(`📊 トラッカー「${name}」値は変更されませんでした: ${oldValue}`);
     }
   },
 

@@ -13,8 +13,8 @@ export default function HistoryPage() {
     router.back();
   };
 
-  const handleHistorySelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  historyItem: ChatSession) => {
+  const handleHistorySelect = (
+  _historyItem: ChatSession) => {
     // 履歴選択後、メインページに戻る
     router.push('/');
   };

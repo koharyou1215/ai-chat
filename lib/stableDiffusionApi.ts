@@ -29,8 +29,7 @@ export class StableDiffusionService {
   }
 
   async generateImage(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    request: StableDiffusionRequest
+    _request: StableDiffusionRequest
   ): Promise<StableDiffusionResponse> {
     if (!this.apiKey) {
       throw new Error('Stable Diffusion APIキーが設定されていません');
@@ -87,8 +86,7 @@ export class StableDiffusionService {
 
   // ReplicateのStable Diffusionを使用する場合の代替実装
   async generateImageWithReplicate(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    request: StableDiffusionRequest
+    _request: StableDiffusionRequest
   ): Promise<StableDiffusionResponse> {
     // Replicate API の実装（後で追加可能）
     // 現在はモックレスポンスを返す

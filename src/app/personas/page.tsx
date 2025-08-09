@@ -13,8 +13,8 @@ export default function PersonasPage() {
     router.back();
   };
 
-  const handlePersonaSelect = (// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  persona: UserPersona) => {
+  const handlePersonaSelect = (
+  _persona: UserPersona) => {
     // ペルソナ選択後、メインページに戻る
     router.push('/');
   };

@@ -37,7 +37,6 @@ export class VoiceManager {
       audio.volume = 0;
       audio.play().catch(() => {});
       this.isAudioUnlocked = true;
-      console.log('🔊 Audio context unlocked by user interaction.');
     } catch (error) {
       console.error('Failed to unlock audio context:', error);
     }
@@ -162,11 +161,8 @@ export class VoiceManager {
       const AudioCtx = win.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
-        console.log('[VoiceManager] AudioContext state:', ctx.state);
         if (ctx.state === 'suspended') {
-          console.log('[VoiceManager] AudioContextが中断されているため、再開を試みます。');
           await ctx.resume();
-          console.log('[VoiceManager] AudioContext再開完了。');
           // すぐに閉じる（メモリリーク防止）
           ctx.close();
         }
@@ -179,12 +175,10 @@ export class VoiceManager {
     this.stopAudio();
 
     try {
-      console.log('音声再生開始:', { text: text.substring(0, 50), settings });
       
       // ElevenLabsのAPIキーがある場合はElevenLabsを試行
       const ELEVENLABS_API_KEY = settings.apiKey || this.apiKey || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
       if (ELEVENLABS_API_KEY) {
-        console.log('ElevenLabs APIを使用します');
         const audioData = await this.textToSpeech(text, settings);
         if (audioData) {
           // ArrayBufferをBlobに変換
@@ -204,11 +198,9 @@ export class VoiceManager {
 
           // モバイル版での音声再生イベントを追加
           this.currentAudio.oncanplaythrough = () => {
-            console.log('[VoiceManager] Audio can play through');
           };
 
           this.currentAudio.onloadeddata = () => {
-            console.log('[VoiceManager] Audio data loaded');
           };
 
           this.currentAudio.onended = () => {
@@ -226,21 +218,17 @@ export class VoiceManager {
 
           this.isPlaying = true;
           try {
-            console.log('[VoiceManager] Audio要素のplay()を呼び出します。');
             // モバイル版での音声再生を確実にするため、ユーザーインタラクションを待つ
             const playPromise = this.currentAudio.play();
             if (playPromise !== undefined) {
               await playPromise;
-              console.log('[VoiceManager] Audio要素のplay()成功。');
             }
           } catch (playError) {
             console.error('[VoiceManager] audio.play() 失敗:', playError);
             // モバイル版での自動再生制限の場合、Web Speech APIにフォールバック
-            console.log('モバイル版での自動再生制限のため、Web Speech APIにフォールバック');
             this.speakWithWebAPI(text, settings);
             return true;
           }
-          console.log('ElevenLabs音声再生成功');
           return true;
         }
       } else {
@@ -248,14 +236,12 @@ export class VoiceManager {
       }
       
       // ElevenLabsが使えない場合やAPIキーがない場合はWeb Speech APIを使用
-      console.log('Web Speech APIを使用します');
       this.speakWithWebAPI(text, settings);
       return true;
       
     } catch (error) {
       console.error('音声再生失敗:', error);
       // エラーが発生した場合もWeb Speech APIにフォールバック
-      console.log('エラーのためWeb Speech APIにフォールバック');
       this.speakWithWebAPI(text, settings);
       return true;
     }
@@ -265,14 +251,12 @@ export class VoiceManager {
    * 音声再生を停止
    */
   static stopAudio() {
-    console.log('音声停止処理開始');
     
     // ElevenLabs音声を停止
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
       this.currentAudio = null;
-      console.log('ElevenLabs音声停止完了');
     }
     
     // Web Speech API音声を停止
@@ -297,7 +281,6 @@ export class VoiceManager {
       return;
     }
 
-    console.log('Web Speech API使用開始:', text.substring(0, 50));
     this.stopWebSpeech();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -311,7 +294,6 @@ export class VoiceManager {
       : 0.8;
     const safePitch = 1.0; // 固定値
     
-    console.log('音声設定値:', { speed: settings.speed, volume: settings.volume, safeRate, safeVolume });
     
     utterance.rate = safeRate;
     utterance.volume = safeVolume;
@@ -320,7 +302,6 @@ export class VoiceManager {
     // 音声読み込み完了を待つ
     const setVoiceAndSpeak = () => {
       const voices = speechSynthesis.getVoices();
-      console.log('利用可能な音声数:', voices.length);
       
       // 日本語音声を探す（優先順位順）
       const japaneseVoice = voices.find(voice => 
@@ -332,27 +313,22 @@ export class VoiceManager {
       );
       
       if (japaneseVoice) {
-        console.log('日本語音声を使用:', japaneseVoice.name);
         utterance.voice = japaneseVoice;
       } else {
-        console.log('日本語音声が見つかりません。デフォルト音声を使用');
       }
 
       // イベントリスナー追加
       utterance.onstart = () => {
-        console.log('Web Speech API音声再生開始');
         this.isPlaying = true;
       };
       
       utterance.onend = () => {
-        console.log('Web Speech API音声再生終了');
         this.isPlaying = false;
       };
       
       utterance.onerror = (event) => {
         // "interrupted"は正常な停止なのでエラーとして扱わない
         if (event.error === 'interrupted') {
-          console.log('🔇 Web Speech API音声が中断されました（正常）');
           this.isPlaying = false;
           return;
         }
@@ -377,9 +353,7 @@ export class VoiceManager {
       };
 
       try {
-        console.log('[VoiceManager] Web Speech APIのspeak()を呼び出します。');
         speechSynthesis.speak(utterance);
-        console.log('[VoiceManager] Web Speech APIのspeak()成功。');
         // 即座にisPlayingをtrueに設定（onstartが呼ばれない場合のため）
         this.isPlaying = true;
       } catch (error) {
@@ -390,7 +364,6 @@ export class VoiceManager {
 
     // 音声リストが読み込まれていない場合は待機
     if (speechSynthesis.getVoices().length === 0) {
-      console.log('音声リスト読み込み待機中...');
       speechSynthesis.addEventListener('voiceschanged', setVoiceAndSpeak, { once: true });
     } else {
       setVoiceAndSpeak();
@@ -402,7 +375,6 @@ export class VoiceManager {
    */
   static stopWebSpeech() {
     if ('speechSynthesis' in window) {
-      console.log('Web Speech API停止');
       speechSynthesis.cancel();
       this.isPlaying = false;
     }
@@ -487,7 +459,6 @@ export class VoiceManager {
         audioContext.close().catch(console.warn);
       }, totalDuration * 1000 + 100);
       
-      console.log('チャット完了通知音を再生しました');
       
     } catch (error) {
       console.warn('通知音の再生に失敗しました:', error);

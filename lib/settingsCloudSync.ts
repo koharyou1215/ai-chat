@@ -15,8 +15,7 @@ export const saveSettingsToCloud = async (settings: AppSettings) => {
     }
 
     // APIキーは除外（セキュリティのため）
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { geminiApiKey, stableDiffusionApiKey, elevenLabsApiKey, ...safeSettings } = settings
+    const { geminiApiKey: _geminiApiKey, stableDiffusionApiKey: _stableDiffusionApiKey, elevenLabsApiKey: _elevenLabsApiKey, ...safeSettings } = settings
 
     // 上書き運用: settings テーブル（最小スキーマ）に合わせて保存
     // テーブル名を 'settings'（user_id unique, data jsonb）に統一

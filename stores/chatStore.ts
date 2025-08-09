@@ -325,7 +325,6 @@ export const useChatStore = create<ChatStore>()(
             const firstHalf = key.substring(0, halfLength);
             const secondHalf = key.substring(halfLength);
             if (firstHalf === secondHalf) {
-              console.log('設定保存時にOpenRouter APIキーの重複を検出、修正しています');
               settings.openRouterApiKey = firstHalf;
             }
           }
@@ -433,16 +432,13 @@ export const useChatStore = create<ChatStore>()(
       },
 
       initializeTrackersForSession: (sessionId, character) => {
-        console.log(`🔧 トラッカー初期化開始: ${character.name}, セッション: ${sessionId}`);
         
         if (!character.trackers || character.trackers.length === 0) {
-          console.log(`⚠️ ${character.name}にトラッカーがありません`);
           return;
         }
         
         const { trackerValues, persistentTrackerValues } = get();
         if (trackerValues[sessionId]) {
-          console.log(`ℹ️ セッション${sessionId}のトラッカーは既に初期化済み`);
           return; // 既に初期化済み
         }
 
@@ -450,7 +446,6 @@ export const useChatStore = create<ChatStore>()(
         const persistentValues = persistentTrackerValues[characterId] || {};
         const initialValues: Record<string, TrackerValue> = {};
 
-        console.log(`📊 ${character.name}のトラッカー定義:`, character.trackers);
 
         character.trackers.forEach(tracker => {
           // 永続化されている値があり、persistent=true の場合はそれを使用
@@ -459,7 +454,6 @@ export const useChatStore = create<ChatStore>()(
 
           if (usePersistent) {
             initialValues[tracker.name] = existingPersistent;
-            console.log(`🔄 トラッカー「${tracker.name}」: 永続値を使用`, existingPersistent);
           } else {
             // 初期値を設定
             let initialValue: number | string | boolean;
@@ -485,7 +479,6 @@ export const useChatStore = create<ChatStore>()(
               value: initialValue,
               lastUpdate: Date.now(),
             };
-            console.log(`✨ トラッカー「${tracker.name}」: 初期値設定`, initialValue);
           }
         });
 
@@ -496,7 +489,6 @@ export const useChatStore = create<ChatStore>()(
           },
         }));
 
-        console.log(`✅ ${character.name}のトラッカー初期化完了:`, initialValues);
       },
 
       analyzeMessageForTrackerUpdates: (sessionId, message, character) => {
@@ -622,10 +614,6 @@ export const exportChatData = () => {
   const { sessions, userPersonas, settings, memos } = useChatStore.getState();
   
   // デバッグ用：現在の設定をログ出力
-  console.log('バックアップ出力 - 現在の設定:', settings);
-  console.log('バックアップ出力 - セッション数:', sessions.length);
-  console.log('バックアップ出力 - Persona数:', userPersonas.length);
-  console.log('バックアップ出力 - メモ数:', memos.length);
   
   const backupData = {
     version: 1,
@@ -645,12 +633,9 @@ export const importChatData = (json: string) => {
     if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Invalid backup');
 
     // デバッグ用：インポートするデータをログ出力
-    console.log('バックアップインポート - 読み込むデータ:', data);
-    console.log('バックアップインポート - 設定:', data.settings);
     
     // 設定のマージ処理を改善
     const mergedSettings = { ...defaultSettings, ...(data.settings ?? {}) };
-    console.log('バックアップインポート - マージ後の設定:', mergedSettings);
 
     useChatStore.setState({
       sessions: data.sessions ?? [],
@@ -659,7 +644,6 @@ export const importChatData = (json: string) => {
       memos: data.memos ?? [],
     });
     
-    console.log('バックアップインポート - 完了');
   } catch (e) {
     console.error('Import failed', e);
     throw e;

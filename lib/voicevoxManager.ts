@@ -226,7 +226,6 @@ export class VOICEVOXManager {
     if (!text.trim()) return;
 
     try {
-      console.log('🎵 VOICEVOX音声合成開始:', text);
       
       const mergedSettings = { ...this.defaultSettings, ...settings };
       
@@ -236,7 +235,6 @@ export class VOICEVOXManager {
       // 音声を再生
       await this.playAudio(audioBuffer);
       
-      console.log('✅ VOICEVOX音声再生完了');
     } catch (error) {
       console.error('❌ VOICEVOX音声再生エラー:', error);
       throw error;
