@@ -2001,7 +2001,6 @@ export default function ChatPage() {
    * ================================================ */
   // メッセージ編集モーダル
   const [isMessageEditorOpen, setIsMessageEditorOpen] = useState(false);
-  // const [messageDraft, setMessageDraft] = useState('');
   const [editorInitialText, setEditorInitialText] = useState('');
   /* ================================================ */
 

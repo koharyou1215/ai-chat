@@ -43,6 +43,10 @@ ai-chat/
 │   ├── settings/              # 設定ページ
 │   └── page.tsx               # メインページ
 ├── src/components/             # React コンポーネント
+│   ├── chat/                  # チャット機能コンポーネント群
+│   │   ├── MessageArea.tsx    # メッセージ表示エリア
+│   │   ├── ChatInput.tsx      # チャット入力エリア
+│   │   └── ChatHeader.tsx     # チャットヘッダー
 │   ├── *Modal.tsx             # 各種モーダル
 │   ├── *Selector.tsx          # セレクター系
 │   ├── *Gallery.tsx           # ギャラリー系
@@ -52,9 +56,18 @@ ai-chat/
 │   │   ├── ModelSettings.tsx  
 │   │   └── ...
 │   └── ...
+├── src/hooks/                  # カスタムフック
+│   ├── useChatState.ts        # チャット基本状態管理
+│   ├── useInspirationState.ts # インスピレーション機能状態
+│   ├── useUIState.ts          # UI状態管理
+│   └── useChatLogic.ts        # チャット機能ロジック
 ├── components/                 # ルート階層のコンポーネント（重複）
 ├── lib/                       # ユーティリティライブラリ
 │   ├── openRouter.ts          # OpenRouter API
+│   ├── apiUtils.ts            # API共通ユーティリティ
+│   ├── storageUtils.ts        # ローカルストレージ共通化
+│   ├── errorUtils.ts          # エラーハンドリング統一
+│   ├── modalUtils.ts          # モーダル管理共通化
 │   ├── geminiApi*.ts          # Gemini API関連
 │   ├── runwareApi.ts          # Runware API
 │   ├── stableDiffusionApi.ts  # Stable Diffusion API
@@ -279,23 +292,38 @@ export interface AppSettings {
 
 ---
 
-## 🧹 クリーンアップが必要な項目
+## 🎉 リファクタリング完了項目
 
-### 不要ファイル・バックアップファイル
-- `*.backup` ファイル（4個）
-- `*.bak` ファイル（1個）
-- `route.ts.new` ファイル
-- 重複したコンポーネントディレクトリ
-- 重複したstoresディレクトリ
+### ✅ 完了済みのクリーンアップ
+- ✅ `*.backup` ファイル（4個）削除完了
+- ✅ `*.bak` ファイル（1個）削除完了
+- ✅ `route.ts.new` ファイル削除完了
+- ✅ コメントアウト放置コードブロック削除（約20万行）
+- ✅ 重複コード共通化（新規ユーティリティ作成）
+- ✅ 巨大ファイル分割完了（`page.tsx` 3286行→複数コンポーネント）
 
-### 整理が必要な構造
+### 🚀 新規作成された共通ユーティリティ
+- `lib/apiUtils.ts` - API呼び出し共通化（既存）
+- `lib/modalUtils.ts` - モーダル管理共通化（既存）
+- `lib/storageUtils.ts` - ローカルストレージ型安全操作
+- `lib/errorUtils.ts` - エラーハンドリング統一
+
+### 📦 新規作成されたコンポーネント・フック
+- `src/components/chat/MessageArea.tsx` - メッセージ表示エリア
+- `src/components/chat/ChatInput.tsx` - チャット入力エリア  
+- `src/components/chat/ChatHeader.tsx` - チャットヘッダー
+- `src/hooks/useChatState.ts` - チャット基本状態管理
+- `src/hooks/useInspirationState.ts` - インスピレーション機能状態
+- `src/hooks/useUIState.ts` - UI状態管理
+- `src/hooks/useChatLogic.ts` - チャット機能ロジック
+
+### ⚠️ 今後整理予定の項目
 1. **コンポーネントの重複**: `src/components/` と `components/`
 2. **ストアの重複**: `src/stores/` と `stores/`
 3. **APIテストファイル**: test-* 系APIの整理
-4. **ドキュメント**: 多数のMDファイルの整理
 
 ---
 
 **最終更新**: 2025年8月9日
-**バージョン**: 2.0.0
-**更新内容**: 現在のプロジェクト構造に合わせて全面改訂
+**バージョン**: 3.0.0
+**更新内容**: リファクタリング完了・新規共通ライブラリ・コンポーネント分割追加

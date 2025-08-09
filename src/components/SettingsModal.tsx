@@ -38,25 +38,6 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave }: Set
     setFormSettings(settings);
   }, [settings]);
 
-  // ElevenLabsの音声リストを取得
-  // useEffect(() => {
-  //   const fetchVoices = async () => {
-  //     try {
-  //       if (formSettings.elevenLabsApiKey) {
-  //         // APIキーをVoiceManagerに設定
-  //         VoiceManager.setApiKey(formSettings.elevenLabsApiKey);
-  //         
-  //         const voices = await VoiceManager.getAvailableVoices();
-  //         // APIから取得した音声とカスタムをマージ（重複除外）
-  //         const merged = [...customVoices, ...voices.filter(v => !customVoices.some(c => c.voice_id === v.voice_id))];
-  //         setVoiceList(merged);
-  //       }
-  //     } catch (e) {
-  //       console.warn('音声リスト取得失敗:', e);
-  //     }
-  //   };
-  //   fetchVoices();
-  // }, [formSettings.elevenLabsApiKey, customVoices, setVoiceList]);
 
   const handleSave = () => {
     console.log('設定保存開始 - 保存する設定:', {

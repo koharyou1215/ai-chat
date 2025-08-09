@@ -1,3 +1,5 @@
+import { createRunwareApi, validateApiKey } from './apiUtils';
+import { apiErrorHandlers } from './errorHandler';
 
 export interface RunwareRequest {
   taskType: "imageInference";
@@ -50,46 +52,53 @@ export class RunwareService {
       weight?: number;
     }>;
   }) {
+    // APIキーの検証
+    if (!validateApiKey(this.apiKey, 'Runware')) {
+      throw new Error('Runware APIキーが設定されていません');
+    }
+
     const taskUUID = crypto.randomUUID();
-    
-    const response = await fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify([{
-        taskType: "imageInference",
-        taskUUID: taskUUID,
-        positivePrompt: params.positivePrompt,
-        ...(params.negativePrompt && { negativePrompt: params.negativePrompt }),
-        width: params.width || 512,
-        height: params.height || 512,
-        model: params.model,
-        numberResults: 1,
-        CFGScale: params.CFGScale || 7,
-        steps: params.steps || 20,
-        ...(params.loras && params.loras.length > 0 && { lora: params.loras })
-      }])
-    });
+    const requestBody = [{
+      taskType: "imageInference" as const,
+      taskUUID: taskUUID,
+      positivePrompt: params.positivePrompt,
+      ...(params.negativePrompt && { negativePrompt: params.negativePrompt }),
+      width: params.width || 512,
+      height: params.height || 512,
+      model: params.model,
+      numberResults: 1,
+      CFGScale: params.CFGScale || 7,
+      steps: params.steps || 20,
+      ...(params.loras && params.loras.length > 0 && { lora: params.loras })
+    }];
 
-    if (!response.ok) {
-      throw new Error(`Runware API error: ${response.status} ${response.statusText}`);
+    try {
+      // 統一されたAPI呼び出しを使用
+      const runwareApi = createRunwareApi(this.apiKey);
+      const result = await runwareApi.generateImage(requestBody);
+
+      if (!result.success) {
+        apiErrorHandlers.runware(new Error(result.error || 'Unknown error'), 'generateImage');
+        throw new Error(result.error || 'Runware API request failed');
+      }
+
+      const data = result.data as any;
+      
+      if (data.errors) {
+        throw new Error(`Runware API error: ${data.errors[0].message}`);
+      }
+
+      if (!data.data || !data.data[0]) {
+        throw new Error('No image data returned from Runware API');
+      }
+
+      return {
+        imageURL: data.data[0].imageURL,
+        imageUUID: data.data[0].imageUUID
+      };
+    } catch (error) {
+      apiErrorHandlers.runware(error, 'generateImage');
+      throw error;
     }
-
-    const data = await response.json();
-    
-    if (data.errors) {
-      throw new Error(`Runware API error: ${data.errors[0].message}`);
-    }
-
-    if (!data.data || !data.data[0]) {
-      throw new Error('No image data returned from Runware API');
-    }
-
-    return {
-      imageURL: data.data[0].imageURL,
-      imageUUID: data.data[0].imageUUID
-    };
   }
 }

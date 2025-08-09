@@ -1,3 +1,7 @@
+import { createElevenLabsApi, validateApiKey } from './apiUtils';
+import { apiErrorHandlers } from './errorHandler';
+import { safeNumber, safeBoolean } from './dataTransforms';
+
 export interface VoiceSettings {
   enabled: boolean;
   autoPlay: boolean;
@@ -54,26 +58,24 @@ export class VoiceManager {
    */
   static async getAvailableVoices(): Promise<ElevenLabsVoice[]> {
     const ELEVENLABS_API_KEY = this.apiKey || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY;
-    if (!ELEVENLABS_API_KEY) {
-      console.warn('ElevenLabs APIキーが設定されていません。');
+    
+    if (!validateApiKey(ELEVENLABS_API_KEY, 'ElevenLabs')) {
       return [];
     }
 
     try {
-      const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-        headers: {
-          'xi-api-key': ELEVENLABS_API_KEY,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+      const elevenLabsApi = createElevenLabsApi(ELEVENLABS_API_KEY!);
+      const result = await elevenLabsApi.getVoices();
+      
+      if (!result.success) {
+        apiErrorHandlers.elevenlabs(new Error(result.error || 'Unknown error'), 'getVoices');
+        return [];
       }
-
-      const data = await response.json();
-      return data.voices || [];
+      
+      const data = result.data as any;
+      return data?.voices || [];
     } catch (error) {
-      console.error('音声リスト取得エラー:', error);
+      apiErrorHandlers.elevenlabs(error, 'getVoices');
       return [];
     }
   }
@@ -381,19 +383,19 @@ export class VoiceManager {
   }
 
   /**
-   * 設定の検証
+   * 設定の検証（共通ユーティリティを使用）
    */
   static validateSettings(settings: Partial<VoiceSettings>): VoiceSettings {
     return {
-      enabled: settings.enabled ?? true,
-      autoPlay: settings.autoPlay ?? false,
-      voiceId: settings.voiceId ?? '8EkOjt4xTPGMclNlh1pk', // ユーザー指定のデフォルト
-      stability: Math.max(0, Math.min(1, settings.stability ?? 0.5)),
-      similarityBoost: Math.max(0, Math.min(1, settings.similarityBoost ?? 0.75)),
-      style: Math.max(0, Math.min(1, settings.style ?? 0)),
-      useSpeakerBoost: settings.useSpeakerBoost ?? true,
-      speed: Math.max(0.25, Math.min(4, settings.speed ?? 1)),
-      volume: Math.max(0, Math.min(1, settings.volume ?? 0.8))
+      enabled: safeBoolean(settings.enabled, true),
+      autoPlay: safeBoolean(settings.autoPlay, false),
+      voiceId: settings.voiceId ?? '8EkOjt4xTPGMclNlh1pk',
+      stability: Math.max(0, Math.min(1, safeNumber(settings.stability, 0.5))),
+      similarityBoost: Math.max(0, Math.min(1, safeNumber(settings.similarityBoost, 0.75))),
+      style: Math.max(0, Math.min(1, safeNumber(settings.style, 0))),
+      useSpeakerBoost: safeBoolean(settings.useSpeakerBoost, true),
+      speed: Math.max(0.25, Math.min(4, safeNumber(settings.speed, 1))),
+      volume: Math.max(0, Math.min(1, safeNumber(settings.volume, 0.8)))
     };
   }
 

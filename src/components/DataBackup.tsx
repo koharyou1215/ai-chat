@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Download, Upload, CloudOff, FileText, AlertCircle } from 'lucide-react'
+import { generateBackup, restoreBackup, storageHelpers } from '../../../lib/storageUtils'
+import { handleError } from '../../../lib/errorHandler'
 
 export default function DataBackup() {
   const [isExporting, setIsExporting] = useState(false)
@@ -13,21 +15,10 @@ export default function DataBackup() {
     setMessage('')
     
     try {
-      // ローカルストレージから全データを取得
-      const allData = {
-        characters: localStorage.getItem('characters') || '[]',
-        personas: localStorage.getItem('personas') || '[]',
-        memos: localStorage.getItem('memos') || '[]',
-        settings: localStorage.getItem('appSettings') || '{}',
-        history: localStorage.getItem('chatHistory') || '[]'
-      }
-
-      // JSONファイルとしてダウンロード
+      // 統一されたバックアップ生成を使用
       const exportData = {
-        timestamp: new Date().toISOString(),
-        version: "1.0.0",
-        device: navigator.userAgent,
-        data: allData
+        ...generateBackup(),
+        device: navigator.userAgent
       }
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
@@ -44,7 +35,7 @@ export default function DataBackup() {
 
       setMessage('✅ データエクスポート完了！ファイルがダウンロードされました。')
     } catch (error) {
-      console.error('エクスポートエラー:', error)
+      handleError(error, 'DataBackup Export', { logToConsole: true })
       setMessage('❌ エクスポートに失敗しました')
     }
     
@@ -62,15 +53,16 @@ export default function DataBackup() {
       const text = await file.text()
       const importData = JSON.parse(text)
       
-      if (!importData.data) {
+      if (!importData._backup_info) {
         throw new Error('無効なバックアップファイルです')
       }
 
       // 確認ダイアログ
+      const backupInfo = importData._backup_info
       const confirm = window.confirm(
         '既存のデータが上書きされます。続行しますか？\n' +
-        `バックアップ日時: ${importData.timestamp || '不明'}\n` +
-        `バージョン: ${importData.version || '不明'}`
+        `バックアップ日時: ${new Date(backupInfo.timestamp).toLocaleString()}\n` +
+        `バージョン: ${backupInfo.version || '不明'}`
       )
       
       if (!confirm) {
@@ -78,13 +70,11 @@ export default function DataBackup() {
         return
       }
 
-      // データを復元
-      const { data } = importData
-      if (data.characters) localStorage.setItem('characters', data.characters)
-      if (data.personas) localStorage.setItem('personas', data.personas)
-      if (data.memos) localStorage.setItem('memos', data.memos)
-      if (data.settings) localStorage.setItem('appSettings', data.settings)
-      if (data.history) localStorage.setItem('chatHistory', data.history)
+      // 統一されたバックアップ復元を使用
+      const success = restoreBackup(importData)
+      if (!success) {
+        throw new Error('データの復元に失敗しました')
+      }
 
       setMessage('✅ データインポート完了！ページを再読み込みしてください。')
       
@@ -94,7 +84,7 @@ export default function DataBackup() {
       }, 3000)
 
     } catch (error) {
-      console.error('インポートエラー:', error)
+      handleError(error, 'DataBackup Import', { logToConsole: true })
       setMessage('❌ インポートに失敗しました。ファイル形式を確認してください。')
     }
     
