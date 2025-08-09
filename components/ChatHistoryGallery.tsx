@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { MessageSquare, Plus, Trash2, Search, Clock, ArrowLeft, Grid, List, Calendar, Star } from 'lucide-react';
 import { SessionSummary } from '../lib/historyManager';
-import { Character } from '../types/character';
 
 interface ChatHistoryGalleryProps {
   sessions: SessionSummary[];
-  characters: Character[];
+  currentSessionId?: string | null;
   onSelectSession: (session: SessionSummary) => void;
   onDeleteSession: (sessionId: string) => void;
   onClose?: () => void;
@@ -94,7 +93,10 @@ export default function ChatHistoryGallery({
           
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onSelectSession('new')}
+              onClick={() => {
+                if (onClose) onClose();
+                // 新規チャットは親コンポーネントで処理
+              }}
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               <Plus size={20} />
@@ -309,14 +311,14 @@ function ChatHistoryListItem({
 }: {
   session: SessionSummary;
   isSelected: boolean;
-  onSelect: (sessionId: string) => void;
+  onSelect: (session: SessionSummary) => void;
   onDelete: (sessionId: string) => void;
   formatDuration: (minutes: number) => string;
   formatDate: (timestamp?: number) => string;
 }) {
   return (
     <div
-      onClick={() => onSelect(session.id)}
+      onClick={() => onSelect(session)}
       className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer border ${
         isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
       }`}

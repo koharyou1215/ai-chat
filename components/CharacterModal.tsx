@@ -12,6 +12,8 @@ interface CharacterModalProps {
   onClose: () => void;
   character?: Character | null;
   onSave: (character: Character) => void;
+  fromGallery?: boolean; // ギャラリーから開かれたかどうか
+  onReturnToGallery?: () => void; // ギャラリーに戻る処理
 }
 
 export default function CharacterModal({ isOpen, onClose, character, onSave }: CharacterModalProps) {

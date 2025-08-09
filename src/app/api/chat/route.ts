@@ -15,18 +15,19 @@ interface ChatHistoryMsg { role: 'user' | 'assistant'; content: string; }
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, character, settings } = await request.json();
+    const { messages, character, settings, persona } = await request.json();
     
     console.log('Chat API called with:', { 
       messagesCount: messages?.length, 
       characterName: character?.name,
-      settings 
+      settings,
+      persona: persona?.name 
     });
     
     const model = genAI.getGenerativeModel({ model: settings?.model || 'gemini-2.5-flash' });
     
     // キャラクター設定からシステムプロンプトを構築
-    const systemPrompt = buildSystemPrompt(character);
+    const systemPrompt = buildSystemPrompt(character, persona);
     
     // プロンプト短縮: 直近10件、assistant 長文省略
     const recentMessages = (messages as ChatHistoryMsg[])
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // プレースホルダ置換 {{char}}, {{user}}
-    const userName = 'あなた';
+    const userName = persona?.name || 'あなた';
     const finalizedText = text.replace(/\{\{char}}/g, (character as {name:string}).name)
                               .replace(/\{\{user}}/g, userName);
 
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildSystemPrompt(character: { name: string; character_definition: any }): string {
+function buildSystemPrompt(character: { name: string; character_definition: any }, persona?: { name: string; likes?: string[]; dislikes?: string[]; other_settings?: string }): string {
   if (!character) return '';
   
   const { character_definition } = character;
@@ -137,6 +138,14 @@ function buildSystemPrompt(character: { name: string; character_definition: any 
 **世界観**: ${character_definition.scenario.worldview}
 **初期状況**: ${character_definition.scenario.initial_situation}
 **ユーザーとの関係**: ${character_definition.scenario.relationship_with_user}
+
+${persona ? `\n## {{user}}の情報
+**{{user}}のタイプ**: ${persona.name}
+${persona.likes && persona.likes.length > 0 ? `**{{user}}の好きなもの**: ${persona.likes.join(', ')}` : ''}
+${persona.dislikes && persona.dislikes.length > 0 ? `**{{user}}の嫌いなもの**: ${persona.dislikes.join(', ')}` : ''}
+${persona.other_settings ? `**{{user}}のその他の特徴**: ${persona.other_settings}` : ''}
+
+上記の{{user}}情報を考慮して、{{char}}として{{user}}に合わせた返答をしてください。` : ''}
 
 ## 重要な指示
 - 必ず{{char}}として一貫して振る舞ってください

@@ -58,7 +58,7 @@ export default function PersonaSelector({
         <div className="space-y-3 max-h-60 overflow-y-auto">
           {/* 現在のPersona */}
           <div className="space-y-2">
-            <div className="text-white/70 text-sm font-medium">現在のPersona:</div>
+            <div className="text-white text-sm font-medium bg-black/30 px-2 py-1 rounded">現在のPersona:</div>
             
             {/* デフォルトペルソナオプション */}
             <div
@@ -74,7 +74,7 @@ export default function PersonaSelector({
               </div>
               <div className="flex-1">
                 <div className="text-white font-medium">デフォルトユーザー</div>
-                <div className="text-white/60 text-xs">一般的なユーザー設定</div>
+                <div className="text-white text-xs bg-black/30 px-1 py-0.5 rounded">一般的なユーザー設定</div>
               </div>
             </div>
 
@@ -98,7 +98,7 @@ export default function PersonaSelector({
                   
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-medium truncate">{persona.name}</div>
-                    <div className="text-white/60 text-xs truncate">
+                    <div className="text-white text-xs truncate bg-black/30 px-1 py-0.5 rounded">
                       {persona.likes.length > 0 && (
                         <span>好き: {persona.likes.slice(0, 2).join(', ')}</span>
                       )}

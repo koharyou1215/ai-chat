@@ -33,10 +33,10 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
     'qwen/qwen3-30b-a3b-instruct-2507', // 追加
     'qwen/qwen3-235b-a22b-thinking-2507',
     'moonshotai/kimi-k2',
-    // 'shisa-ai/shisa-v2-llama3.3-70b', // 文字化け報告により一時的に無効化
-    // 'thedrummer/anubis-70b-v1.1', // 文字化け報告により一時的に無効化
-    'meta-llama/llama-4-maverick', 
-    'openrouter/horizon-beta'
+    'openai/gpt-5-chat', // 'thedrummer/anubis-70b-v1.1', // 文字化け報告により一時的に無効化
+    'openai/gpt-5-mini',
+    'meta-llama/llama-4-maverick',
+
     // ⚠️ このリスト以外のモデルは追加しないでください
   ];
 

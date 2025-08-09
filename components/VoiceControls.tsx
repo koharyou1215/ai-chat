@@ -12,9 +12,10 @@ interface VoiceControlsProps {
   appSettings: AppSettings; // AppSettings全体を追加
   className?: string;
   apiKey?: string; // APIキーを追加
+  characterName?: string; // キャラクター名を追加
 }
 
-export default function VoiceControls({ text, settings, appSettings, className = '', apiKey }: VoiceControlsProps) {
+export default function VoiceControls({ text, settings, appSettings, className = '', apiKey, characterName }: VoiceControlsProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -49,11 +50,42 @@ export default function VoiceControls({ text, settings, appSettings, className =
     
     try {
       if (appSettings.voiceProvider === 'voicevox') {
+        // キャラクター名に応じた話者IDマッピング
+        const getCharacterSpeakerId = (characterName?: string): number => {
+          if (!characterName) return appSettings.voicevoxSpeaker || 3;
+          
+          const name = characterName.toLowerCase();
+          // キャラクター名に応じた話者ID設定
+          if (name.includes('ずんだもん') || name.includes('zundamon')) return 3; // ずんだもん（ノーマル）
+          if (name.includes('めたん') || name.includes('metan')) return 0; // 四国めたん（ノーマル）
+          if (name.includes('つむぎ') || name.includes('tsumugi')) return 8; // 春日部つむぎ
+          if (name.includes('はう') || name.includes('hau')) return 10; // 雨晴はう
+          if (name.includes('リツ') || name.includes('ritsu')) return 9; // 波音リツ
+          if (name.includes('武宏') || name.includes('takehiro')) return 11; // 玄野武宏
+          if (name.includes('虎太郎') || name.includes('kotarou')) return 12; // 白上虎太郎
+          
+          // キャラクターの性別や特徴に応じた自動選択
+          if (name.includes('男') || name.includes('boy') || name.includes('man')) return 11; // 男性キャラは玄野武宏
+          if (name.includes('女') || name.includes('girl') || name.includes('woman')) return 0; // 女性キャラは四国めたん
+          
+          // デフォルトは設定値またはずんだもん
+          return appSettings.voicevoxSpeaker || 3;
+        };
+
+        // 現在のキャラクター名を取得
+        const speakerId = getCharacterSpeakerId(characterName);
+        
+        console.log('🎵 VOICEVOX設定:', {
+          characterName: characterName,
+          speakerId,
+          defaultSpeaker: appSettings.voicevoxSpeaker
+        });
+
         // VOICEVOX使用
         await VOICEVOXManager.speak(text, {
           enabled: settings.enabled,
           autoPlay: settings.autoPlay,
-          speaker: appSettings.voicevoxSpeaker || 3,
+          speaker: speakerId,
           speed: appSettings.voicevoxSpeed || 1.0,
           pitch: appSettings.voicevoxPitch || 0.0,
           intonation: appSettings.voicevoxIntonation || 1.0,

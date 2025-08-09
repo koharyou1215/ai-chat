@@ -140,7 +140,7 @@ export default function CharacterSelector({
                             <Star size={12} className="text-yellow-400 flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-white/60 text-xs truncate">
+                        <p className="text-white text-xs truncate bg-black/30 px-2 py-1 rounded">
                           {character.occupation || character.tags[0] || 'キャラクター'}
                         </p>
                       </div>
@@ -152,7 +152,7 @@ export default function CharacterSelector({
                         {character.tags.slice(0, 2).map((tag, index) => (
                           <span
                             key={index}
-                            className="bg-white/20 text-white/70 px-1.5 py-0.5 rounded text-xs"
+                            className="bg-black/40 text-white px-2 py-1 rounded text-xs border border-white/20"
                           >
                             {tag}
                           </span>
@@ -172,7 +172,7 @@ export default function CharacterSelector({
             {/* 残りのキャラクター（リスト表示） */}
             {(characters || []).length > 6 && (
               <div className="space-y-2 border-t border-white/10 pt-4">
-                <h4 className="text-white/70 text-sm font-medium mb-2">その他のキャラクター</h4>
+                <h4 className="text-white text-sm font-medium mb-2 bg-black/30 px-2 py-1 rounded">その他のキャラクター</h4>
                 {characters.slice(6).map((character, idx) => {
                   const isSelected = currentCharacter?.name === character.name;
                   

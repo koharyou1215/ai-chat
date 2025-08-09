@@ -27,13 +27,55 @@ export default function CharacterGallery({
   onManualLoad,
   onClose,
 }: CharacterGalleryProps) {
+  // ローカルストレージからソート設定を復元
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular' | 'created' | 'updated'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [showVariations, setShowVariations] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('character-gallery-view-mode') as 'grid' | 'list' || 'grid';
+    }
+    return 'grid';
+  });
+  const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular' | 'created' | 'updated'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('character-gallery-sort-by') as 'name' | 'recent' | 'popular' | 'created' | 'updated' || 'name';
+    }
+    return 'name';
+  });
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('character-gallery-sort-order') as 'asc' | 'desc' || 'asc';
+    }
+    return 'asc';
+  });
+  const [showVariations, setShowVariations] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('character-gallery-show-variations') === 'true';
+    }
+    return false;
+  });
   const [selectedBaseCharacter, setSelectedBaseCharacter] = useState<string | null>(null);
+
+  // 設定変更時にローカルストレージに保存
+  const handleSortByChange = (newSortBy: 'name' | 'recent' | 'popular' | 'created' | 'updated') => {
+    setSortBy(newSortBy);
+    localStorage.setItem('character-gallery-sort-by', newSortBy);
+  };
+
+  const handleSortOrderChange = (newSortOrder: 'asc' | 'desc') => {
+    setSortOrder(newSortOrder);
+    localStorage.setItem('character-gallery-sort-order', newSortOrder);
+  };
+
+  const handleViewModeChange = (newViewMode: 'grid' | 'list') => {
+    setViewMode(newViewMode);
+    localStorage.setItem('character-gallery-view-mode', newViewMode);
+  };
+
+  const handleShowVariationsChange = (newShowVariations: boolean) => {
+    setShowVariations(newShowVariations);
+    localStorage.setItem('character-gallery-show-variations', newShowVariations.toString());
+  };
 
   // 全タグを取得（安全な処理）
   const allTags = Array.from(new Set((characters || []).flatMap(c => c.tags || [])));
@@ -204,8 +246,9 @@ export default function CharacterGallery({
                       <div className="flex items-center gap-2 md:gap-4">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
-              className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+              onChange={(e) => handleSortByChange(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
+              className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base bg-white text-gray-800 appearance-none cursor-pointer"
+              style={{ minWidth: '120px' }}
             >
               <option value="name">名前順</option>
               <option value="created">登録順</option>
@@ -216,7 +259,7 @@ export default function CharacterGallery({
             
             {/* 昇順/降順切り替え */}
             <button
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              onClick={() => handleSortOrderChange(sortOrder === 'asc' ? 'desc' : 'asc')}
               className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
                 sortOrder === 'desc' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
               }`}
@@ -232,7 +275,7 @@ export default function CharacterGallery({
             <div className="flex items-center gap-1 md:gap-2">
               {/* バリエーション表示切り替え */}
               <button
-                onClick={() => setShowVariations(!showVariations)}
+                onClick={() => handleShowVariationsChange(!showVariations)}
                 className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
                   showVariations ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'
                 }`}
@@ -245,7 +288,7 @@ export default function CharacterGallery({
               {/* ビューモード切り替え */}
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                     viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
@@ -253,7 +296,7 @@ export default function CharacterGallery({
                   <Grid size={16} className="md:w-5 md:h-5" />
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   className={`p-1.5 md:p-2 rounded-lg transition-colors ${
                     viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
                   }`}
@@ -352,20 +395,23 @@ function CharacterCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              console.log('🔧 グリッド編集ボタンクリック:', character.name);
               onEdit(character);
             }}
-            className="bg-white/90 hover:bg-white text-gray-700 p-1 rounded-full transition-colors"
+            className="bg-white/80 hover:bg-white text-gray-600 hover:text-blue-600 p-1 rounded shadow transition-all"
+            title="編集"
           >
-            <Edit size={14} />
+            <Edit size={12} />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(character);
             }}
-            className="bg-white/90 hover:bg-red-100 text-red-600 p-1 rounded-full transition-colors"
+            className="bg-white/80 hover:bg-white text-gray-600 hover:text-red-600 p-1 rounded shadow transition-all"
+            title="削除"
           >
-            <Trash2 size={14} />
+            <Trash2 size={12} />
           </button>
         </div>
 
@@ -507,20 +553,23 @@ function CharacterListItem({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              console.log('🔧 リスト編集ボタンクリック:', character.name);
               onEdit(character);
             }}
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="text-gray-500 hover:text-blue-600 p-1 rounded hover:bg-gray-100 transition-all"
+            title="編集"
           >
-            <Edit size={16} />
+            <Edit size={14} />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(character);
             }}
-            className="text-gray-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"
+            className="text-gray-500 hover:text-red-600 p-1 rounded hover:bg-gray-100 transition-all"
+            title="削除"
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} />
           </button>
         </div>
       </div>

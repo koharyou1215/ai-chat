@@ -745,27 +745,64 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
             const mainResponse = candidates[0];
             console.log('📊 トラッカー更新情報を抽出中:', mainResponse.substring(0, 200));
             
-            // JSONブロックの抽出と除去
-            const jsonMatches = mainResponse.match(/```json\s*([\s\S]*?)\s*```/g);
-            if (jsonMatches) {
-              for (const jsonMatch of jsonMatches) {
-                try {
-                  const jsonContent = jsonMatch.replace(/```json\s*|\s*```/g, '').trim();
-                  const parsed = JSON.parse(jsonContent);
-                  
-                  if (parsed.tracker_updates && Array.isArray(parsed.tracker_updates)) {
-                    console.log('📊 トラッカー更新指示を発見:', parsed.tracker_updates);
-                    extractedTrackers = parsed.tracker_updates;
+            // JSONブロックの抽出と除去（複数パターンに対応）
+            const jsonPatterns = [
+              /```json\s*([\s\S]*?)\s*```/g,
+              /```\s*([\s\S]*?)\s*```/g,
+              /\{[^}]*"tracker_updates"[^}]*\}/g,
+              /\{[\s\S]*?"tracker_updates"[\s\S]*?\}/g
+            ];
+            
+            let foundTrackerUpdates = false;
+            
+            for (const pattern of jsonPatterns) {
+              const matches = mainResponse.match(pattern);
+              if (matches) {
+                for (const jsonMatch of matches) {
+                  try {
+                    // JSONの内容を抽出
+                    let jsonContent = jsonMatch.replace(/```json\s*|\s*```|```\s*|\s*```/g, '').trim();
                     
-                    // 応答からJSONブロックを削除
-                    cleanedResponse = mainResponse.replace(jsonMatch, '').trim();
-                    console.log('🧹 JSON除去後の応答長:', cleanedResponse.length);
-                    break;
+                    // もしJSONでなく文字列の場合、より柔軟に処理
+                    if (!jsonContent.startsWith('{')) {
+                      const jsonStart = jsonContent.indexOf('{');
+                      const jsonEnd = jsonContent.lastIndexOf('}');
+                      if (jsonStart !== -1 && jsonEnd !== -1) {
+                        jsonContent = jsonContent.substring(jsonStart, jsonEnd + 1);
+                      }
+                    }
+                    
+                    const parsed = JSON.parse(jsonContent);
+                    
+                    if (parsed.tracker_updates && Array.isArray(parsed.tracker_updates)) {
+                      console.log('📊 トラッカー更新指示を発見:', parsed.tracker_updates);
+                      extractedTrackers = parsed.tracker_updates;
+                      foundTrackerUpdates = true;
+                      
+                      // 応答からJSONブロックを削除
+                      cleanedResponse = mainResponse.replace(jsonMatch, '').trim();
+                      console.log('🧹 JSON除去後の応答長:', cleanedResponse.length);
+                      break;
+                    }
+                  } catch (parseError) {
+                    console.warn('⚠️ JSON解析失敗:', parseError);
                   }
-                } catch (parseError) {
-                  console.warn('⚠️ JSON解析失敗:', parseError);
                 }
+                if (foundTrackerUpdates) break;
               }
+            }
+            
+            // その他のメタデータ的な文言も除去
+            if (!foundTrackerUpdates) {
+              // トラッカー関連のメタ文言を除去
+              cleanedResponse = cleanedResponse
+                .replace(/\[?トラッカー.*?更新.*?\]?/gi, '')
+                .replace(/\[?パラメータ.*?変更.*?\]?/gi, '')
+                .replace(/\[?.*?トラッカー.*?\]?/gi, '')
+                .replace(/【.*?トラッカー.*?】/gi, '')
+                .replace(/（.*?トラッカー.*?）/gi, '')
+                .replace(/\*.*?トラッカー.*?\*/gi, '')
+                .trim();
             }
             
             // JSONが見つからない場合、自動推測

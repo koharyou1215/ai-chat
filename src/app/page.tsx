@@ -20,13 +20,14 @@
 import '../../lib/uuidPolyfill';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User, Activity, Zap } from 'lucide-react';
+import { Send, Settings, MessageSquare, Loader, RefreshCw, CornerUpLeft, Clock, X, Palette, Menu, Cloud, Copy, User, Activity, Zap, Edit } from 'lucide-react';
 import { CharacterLoader } from '../../lib/characterLoader';
 import { Character, UserPersona } from '../../types/character';
 import { historyManager, SessionSummary } from '../../lib/historyManager';
 // 直接インポートに変更（ChunkLoadError回避）
 import CharacterGallery from '../../components/CharacterGallery';
 import CharacterImportExport from '../../components/CharacterImportExport';
+import ChatHistoryGallery from '../../components/ChatHistoryGallery';
 // ThemeManagerは削除 - シンプルなローカルストレージ管理に変更
 import { VoiceManager } from '../../lib/voiceManager';
 import SettingsModal from '../../components/SettingsModal';
@@ -99,6 +100,7 @@ export default function ChatPage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
+  const [isCharacterModalFromGallery, setIsCharacterModalFromGallery] = useState(false); // ギャラリーから開いたかどうか
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
@@ -2467,6 +2469,21 @@ export default function ChatPage() {
                   </div>
                 )}
               </div>
+              
+              {/* キャラクター編集ボタン */}
+              <button
+                onClick={() => {
+                  if (currentCharacter) {
+                    setEditingCharacter(currentCharacter);
+                    setIsCharacterModalOpen(true);
+                  }
+                }}
+                className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+                title="キャラクター編集"
+              >
+                <Edit size={20} />
+              </button>
+              
               <div className="flex gap-2 shrink-0">
                 {/* 🚨 画面右上5つのアイコン - 重要機能保護開始 🚨 */}
                 {/* これらのアイコンは何度も消失しています。絶対に削除・変更しないでください！ */}
@@ -2506,7 +2523,7 @@ export default function ChatPage() {
                 </button>
                 <button
                   onClick={() => setIsSettingsOpen(true)}
-                  className="touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 md:hidden shadow-sm"
+                  className="touch-target text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 p-1.5 md:p-2 rounded-lg transition-all duration-200 shadow-sm"
                   title="詳細設定"
                 >
                   <Settings size={20} />
@@ -2656,6 +2673,7 @@ export default function ChatPage() {
                        <div className="flex justify-end mt-2 gap-1 flex-wrap">
                          <VoiceControls
                            text={typeof msg.content === 'string' ? msg.content : String(msg.content || '')}
+                           characterName={currentCharacter?.name}
                            settings={{
                              enabled: settings.voiceEnabled ?? true,
                              autoPlay: settings.voiceAutoPlay ?? false,
@@ -2899,8 +2917,22 @@ export default function ChatPage() {
       {isCharacterModalOpen && (
         <CharacterModal
           isOpen={isCharacterModalOpen}
-          onClose={() => setIsCharacterModalOpen(false)}
+          onClose={() => {
+            setIsCharacterModalOpen(false);
+            setIsCharacterModalFromGallery(false); // フラグをリセット
+            
+            // ギャラリーから開いた場合はギャラリーに戻る
+            if (isCharacterModalFromGallery) {
+              setIsCharacterGalleryOpen(true);
+            }
+          }}
           character={editingCharacter}
+          fromGallery={isCharacterModalFromGallery}
+          onReturnToGallery={() => {
+            setIsCharacterModalOpen(false);
+            setIsCharacterModalFromGallery(false);
+            setIsCharacterGalleryOpen(true); // ギャラリーを再表示
+          }}
           onSave={async (updatedCharacter) => {
             CharacterLoader.addCharacter(updatedCharacter);
             const updatedCharacters = CharacterLoader.getAllCharacters();
@@ -2909,21 +2941,38 @@ export default function ChatPage() {
               setCurrentCharacter(updatedCharacter);
               setStoreCurrentCharacter(updatedCharacter);
             }
-            setIsCharacterModalOpen(false);
+            setIsCharacterModalFromGallery(false); // フラグをリセット
+            
+            // ギャラリーから開いた場合はギャラリーに戻る（保存処理はCharacterModal内で実行）
+            if (isCharacterModalFromGallery) {
+              setIsCharacterGalleryOpen(true);
+            }
             if (updatedCharacter.background) {
               BackgroundManager.saveCharacterBackground(updatedCharacter.name, updatedCharacter.background);
             }
             
-            // Supabaseに保存
+            // Supabaseに保存（認証済みの場合のみ）
             try {
-              const result = await saveCharacterToCloud(updatedCharacter);
-              if (result.success) {
-                console.log('✅ キャラクターをSupabaseに保存しました:', updatedCharacter.name);
+              // 認証状態をチェックしてからクラウド同期を実行
+              const { supabase } = await import('../../lib/supabase');
+              if (supabase) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  const result = await saveCharacterToCloud(updatedCharacter);
+                  if (result.success) {
+                    console.log('✅ キャラクターをSupabaseに保存しました:', updatedCharacter.name);
+                  } else {
+                    console.warn('⚠️ Supabase保存に失敗:', result.error);
+                  }
+                } else {
+                  console.log('ℹ️ 未ログイン状態のため、ローカル保存のみ実行');
+                }
               } else {
-                console.warn('⚠️ Supabase保存に失敗:', result.error);
+                console.log('ℹ️ Supabase未設定のため、ローカル保存のみ実行');
               }
             } catch (error) {
               console.error('❌ Supabase保存エラー:', error);
+              // エラーが発生してもローカル保存は成功しているため、処理は継続
             }
           }}
         />
@@ -3102,8 +3151,9 @@ export default function ChatPage() {
             }
             
             setEditingCharacter(character);
+            setIsCharacterModalFromGallery(true); // ギャラリーから開いたことを記録
+            setIsCharacterGalleryOpen(false); // ギャラリーを閉じる
             setIsCharacterModalOpen(true);
-            setIsCharacterGalleryOpen(false);
           }}
           onDeleteCharacter={(character) => {
             if (confirm(`「${character.name}」を削除しますか？`)) {
@@ -3199,12 +3249,10 @@ export default function ChatPage() {
       {/* ================================================ */}
 
       {/* チャット履歴ギャラリー */}
-      {/* 一時的にコメントアウト */}
-      {/*
       {isChatHistoryOpen && (
         <ChatHistoryGallery
           sessions={sessions}
-          characters={allCharacters}
+          currentSessionId={currentSessionId}
           onSelectSession={async (session) => {
             try {
               const loadedSession = await historyManager.loadSession(session.id);
@@ -3245,9 +3293,9 @@ export default function ChatPage() {
               console.error('セッション削除エラー:', error);
             }
           }}
+          onClose={() => setIsChatHistoryOpen(false)}
         />
       )}
-      */}
 
       {/* ================================================
        * 【重要】MessageEditorModal - 絶対に変更・削除禁止

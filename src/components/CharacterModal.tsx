@@ -2,19 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { X, Save, User, Heart, Tag, MessageSquare, TrendingUp } from 'lucide-react';
-import { Character } from '../types/character';
-import { ImageCompressor } from '../lib/imageCompressor';
+import { Character } from '../../types/character';
+import { ImageCompressor } from '../../lib/imageCompressor';
 import TrackerEditor from './TrackerEditor';
-import { BackgroundManager } from '../lib/backgroundManager';
+import { BackgroundManager } from '../../lib/backgroundManager';
 
 interface CharacterModalProps {
   isOpen: boolean;
   onClose: () => void;
   character?: Character | null;
   onSave: (character: Character) => void;
+  fromGallery?: boolean; // ギャラリーから開かれたかどうか
+  onReturnToGallery?: () => void; // ギャラリーに戻る処理
 }
 
-export default function CharacterModal({ isOpen, onClose, character, onSave }: CharacterModalProps) {
+export default function CharacterModal({ isOpen, onClose, character, onSave, fromGallery, onReturnToGallery }: CharacterModalProps) {
   const [formData, setFormData] = useState<Character & { nsfw_profile: string | object }>({
     name: '',
     personality: '',
@@ -324,10 +326,25 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     }
     
     onSave(characterData);
-    onClose();
+    
+    // ギャラリーから開かれた場合はギャラリーに戻る
+    if (fromGallery && onReturnToGallery) {
+      onReturnToGallery();
+    } else {
+      onClose();
+    }
   };
 
 
+
+  const handleCancel = () => {
+    // ギャラリーから開かれた場合はギャラリーに戻る
+    if (fromGallery && onReturnToGallery) {
+      onReturnToGallery();
+    } else {
+      onClose();
+    }
+  };
 
   const addArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes', value: string, setValue: (val: string) => void) => {
     if (value.trim()) {
@@ -362,7 +379,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
             {character ? 'キャラクター編集' : '新しいキャラクター'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <X size={24} />
@@ -372,7 +389,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         {/* 操作ボタン（上部に移動） */}
         <div className="flex items-center justify-end gap-3 px-6 py-3 border-b border-gray-200 bg-gray-50/30">
           <button
-            onClick={onClose}
+            onClick={handleCancel}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
           >
             キャンセル
