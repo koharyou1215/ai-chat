@@ -103,15 +103,10 @@ export default function ChatPage() {
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState<UserPersona | null>(null);
-  const [allPersonas, setAllPersonas] = useState<UserPersona[]>([]);
-  const [currentPersona, setCurrentPersona] = useState<UserPersona | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [currentSummary, setCurrentSummary] = useState<ChatSummary | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -120,20 +115,11 @@ export default function ChatPage() {
   const [pendingSelection, setPendingSelection] = useState('');
 
   // インスピレーション関連
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showInspiration, setShowInspiration] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [inspirationCandidates, setInspirationCandidates] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showUserInspiration, setShowUserInspiration] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userInspirationCandidates, setUserInspirationCandidates] = useState<string[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showInspirationCandidates, setShowInspirationCandidates] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingUserInspiration, setIsLoadingUserInspiration] = useState(false);
 
   // ユーザー文章強化機能
@@ -150,23 +136,15 @@ export default function ChatPage() {
   // 文章強化機能
   const [selectedText, setSelectedText] = useState('');
   const [selectedMessageId, setSelectedMessageId] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showEnhanceButton, setShowEnhanceButton] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [enhanceButtonPosition, setEnhanceButtonPosition] = useState({ x: 0, y: 0 });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isEnhancing, setIsEnhancing] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [enhancementResult, setEnhancementResult] = useState<{
     originalText: string;
     enhancedText: string;
     messageId: string;
   } | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showEnhancementModal, setShowEnhancementModal] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
   // Personaインポート/エクスポート
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -187,12 +165,9 @@ export default function ChatPage() {
   // 🚨 画面右上5つのアイコン関連State変数 - 重要機能保護終了 🚨
 
   const [isPersonaImportExportOpen, setIsPersonaImportExportOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isEnhancedImpressionOpen, setIsEnhancedImpressionOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentImpressions, setCurrentImpressions] = useState<ChatImpression[]>([]);
   const [isGeneratingImpression, setIsGeneratingImpression] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
   // Zustandストアから設定を取得
   const { 
@@ -204,7 +179,13 @@ export default function ChatPage() {
     initializeTrackersForSession,
     analyzeMessageForTrackerUpdates,
     setCurrentCharacter: setStoreCurrentCharacter,
-    currentCharacter: storeCurrentCharacter
+    currentCharacter: storeCurrentCharacter,
+    userPersonas,
+    currentPersona,
+    setUserPersona,
+    addUserPersona,
+    updateUserPersona,
+    deleteUserPersona
   } = useChatStore();
 
   // タッチジェスチャー管理
@@ -2237,14 +2218,14 @@ export default function ChatPage() {
               {activeTab === 'personas' && (
                 <div className="h-full flex flex-col">
                   <PersonaSelector
-                    personas={allPersonas}
+                    personas={userPersonas}
                     currentPersona={currentPersona}
                     onSelectPersona={(persona) => {
                       // デフォルトペルソナの場合はnullを設定
                       if (persona?.id === 'default-persona') {
-                        setCurrentPersona(null);
+                        setUserPersona(null);
                       } else {
-                        setCurrentPersona(persona);
+                        setUserPersona(persona);
                       }
                     }}
                     onAddPersona={() => {
@@ -2269,14 +2250,7 @@ export default function ChatPage() {
                       }
                       
                       if (confirm(`「${persona.name}」を削除しますか？`)) {
-                        const updatedPersonas = allPersonas.filter(p => p.id !== persona.id);
-                        setAllPersonas(updatedPersonas);
-                        localStorage.setItem('ai-chat-personas', JSON.stringify(updatedPersonas));
-                        
-                        if (currentPersona?.id === persona.id) {
-                          // 削除されたペルソナが現在選択中の場合は、デフォルトペルソナに戻す
-                          setCurrentPersona(null);
-                        }
+                        deleteUserPersona(persona.id);
                       }
                     }}
                     onImportExport={() => setIsPersonaImportExportOpen(true)}
@@ -3002,11 +2976,13 @@ export default function ChatPage() {
           onClose={() => setIsPersonaModalOpen(false)}
           initialPersona={editingPersona}
           onSave={(savedPersona) => {
-            const newPersonas = editingPersona
-              ? allPersonas.map(p => p.id === savedPersona.id ? savedPersona : p)
-              : [...allPersonas, savedPersona];
-            setAllPersonas(newPersonas);
-            localStorage.setItem('ai-chat-personas', JSON.stringify(newPersonas));
+            if (editingPersona) {
+              // 編集の場合
+              updateUserPersona(savedPersona.id, savedPersona);
+            } else {
+              // 新規追加の場合
+              addUserPersona(savedPersona);
+            }
             setIsPersonaModalOpen(false);
           }}
         />

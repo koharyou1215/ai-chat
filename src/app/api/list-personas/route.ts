@@ -11,11 +11,17 @@ export async function GET() {
       return NextResponse.json([]);
     }
     
-    // .jsonファイルのみをフィルター
     const files = fs.readdirSync(personasDir)
       .filter(file => file.endsWith('.json'));
+
+    const personas = files.map(file => {
+      const filePath = path.join(personasDir, file);
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const persona = JSON.parse(fileContent);
+      return persona;
+    });
     
-    return NextResponse.json(files);
+    return NextResponse.json(personas);
   } catch (error) {
     console.error('Personas list error:', error);
     return NextResponse.json([], { status: 500 });

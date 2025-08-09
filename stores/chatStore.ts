@@ -35,6 +35,8 @@ interface ChatStore {
   loadSettings: () => Promise<void>;
   setUserPersona: (persona: UserPersona) => void;
   addUserPersona: (persona: UserPersona) => void;
+  updateUserPersona: (id: string, persona: UserPersona) => void;
+  deleteUserPersona: (id: string) => void;
   setLoading: (loading: boolean) => void;
   toggleSidebar: () => void;
   
@@ -348,6 +350,24 @@ export const useChatStore = create<ChatStore>()(
         set((state) => ({ userPersonas: [...state.userPersonas, persona] }));
       },
 
+      updateUserPersona: (id, persona) => {
+        set((state) => ({
+          userPersonas: state.userPersonas.map(p => p.id === id ? persona : p),
+          currentPersona: state.currentPersona?.id === id ? persona : state.currentPersona
+        }));
+      },
+
+      deleteUserPersona: (id) => {
+        set((state) => {
+          const updatedPersonas = state.userPersonas.filter(p => p.id !== id);
+          const currentPersona = state.currentPersona?.id === id ? defaultPersona : state.currentPersona;
+          return { 
+            userPersonas: updatedPersonas,
+            currentPersona: currentPersona
+          };
+        });
+      },
+
       setLoading: (loading) => {
         set({ isLoading: loading });
       },
@@ -585,6 +605,7 @@ export const useChatStore = create<ChatStore>()(
       name: 'ai-chat-store',
       partialize: (state) => ({
         currentCharacter: state.currentCharacter,
+        currentPersona: state.currentPersona,
         sessions: state.sessions,
         userPersonas: state.userPersonas,
         settings: state.settings,

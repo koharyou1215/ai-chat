@@ -78,7 +78,7 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <User size={28} />
-            {persona ? 'Persona編集' : '新しいPersona'}
+            {initialPersona ? 'Persona編集' : '新しいPersona'}
           </h2>
           <button
             onClick={onClose}

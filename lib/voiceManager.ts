@@ -24,6 +24,24 @@ export class VoiceManager {
   private static currentAudio: HTMLAudioElement | null = null;
   private static isPlaying: boolean = false;
   private static apiKey: string = '';
+  private static isAudioUnlocked: boolean = false;
+
+  /**
+   * ユーザーのインタラクションでオーディオコンテキストをアンロックする
+   * モバイルデバイスでの自動再生制限を回避するために一度だけ呼び出す
+   */
+  static unlockAudio() {
+    if (this.isAudioUnlocked) return;
+    try {
+      const audio = new Audio();
+      audio.volume = 0;
+      audio.play().catch(() => {});
+      this.isAudioUnlocked = true;
+      console.log('🔊 Audio context unlocked by user interaction.');
+    } catch (error) {
+      console.error('Failed to unlock audio context:', error);
+    }
+  }
 
   /**
    * APIキーを設定

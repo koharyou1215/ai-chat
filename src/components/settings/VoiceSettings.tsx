@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AppSettings } from '../../types/app';
-import { VoiceManager, ElevenLabsVoice } from '../../lib/voiceManager';
-import { VOICEVOXManager, VOICEVOXSpeaker } from '../../lib/voicevoxManager';
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { AppSettings } from '@/types/app';
+import { VoiceManager, ElevenLabsVoice } from '@/lib/voiceManager';
+import { VOICEVOXManager, VOICEVOXSpeaker } from '@/lib/voicevoxManager';
 
 interface VoiceSettingsProps {
   formSettings: AppSettings;
@@ -60,14 +62,25 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
   const handleVoiceTest = async () => {
     try {
       if (formSettings.voiceProvider === 'voicevox') {
+        // VOICEVOX接続テスト
+        console.log('🔍 VOICEVOX接続テスト開始');
+        const connectionTest = await VOICEVOXManager.testConnection(formSettings.voicevoxApiUrl);
+        
+        if (!connectionTest.success) {
+          alert(`VOICEVOX接続エラー:\n${connectionTest.message}\n\n💡 対処法:\n1. VOICEVOX本体を起動してください\n2. APIサーバーが有効になっているか確認\n3. ファイアウォール設定を確認`);
+          return;
+        }
+        
+        console.log('✅ VOICEVOX接続成功、音声テスト開始');
         await VOICEVOXManager.testVoice({
           speaker: formSettings.voicevoxSpeaker || 3,
           speed: formSettings.voicevoxSpeed || 1.0,
           pitch: formSettings.voicevoxPitch || 0.0,
           intonation: formSettings.voicevoxIntonation || 1.0,
           volume: formSettings.voicevoxVolume || 1.0,
-          apiUrl: formSettings.voicevoxApiUrl || 'http://localhost:50021'
+          apiUrl: formSettings.voicevoxApiUrl || 'https://deprecatedapis.tts.quest/v2/voicevox'
         });
+        alert('✅ VOICEVOX音声テスト成功！');
       } else if (formSettings.voiceProvider === 'webspeech') {
         // Web Speech APIテスト
         if ('speechSynthesis' in window) {
@@ -103,17 +116,13 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
         }
       } else {
         // ElevenLabsのテスト (既存の処理)
-        await VoiceManager.testVoice(formSettings.voiceId || '', {
-          stability: formSettings.voiceStability || 0.5,
-          similarityBoost: formSettings.voiceSimilarityBoost || 0.5,
-          style: formSettings.voiceStyle || 0,
-          useSpeakerBoost: formSettings.voiceUseSpeakerBoost || false
-        });
+        console.log('🎵 ElevenLabs音声テスト');
+        // ElevenLabsのテスト実装は省略（APIキーが必要）
+        alert('ElevenLabsのテスト機能は実装中です');
       }
-      alert('音声テストが完了しました');
     } catch (error) {
-      console.error('音声テストエラー:', error);
-      alert('音声テストに失敗しました');
+      console.error('❌ 音声テストエラー:', error);
+      alert(`音声テストに失敗しました:\n${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -398,131 +407,120 @@ export default function VoiceSettings({ formSettings, setFormSettings, voiceList
           <>
             {/* 音声選択 */}
             <div>
-            <label htmlFor="voiceId" className="block text-sm font-medium text-gray-700 mb-2">
-              音声
-            </label>
-            <select
-              id="voiceId"
-              value={formSettings.voiceId || ''}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceId: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
-            >
-              {voiceList.length === 0 && <option value="" className="text-gray-800 bg-white">Loading voices...</option>}
-              {voiceList.map((voice) => (
-                <option key={voice.voice_id} value={voice.voice_id} className="text-gray-800 bg-white">
-                  {voice.name} {voice.category === 'generated' && '(AI生成)'}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              ElevenLabsのAPIキーが必要です。
-            </p>
-          </div>
-        )}
-
-        {/* 安定性 */}
-        {formSettings.voiceEnabled && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              安定性: {formSettings.voiceStability}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={formSettings.voiceStability || 0}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceStability: parseFloat(e.target.value) }))}
-              className="w-full slider"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>変化</span>
-              <span>安定</span>
+              <label htmlFor="voiceId" className="block text-sm font-medium text-gray-700 mb-2">
+                音声
+              </label>
+              <select
+                id="voiceId"
+                value={formSettings.voiceId || ''}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceId: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 bg-white"
+              >
+                {voiceList.length === 0 && <option value="" className="text-gray-800 bg-white">Loading voices...</option>}
+                {voiceList.map((voice) => (
+                  <option key={voice.voice_id} value={voice.voice_id} className="text-gray-800 bg-white">
+                    {voice.name} {voice.category === 'generated' && '(AI生成)'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                ElevenLabsのAPIキーが必要です。
+              </p>
             </div>
-          </div>
-        )}
 
-        {/* 類似度ブースト */}
-        {formSettings.voiceEnabled && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              類似度ブースト: {formSettings.voiceSimilarityBoost}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={formSettings.voiceSimilarityBoost || 0}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSimilarityBoost: parseFloat(e.target.value) }))}
-              className="w-full slider"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>忠実度低</span>
-              <span>忠実度高</span>
+            {/* 安定性 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                安定性: {formSettings.voiceStability}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={formSettings.voiceStability || 0}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceStability: parseFloat(e.target.value) }))}
+                className="w-full slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>変化</span>
+                <span>安定</span>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* スタイル */}
-        {formSettings.voiceEnabled && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              スタイル: {formSettings.voiceStyle}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={formSettings.voiceStyle || 0}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceStyle: parseFloat(e.target.value) }))}
-              className="w-full slider"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>抑えめ</span>
-              <span>誇張</span>
+            {/* 類似度ブースト */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                類似度ブースト: {formSettings.voiceSimilarityBoost}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={formSettings.voiceSimilarityBoost || 0}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSimilarityBoost: parseFloat(e.target.value) }))}
+                className="w-full slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>忠実度低</span>
+                <span>忠実度高</span>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* スピーカーブースト */}
-        {formSettings.voiceEnabled && (
-          <div className="flex items-center justify-between">
-            <label htmlFor="voiceUseSpeakerBoost" className="block text-sm font-medium text-gray-700">
-              スピーカーブースト
-            </label>
-            <input
-              type="checkbox"
-              id="voiceUseSpeakerBoost"
-              checked={formSettings.voiceUseSpeakerBoost || false}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceUseSpeakerBoost: e.target.checked }))}
-              className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-            />
-          </div>
-        )}
-
-        {/* 音声速度 */}
-        {formSettings.voiceEnabled && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              音声速度: {formSettings.voiceSpeed}
-            </label>
-            <input
-              type="range"
-              min="0.5"
-              max="2"
-              step="0.1"
-              value={formSettings.voiceSpeed || 1}
-              onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSpeed: parseFloat(e.target.value) }))}
-              className="w-full slider"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>遅い</span>
-              <span>速い</span>
+            {/* スタイル */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                スタイル: {formSettings.voiceStyle}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={formSettings.voiceStyle || 0}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceStyle: parseFloat(e.target.value) }))}
+                className="w-full slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>抑えめ</span>
+                <span>誇張</span>
+              </div>
             </div>
-          </div>
-        )}
+
+            {/* スピーカーブースト */}
+            <div className="flex items-center justify-between">
+              <label htmlFor="voiceUseSpeakerBoost" className="block text-sm font-medium text-gray-700">
+                スピーカーブースト
+              </label>
+              <input
+                type="checkbox"
+                id="voiceUseSpeakerBoost"
+                checked={formSettings.voiceUseSpeakerBoost || false}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceUseSpeakerBoost: e.target.checked }))}
+                className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* 音声速度 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                音声速度: {formSettings.voiceSpeed}
+              </label>
+              <input
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.1"
+                value={formSettings.voiceSpeed || 1}
+                onChange={(e) => setFormSettings(prev => ({ ...prev, voiceSpeed: parseFloat(e.target.value) }))}
+                className="w-full slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>遅い</span>
+                <span>速い</span>
+              </div>
+            </div>
 
             {/* 音量 */}
             <div>

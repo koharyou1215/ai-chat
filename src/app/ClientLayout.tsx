@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChatMemoProvider } from '../components/ChatMemoProvider'
 import { useChatStore } from '../../stores/chatStore'
+import { VoiceManager } from '../../lib/voiceManager'; // VoiceManagerをインポート
 
 import SettingsModal from '../../components/SettingsModal'
 
@@ -26,6 +27,20 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   useEffect(() => {
     videoRef.current?.play().catch(() => {})
   }, [])
+
+  // モバイルでの音声自動再生を有効化するためのユーザーインタラクションハンドラ
+  useEffect(() => {
+    const handleFirstUserInteraction = () => {
+      VoiceManager.unlockAudio();
+      window.removeEventListener('click', handleFirstUserInteraction);
+    };
+
+    window.addEventListener('click', handleFirstUserInteraction);
+
+    return () => {
+      window.removeEventListener('click', handleFirstUserInteraction);
+    };
+  }, []);
 
   return (
     <ChatMemoProvider>

@@ -64,7 +64,7 @@ export class VOICEVOXManager {
     pitch: 0.0,
     intonation: 1.0,
     volume: 1.0,
-    apiUrl: 'https://deprecatedapis.tts.quest/v2/voicevox' // 公開API
+    apiUrl: 'http://localhost:50021' // デフォルトをローカルエンジンに変更
   };
 
   /**
