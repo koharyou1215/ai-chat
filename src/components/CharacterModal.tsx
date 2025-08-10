@@ -67,21 +67,35 @@ export default function CharacterModal({ isOpen, onClose, character, onSave, fro
         characterDef?.scenario?.initial_situation ||
         '';
 
-      // 2. systemPrompt の正規化処理
+      // 2. systemPrompt の正規化処理（複数パターン対応）
       const systemPromptFromProps = 
         character.systemPrompt || 
+        character.system_prompt ||
+        (character as any)['system-prompt'] ||
+        characterDef?.systemPrompt ||
         '';
 
-      // 3. appearanceNegativePrompt の正規化処理
+      // 3. appearanceNegativePrompt の正規化処理（複数パターン対応＋深掘り検索）
       const negFromProps = 
         character.appearanceNegativePrompt || 
+        character.appearance_negative_prompt ||
+        (character as any)['appearance-negative-prompt'] ||
+        character.negativePrompt ||
+        character.negative_prompt ||
         characterDef?.appearance?.negativePrompt ||
+        characterDef?.appearanceNegativePrompt ||
+        (characterDef as any)?.['appearance-negative-prompt'] ||
         '';
 
-      // 4. nsfw_profile の正規化処理
+      // 4. nsfw_profile の正規化処理（複数パターン対応＋深掘り検索）
       const nsfwFromProps = 
         character.nsfw_profile ||
+        character.nsfwProfile ||
+        (character as any)['nsfw-profile'] ||
+        (character as any)['nsfw_profile'] ||
         characterDef?.nsfw_profile ||
+        (characterDef as any)?.nsfwProfile ||
+        (characterDef as any)?.['nsfw-profile'] ||
         undefined;
 
       console.log('📊 モーダル正規化後の値:', {
@@ -91,11 +105,11 @@ export default function CharacterModal({ isOpen, onClose, character, onSave, fro
         nsfwFromProps
       });
 
-      // 🚨 カスタムキャラクター4項目が空の場合の緊急フォールバック 🚨
-      const emergencyFirstMessage = firstMsgFromProps || character.first_message || 'こんにちは！';
-      const emergencySystemPrompt = systemPromptFromProps || character.systemPrompt || '';
-      const emergencyNegPrompt = negFromProps || character.appearanceNegativePrompt || '';
-      const emergencyNsfw = nsfwFromProps || character.nsfw_profile || '';
+      // 🚨 カスタムキャラクター4項目が空の場合の緊急フォールバック（より包括的） 🚨
+      const emergencyFirstMessage = firstMsgFromProps || character.first_message || characterDef?.first_message || 'こんにちは！';
+      const emergencySystemPrompt = systemPromptFromProps || character.systemPrompt || characterDef?.systemPrompt || character.system_prompt || characterDef?.system_prompt || '';
+      const emergencyNegPrompt = negFromProps || character.appearanceNegativePrompt || characterDef?.appearanceNegativePrompt || '';
+      const emergencyNsfw = nsfwFromProps || character.nsfw_profile || characterDef?.nsfw_profile || '';
 
       console.log('🚨 緊急フォールバック後の値:', {
         emergencyFirstMessage,
@@ -158,8 +172,15 @@ export default function CharacterModal({ isOpen, onClose, character, onSave, fro
         occupation: character.occupation || '',
         background: characterDef?.background || character.background || '',
         avatar_url: character.avatar_url || '',
-        appearancePrompt: characterDef?.appearance?.prompt || character.appearancePrompt || '',
-        chatBackgroundUrl: character.chatBackgroundUrl || '',
+        appearancePrompt: 
+          character.appearancePrompt || 
+          character.appearance_prompt ||
+          (character as any)['appearance-prompt'] ||
+          characterDef?.appearance?.prompt || 
+          characterDef?.appearancePrompt ||
+          (characterDef as any)?.['appearance-prompt'] ||
+          '',
+        chatBackgroundUrl: character.chatBackgroundUrl || character.chat_background_url || '',
         trackers: Array.isArray(character.trackers) ? character.trackers : []
       });
 

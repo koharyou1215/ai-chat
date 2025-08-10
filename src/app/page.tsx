@@ -745,12 +745,14 @@ export default function ChatPage() {
 
     const messageContent = message.trim();
     // ユニークなIDでメッセージを作成（重複を避けるため）
-    const messageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const uniqueTimestamp = Date.now();
+    const randomSeed = Math.random().toString(36).substr(2, 12);
+    const messageId = `user-${uniqueTimestamp}-${randomSeed}`;
     const newMessage: Message = {
       id: messageId,
       role: 'user',
       content: messageContent,
-      timestamp: Date.now()
+      timestamp: uniqueTimestamp
     };
 
     // メッセージを即座にクリア（重複送信防止）
@@ -796,7 +798,10 @@ export default function ChatPage() {
       console.log('🌐 API呼び出し開始');
       const chatResponse = await fetch('/api/simple-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
         body: JSON.stringify({
           message: newMessage.content,
           settings,
@@ -806,17 +811,22 @@ export default function ChatPage() {
           memos,
           conversation: conversationContext,
           // 現在のトラッカー状態を送信
-          trackers: trackersWithCurrentState
+          trackers: trackersWithCurrentState,
+          // キャッシュ防止用のユニークID
+          requestId: `${uniqueTimestamp}-${randomSeed}`
         }),
       });
 
       let aiContent = '';
-      const aiResponseId = `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // AI応答もユーザーメッセージに対応する一意のIDを生成
+      const aiTimestamp = Date.now();
+      const aiRandomSeed = Math.random().toString(36).substr(2, 12);
+      const aiResponseId = `ai-${aiTimestamp}-${aiRandomSeed}`;
       const aiResponse: Message = {
         id: aiResponseId,
         role: 'assistant',
         content: '', // Start with an empty message, content will be streamed
-        timestamp: Date.now(),
+        timestamp: aiTimestamp,
       };
       
       console.log('🤖 AI応答スロット作成:', aiResponseId);
@@ -839,12 +849,25 @@ export default function ChatPage() {
                 const changeInfo = update.change || '';
                 
                 console.log(`🔄 トラッカー更新適用: ${trackerName} = ${newValue} (${changeInfo})`);
-                updateTrackerValue(currentSessionId, trackerName, newValue, currentCharacter);
+                updateTrackerValue(currentSessionId, trackerName, newValue);
                 
                 // アニメーション用の追加ログ
                 console.log(`✨ トラッカー「${trackerName}」の値が変更されました: ${changeInfo}`);
               }
             });
+          } else {
+            // APIからトラッカー更新がない場合は、フロントエンドで自動推測を実行
+            console.log('📊 APIからトラッカー更新なし、フロントエンド自動推測を実行');
+            if (currentSessionId && currentCharacter && chatData.content) {
+              // AI応答を分析してトラッカー値を推測更新
+              analyzeMessageForTrackerUpdates(currentSessionId, {
+                id: `ai-analysis-${Date.now()}`,
+                role: 'assistant',
+                content: chatData.content,
+                timestamp: Date.now()
+              }, currentCharacter);
+              console.log('📊 フロントエンド自動推測完了');
+            }
           }
           
           if (chatData.candidates && chatData.candidates.length > 1) {
@@ -1900,8 +1923,20 @@ export default function ChatPage() {
 
       // トラッカー分析（AIメッセージが完了した後）
       if (aiContent && currentCharacter && currentSessionId) {
-        const completedMessage = { ...aiMsg, content: aiContent };
+        const completedMessage = { ...aiResponse, content: aiContent };
+        console.log('📊 トラッカー分析を実行:', {
+          sessionId: currentSessionId,
+          characterName: currentCharacter.name,
+          messageLength: aiContent.length,
+          hasTrackers: !!currentCharacter.trackers
+        });
         analyzeMessageForTrackerUpdates(currentSessionId, completedMessage, currentCharacter);
+        
+        // トラッカー更新後、現在の値をログ出力
+        if (currentCharacter.trackers) {
+          const updatedValues = getTrackerValues(currentSessionId);
+          console.log('📊 トラッカー更新後の値:', updatedValues);
+        }
       }
 
       if (aiContent && settings.chatNotificationSound) {
@@ -2563,7 +2598,10 @@ export default function ChatPage() {
                   <CharacterTrackerDisplay
                     trackers={currentCharacter.trackers}
                     currentValues={trackerValues}
-                    onChange={(name, value) => updateTrackerValue(currentSessionId, name, value, currentCharacter)}
+                    onChange={(name, value) => {
+                      console.log('📊 手動トラッカー更新:', { sessionId: currentSessionId, name, value });
+                      updateTrackerValue(currentSessionId, name, value, currentCharacter!);
+                    }}
                     readOnly={false}
                     compact={true}
                   />

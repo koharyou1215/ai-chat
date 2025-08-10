@@ -108,10 +108,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue, trackers } = requestBody;
+    const { message, settings, persona, characterId, character: clientCharacter, memos, conversation, continue: doContinue, trackers, requestId } = requestBody;
     console.log('💬 User message:', message);
     console.log('👤 Character ID:', characterId);
     console.log('⚙️ Settings:', settings);
+    console.log('🔄 Request ID:', requestId); // キャッシュバスティング用
     
     if (!message && !doContinue) {
       return NextResponse.json({
@@ -194,27 +195,42 @@ export async function POST(request: NextRequest) {
 
     console.log('Model config maxOutputTokens:', modelConfig.generationConfig.maxOutputTokens); // デバッグログ追加
 
-    // キャラクター情報からプロンプトを生成
-    let basePrompt = '';
-    
-    if (character) {
-      basePrompt = `あなたは{{char}}です。以下の設定に従って{{char}}として行動してください。
+    // 1. 最優先で{{char}}と{{user}}の基本定義を配置
+    let basePrompt = `# 基本設定（最優先）
+{{char}} = ${character?.name || 'ナミ（航海士）'}
+{{user}} = ${persona?.name || 'あなた'}
 
-【キャラクター設定】
-{{char}}の名前: {{char}}
-{{char}}の性格: ${character.personality}
-{{char}}の外見: ${character.appearance}
-{{char}}の話し方: ${character.speaking_style}
-{{char}}のシナリオ: ${character.scenario}
+## キャラクター設定（{{char}}）
+- 名前: ${character?.name || 'ナミ'}
+- 性格概要: ${character?.character_definition?.personality?.summary || character?.personality || '明るく親しみやすい関西弁で話す航海士'}
+- 外面的性格: ${character?.character_definition?.personality?.external || '設定なし'}
+- 内面的性格: ${character?.character_definition?.personality?.internal || '設定なし'}
+- 長所: ${character?.character_definition?.personality?.strengths ? character.character_definition.personality.strengths.join('、') : '設定なし'}
+- 短所: ${character?.character_definition?.personality?.weaknesses ? character.character_definition.personality.weaknesses.join('、') : '設定なし'}
+- 外見: ${character?.character_definition?.appearance?.description || character?.appearance || '設定なし'}  
+- 話し方: ${character?.character_definition?.speaking_style?.base || character?.speaking_style || '関西弁'}
+- 一人称: ${character?.character_definition?.speaking_style?.first_person || '設定なし'}
+- 二人称: ${character?.character_definition?.speaking_style?.second_person || '設定なし'}
+- 口癖: ${character?.character_definition?.speaking_style?.quirks || '設定なし'}
+- 職業: ${character?.occupation || '設定なし'}
+- 年齢: ${character?.age || '設定なし'}
+- シナリオ: ${character?.character_definition?.scenario?.initial_situation || character?.scenario || '設定なし'}
+- 世界観: ${character?.character_definition?.scenario?.worldview || '設定なし'}
+- ユーザーとの関係: ${character?.character_definition?.scenario?.relationship_with_user || '設定なし'}
+- 背景: ${character?.character_definition?.background || character?.background || '設定なし'}
 
-${character.example_dialogue ? `【会話例】\n${character.example_dialogue.map((ex: ExampleDialogue) => `{{user}}: ${ex.user}\n{{char}}: ${ex.char}`).join('\n\n')}` : ''}
+## ユーザー設定（{{user}}）
+- 名前: ${persona?.name || 'あなた'}
+- 説明: ${persona?.description || '設定なし'}
+- 役割: ${persona?.role || '設定なし'}
+- 特徴: ${Array.isArray(persona?.traits) ? persona.traits.join('、') : '設定なし'}
+- 好きなもの: ${Array.isArray(persona?.likes) ? persona.likes.join('、') : '設定なし'}
+- 嫌いなもの: ${Array.isArray(persona?.dislikes) ? persona.dislikes.join('、') : '設定なし'}
+- その他の設定: ${persona?.other_settings || '設定なし'}
 
-上記の設定を厳密に守り、{{char}}として一貫した返答をしてください。
-{{user}}は会話相手を指します。{{char}}は{{char}}を指します。`;
-    } else {
-      // 完全なフォールバック
-      basePrompt = `あなたは{{char}}（ナミ）という名前の航海士です。明るく親しみやすい関西弁で話してください。{{user}}は会話相手を指します。`;
-    }
+${character?.example_dialogue ? `\n## 会話例\n${character.example_dialogue.map((ex: ExampleDialogue) => `{{user}}: ${ex.user}\n{{char}}: ${ex.char}`).join('\n\n')}` : ''}
+
+**重要**: 以降は全て{{char}}として一貫した返答を行い、{{user}}の設定を考慮して対話してください。`
     
     // メモリ情報を追加（雰囲気・関係性・継続目標を強化）
     if (memos && characterId) {
@@ -257,50 +273,30 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         '次の一歩（感情の変化や状況の進展）を短いアクション/セリフで前進させてください。';
 
       if (memorySummary || moodLine || relLine) {
-        basePrompt += '\n\n【長期メモと雰囲気/関係性の指針】';
+        basePrompt += '\n\n## 記憶と関係性の情報';
         if (memorySummary) basePrompt += `\n${memorySummary}`;
         if (moodLine || relLine) {
-          basePrompt += '\n- 文脈ラベル（推定）:';
-          if (moodLine) basePrompt += `\n  ${moodLine}`;
-          if (relLine) basePrompt += `\n  ${relLine}`;
+          basePrompt += '\n### 現在の状況:';
+          if (moodLine) basePrompt += `\n- ${moodLine}`;
+          if (relLine) basePrompt += `\n- ${relLine}`;
         }
-        basePrompt += `\n- 継続目標: ${continuationGoal}`;
-        basePrompt += '\nこの指針を踏まえ、唐突な場面転換や人格の齟齬を避け、前回までの「空気」を保ってください。';
+        basePrompt += `\n### 会話の指針:\n- 対話の流れ: 最新の{{user}}の発言に直接反応し、会話の自然な流れを作るために、直近2〜3回のやり取りを重視してください\n- 記憶の参照: ただし、{{char}}設定や過去の重要な出来事を忘れないために、送られた全ての会話履歴を「知識のデータベース」として、いつでも参照してかまいません\n- 継続性: 唐突な場面転換や人格の齟齬を避け、前回までの「空気」を保ってください`;
       }
     }
     
-    // Persona情報を追加
-    if (persona && persona.name) {
-      let personaInfo = `\n\n【{{user}}の情報】\n`;
-      personaInfo += `- {{user}}のタイプ: ${persona.name}\n`;
-      
-      if (persona.likes && persona.likes.length > 0) {
-        personaInfo += `- {{user}}の好きなもの: ${persona.likes.join(', ')}\n`;
-      }
-      
-      if (persona.dislikes && persona.dislikes.length > 0) {
-        personaInfo += `- {{user}}の嫌いなもの: ${persona.dislikes.join(', ')}\n`;
-      }
-      
-      if (persona.other_settings) {
-        personaInfo += `- {{user}}のその他の特徴: ${persona.other_settings}\n`;
-      }
-      
-      personaInfo += `\n上記の{{user}}情報を考慮して、{{char}}として{{user}}に合わせた返答をしてください。`;
-      basePrompt += personaInfo;
-    }   // デフォルトシステムプロンプトを先頭に
-    basePrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${basePrompt}`;
-    
-    // キャラクター専用 System Prompt があれば最優先で追加
+    // 2. キャラクター専用 System Prompt があれば基本設定の直後に追加
     if (character?.systemPrompt) {
-      basePrompt = `${character.systemPrompt}\n\n${basePrompt}`;
+      basePrompt += `\n\n## キャラクター専用指示\n${character.systemPrompt}`;
     }
+    
+    // 3. デフォルトシステムプロンプトを最後に追加（{{char}}や{{user}}が既に定義された後）
+    basePrompt += `\n\n${DEFAULT_SYSTEM_PROMPT}`;
 
-    // パラメータトラッカー情報を追加
+    // パラメータトラッカー情報を追加（JSON応答指示なし）
     if (trackers && Array.isArray(trackers) && trackers.length > 0) {
       let trackerInfo = '\n\n## 📊 パラメータトラッカー\n';
       trackerInfo += '以下のパラメータを参考にして、キャラクターの状態を反映した返答をしてください。\n';
-      trackerInfo += '**重要**: 会話内容に応じてパラメータを自然に変動させ、最終的にJSON形式で更新指示を返してください。\n\n';
+      trackerInfo += '**重要**: 会話内容に応じて自然にキャラクターの感情や状態を表現してください。\n\n';
       
       trackers.forEach(tracker => {
         if (tracker && tracker.display_name) {
@@ -339,26 +335,14 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
         }
       });
       
-      // AI用の更新指示を追加
-      trackerInfo += `\n**トラッカー更新指示**:\n`;
-      trackerInfo += `会話の内容に基づいて、適切なパラメータを変更してください。例:\n`;
-      trackerInfo += `- ユーザーが優しい言葉をかけた → 好感度+5～15\n`;
-      trackerInfo += `- ユーザーが冷たい態度を取った → 好感度-10～20\n`;
-      trackerInfo += `- 楽しい会話 → 気分を「楽しい」や「嬉しい」に\n`;
-      trackerInfo += `- 信頼できる行動 → 信頼度+5～10\n\n`;
-      
-      trackerInfo += `変更がある場合、応答の最後に以下の形式でJSONを含めてください:\n`;
-      trackerInfo += `\`\`\`json\n`;
-      trackerInfo += `{\n`;
-      trackerInfo += `  "tracker_updates": [\n`;
-      trackerInfo += `    {"name": "affection", "type": "numeric", "value": 75, "change": "+5"},\n`;
-      trackerInfo += `    {"name": "mood", "type": "state", "value": "嬉しい", "change": "楽しい→嬉しい"}\n`;
-      trackerInfo += `  ]\n`;
-      trackerInfo += `}\n`;
-      trackerInfo += `\`\`\`\n`;
+      // 状態を自然に表現する指示のみ（JSON指示は削除）
+      trackerInfo += `\n**状態表現指示**:\n`;
+      trackerInfo += `これらのパラメータの現在値を考慮して、キャラクターの感情や行動を自然に表現してください。\n`;
+      trackerInfo += `例: 好感度が高い場合は親しみやすく、低い場合は距離を置いた態度を示してください。\n`;
+      trackerInfo += `応答にはJSONやメタ情報を含めず、純粋にキャラクターとしての返答のみを行ってください。\n`;
       
       basePrompt += trackerInfo;
-      console.log('📊 トラッカー情報をプロンプトに追加:', trackers.length, '個');
+      console.log('📊 トラッカー情報をプロンプトに追加:', trackers.length, '個（JSON応答指示なし）');
     }
 
     // 追加のユーザー設定プロンプト
@@ -371,17 +355,8 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       basePrompt = `${settings.jailbreakPrompt}\n\n${basePrompt}`;
     }
 
-    // 最新入力への集中を強調
-    basePrompt += '\n【超重要】最新のユーザー入力に直接応答してください。過去の会話履歴は参考程度に留め、現在の話題に集中してください。2-3ラウンド前の会話に戻ることは避け、最新のメッセージに対する直接的な反応を優先してください。';
-    
-    // モデルが応答を生成しないことを避けるための指示を強化
-    basePrompt += '\n【最終指示】必ず{{char}}の返答を生成してください。空の応答や不完全な応答は許可されません。';
-    
-    // Geminiの内部思考プロセスを防ぐための指示を追加
-    basePrompt += '\n【重要】あなたの内部的な思考プロセスや「Responding to the Situation」のようなメタ的な表現は一切含めず、直接的に{{char}}として返答してください。';
-    
-    // 日本語での応答を強制
-    basePrompt += '\n【言語指示】必ず日本語で返答してください。英語での返答は禁止です。';
+    // 簡潔な指示（重複排除）
+    basePrompt += '\n\n## 応答の基本ルール\n- {{char}}として一貫した日本語での返答\n- 最新の{{user}}入力に直接反応\n- 内部思考やメタ表現は含めない\n- 必ず何らかの返答を生成する';
 
     // レスポンス形式に応じた指示を追加
     if (settings?.responseFormat && settings.responseFormat !== 'normal') {
@@ -418,12 +393,10 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
       basePrompt += 'この直前のやり取りを必ず踏まえて、会話を自然に継続してください。';
     }
     
-    // 会話履歴をテキスト化（空文字やundefinedを除外）
-    // ---- プロンプト短縮 ----
-    // 1) 空行除去 2) 直近の履歴を適切に制限 3) 長すぎるメッセージは要約
+    // 会話履歴をテキスト化（設定値を正しく反映）
     console.log(`📚 元の会話履歴件数: ${conversation ? conversation.length : 0}`);
-    // 履歴をより多めに保持（最低12、上限32まで）し、長文は要約
-    const targetHistorySize = Math.max(12, Math.min(settings?.historySize || 24, 32));
+    // 設定画面の履歴数を正確に使用（最低6、上限50）
+    const targetHistorySize = Math.max(6, Math.min(settings?.historySize || 12, 50));
     // 直前の1往復は要約せずそのまま保持し、それ以前のみ要約（直近忘却対策）
     const filteredConversation = (conversation && Array.isArray(conversation))
       ? conversation
@@ -737,86 +710,50 @@ ${character.example_dialogue ? `【会話例】\n${character.example_dialogue.ma
 
           console.log(`✅ AI API: ${candidateCount}個の候補を生成しました`);
 
-          // トラッカー更新情報を抽出
-          let extractedTrackers: any[] = [];
+          // JSONやメタ情報を除去してクリーンな応答に
           let cleanedResponse = candidates[0];
+          let trackerUpdates: any[] = [];
           
           if (candidates.length > 0) {
             const mainResponse = candidates[0];
-            console.log('📊 トラッカー更新情報を抽出中:', mainResponse.substring(0, 200));
+            console.log('🧹 応答のクリーンアップ中:', mainResponse.substring(0, 200));
             
-            // JSONブロックの抽出と除去（複数パターンに対応）
+            // JSONブロックを除去（複数パターンに対応）
             const jsonPatterns = [
-              /```json\s*([\s\S]*?)\s*```/g,
-              /```\s*([\s\S]*?)\s*```/g,
-              /\{[^}]*"tracker_updates"[^}]*\}/g,
-              /\{[\s\S]*?"tracker_updates"[\s\S]*?\}/g
+              /```json\s*[\s\S]*?\s*```/gi,
+              /```\s*[\s\S]*?\s*```/gi,
+              /\{[\s\S]*?"tracker_updates"[\s\S]*?\}/gi
             ];
             
-            let foundTrackerUpdates = false;
-            
             for (const pattern of jsonPatterns) {
-              const matches = mainResponse.match(pattern);
-              if (matches) {
-                for (const jsonMatch of matches) {
-                  try {
-                    // JSONの内容を抽出
-                    let jsonContent = jsonMatch.replace(/```json\s*|\s*```|```\s*|\s*```/g, '').trim();
-                    
-                    // もしJSONでなく文字列の場合、より柔軟に処理
-                    if (!jsonContent.startsWith('{')) {
-                      const jsonStart = jsonContent.indexOf('{');
-                      const jsonEnd = jsonContent.lastIndexOf('}');
-                      if (jsonStart !== -1 && jsonEnd !== -1) {
-                        jsonContent = jsonContent.substring(jsonStart, jsonEnd + 1);
-                      }
-                    }
-                    
-                    const parsed = JSON.parse(jsonContent);
-                    
-                    if (parsed.tracker_updates && Array.isArray(parsed.tracker_updates)) {
-                      console.log('📊 トラッカー更新指示を発見:', parsed.tracker_updates);
-                      extractedTrackers = parsed.tracker_updates;
-                      foundTrackerUpdates = true;
-                      
-                      // 応答からJSONブロックを削除
-                      cleanedResponse = mainResponse.replace(jsonMatch, '').trim();
-                      console.log('🧹 JSON除去後の応答長:', cleanedResponse.length);
-                      break;
-                    }
-                  } catch (parseError) {
-                    console.warn('⚠️ JSON解析失敗:', parseError);
-                  }
-                }
-                if (foundTrackerUpdates) break;
-              }
+              cleanedResponse = cleanedResponse.replace(pattern, '').trim();
             }
             
-            // その他のメタデータ的な文言も除去
-            if (!foundTrackerUpdates) {
-              // トラッカー関連のメタ文言を除去
-              cleanedResponse = cleanedResponse
-                .replace(/\[?トラッカー.*?更新.*?\]?/gi, '')
-                .replace(/\[?パラメータ.*?変更.*?\]?/gi, '')
-                .replace(/\[?.*?トラッカー.*?\]?/gi, '')
-                .replace(/【.*?トラッカー.*?】/gi, '')
-                .replace(/（.*?トラッカー.*?）/gi, '')
-                .replace(/\*.*?トラッカー.*?\*/gi, '')
-                .trim();
+            // トラッカー関連のメタ文言も除去
+            cleanedResponse = cleanedResponse
+              .replace(/\[?トラッカー.*?更新.*?\]?/gi, '')
+              .replace(/\[?パラメータ.*?変更.*?\]?/gi, '')
+              .replace(/\[?.*?トラッカー.*?\]?/gi, '')
+              .replace(/【.*?トラッカー.*?】/gi, '')
+              .replace(/（.*?トラッカー.*?）/gi, '')
+              .replace(/\*.*?トラッカー.*?\*/gi, '')
+              .replace(/^\s*\n+|\n+\s*$/g, '') // 前後の空行も除去
+              .trim();
+            
+            // 自動推測でトラッカー更新を検出
+            if (trackers && trackers.length > 0) {
+              console.log('📊 トラッカー自動推測を実行');
+              trackerUpdates = autoDetectTrackerChanges(cleanedResponse, trackers);
             }
             
-            // JSONが見つからない場合、自動推測
-            if (extractedTrackers.length === 0 && trackers) {
-              console.log('📊 JSONが見つからない、自動推測を試行');
-              extractedTrackers = autoDetectTrackerChanges(mainResponse, trackers);
-            }
+            console.log('🧹 クリーンアップ完了 応答長:', cleanedResponse.length);
           }
 
           return NextResponse.json({
             success: true,
-            content: cleanedResponse, // クリーンアップされた応答を使用
+            content: cleanedResponse, // クリーンアップされた応答
             candidates: [cleanedResponse], // 候補もクリーンアップ
-            trackers: extractedTrackers // 更新されたトラッカー情報を返す
+            trackers: trackerUpdates // 自動推測されたトラッカー更新情報
           });
         } catch (multipleRequestError) {
           console.warn('❌ 順次候補生成に失敗、単一候補で再試行:', multipleRequestError);

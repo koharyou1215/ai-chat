@@ -497,72 +497,217 @@ export const useChatStore = create<ChatStore>()(
         const { trackerValues, updateTrackerValue } = get();
         const currentValues = trackerValues[sessionId] || {};
         
-        // 簡単な感情・行動分析
+        // メッセージ内容を分析（詳細ログ付き）
         const content = message.content.toLowerCase();
+        console.log(`🔍 トラッカー分析開始:`, { 
+          sessionId: sessionId.substring(0, 8) + '...', 
+          contentLength: content.length, 
+          trackerCount: character.trackers.length,
+          contentPreview: content.substring(0, 100) + '...'
+        });
+        
+        let updatedTrackers = 0;
         
         character.trackers.forEach(tracker => {
           const currentValueData = currentValues[tracker.name];
-          const currentValue: number = typeof currentValueData === 'object' && currentValueData?.value !== undefined 
-            ? (typeof currentValueData.value === 'number' ? currentValueData.value : 0)
-            : (typeof currentValueData === 'number' ? currentValueData : (tracker.initial_value || 0));
-          const maxValue = tracker.max_value || 100;
+          let currentValue: number | string | boolean;
           let delta = 0;
+          let newValue: number | string | boolean | undefined;
+          let shouldUpdate = false;
 
-          // トラッカー名に基づく分析
+          // 現在値を取得（型に応じて適切なデフォルト値を設定）
+          if (typeof currentValueData === 'object' && currentValueData?.value !== undefined) {
+            currentValue = currentValueData.value;
+          } else {
+            // 初期値を設定
+            switch (tracker.type) {
+              case 'numeric':
+                currentValue = tracker.initial_value ?? 0;
+                break;
+              case 'state':
+                currentValue = tracker.initial_state ?? (tracker.possible_states?.[0] || '');
+                break;
+              case 'boolean':
+                currentValue = tracker.initial_boolean ?? false;
+                break;
+              case 'text':
+                currentValue = tracker.initial_text ?? '';
+                break;
+              default:
+                currentValue = 0;
+            }
+          }
+
+          // トラッカー名ベースの詳細分析
           switch (tracker.name) {
+            case 'role_immersion_level':
+              // 魔法少女役への没入度
+              if (content.includes('魔法少女') || content.includes('愛と正義')) delta += 8;
+              if (content.includes('浄化') || content.includes('愛の力')) delta += 6;
+              if (content.includes('撮影') || content.includes('企画')) delta += 4;
+              if (content.includes('ぴぃー') || content.includes('きゃぴ')) delta += 5;
+              if (content.includes('悪の組織') || content.includes('幹部')) delta += 3;
+              if (content.includes('現実') || content.includes('拉致')) delta -= 15;
+              if (content.includes('助け') && content.includes('来た')) delta -= 10;
+              if (content.includes('本当') && content.includes('だ')) delta -= 8;
+              break;
+
+            case 'restraint_status':
+              // 拘束状態（state型トラッカー）
+              const currentState = currentValue as string;
+              if (content.includes('外し') || content.includes('外れ')) {
+                if (content.includes('目隠し')) {
+                  if (currentState.includes('目隠し')) {
+                    newValue = currentState.replace('＋目隠し', '').replace('目隠し＋', '');
+                    if (newValue === '手足拘束') newValue = '手足拘束';
+                    shouldUpdate = true;
+                  }
+                }
+                if (content.includes('拘束') || content.includes('縄')) {
+                  newValue = '軽度拘束';
+                  shouldUpdate = true;
+                }
+              }
+              if (content.includes('縛') && content.includes('強く')) {
+                newValue = '完全固定';
+                shouldUpdate = true;
+              }
+              break;
+
+            case 'aphrodisiac_effect':
+              // 媚薬効果
+              if (content.includes('熱') || content.includes('火照')) delta += 4;
+              if (content.includes('痺れ') || content.includes('ぞわぞわ')) delta += 5;
+              if (content.includes('ふわふわ') || content.includes('ドキドキ')) delta += 6;
+              if (content.includes('身体中') || content.includes('全身')) delta += 4;
+              if (content.includes('感覚') && content.includes('鋭敏')) delta += 3;
+              if (content.includes('背筋') && content.includes('ゾクゾク')) delta += 4;
+              if (content.includes('震え') || content.includes('ぶるぶる')) delta += 3;
+              if (content.includes('冷静') || content.includes('落ち着')) delta -= 5;
+              break;
+
+            case 'trust_in_user':
+              // ユーザーへの信頼度
+              if (content.includes('こういちおにいさん') && (content.includes('優しい') || content.includes('守られ'))) delta += 8;
+              if (content.includes('安心') || content.includes('落ち着く')) delta += 6;
+              if (content.includes('ドキドキ') && content.includes('おにいさん')) delta += 4;
+              if (content.includes('頼り') || content.includes('信頼')) delta += 5;
+              if (content.includes('助け') && content.includes('来た')) delta += 12;
+              if (content.includes('本当') && content.includes('だ')) delta += 8;
+              if (content.includes('悪の組織') || content.includes('悪役')) delta -= 2;
+              if (content.includes('意地悪') || content.includes('焦らす')) delta += 2; // 悪役だけど興味深い
+              if (content.includes('嘘つき') || content.includes('からかう')) delta += 1;
+              break;
+
+            case 'realizes_reality':
+              // 現実認識（boolean型）
+              if (content.includes('助け') && content.includes('来た')) {
+                newValue = true;
+                shouldUpdate = true;
+              } else if (content.includes('本当') && content.includes('だ')) {
+                newValue = true;
+                shouldUpdate = true;
+              } else if (content.includes('拉致') || content.includes('監禁')) {
+                newValue = true;
+                shouldUpdate = true;
+              } else if (content.includes('撮影') || content.includes('魔法') || content.includes('企画')) {
+                newValue = false;
+                shouldUpdate = true;
+              }
+              break;
+
+            case 'magical_memories':
+              // 魔法の記憶（text型）
+              const memories = currentValue?.toString() || '';
+              if (content.includes('愛の力') && !memories.includes('愛の力体験')) {
+                newValue = memories + (memories ? ', ' : '') + '愛の力体験';
+                shouldUpdate = true;
+              } else if (content.includes('浄化') && !memories.includes('浄化の実践')) {
+                newValue = memories + (memories ? ', ' : '') + '浄化の実践';
+                shouldUpdate = true;
+              } else if (content.includes('第六感') && !memories.includes('感覚増幅')) {
+                newValue = memories + (memories ? ', ' : '') + '感覚増幅';
+                shouldUpdate = true;
+              }
+              break;
+
+            // 既存のトラッカー分析（改良版）
             case 'affection':
             case 'love':
             case 'favorability':
-              // 好感度分析
-              if (content.includes('好き') || content.includes('嬉しい') || content.includes('ありがとう')) delta += 2;
-              if (content.includes('素敵') || content.includes('優しい') || content.includes('素晴らしい')) delta += 3;
-              if (content.includes('愛してる') || content.includes('大好き')) delta += 5;
-              if (content.includes('嫌い') || content.includes('ひどい') || content.includes('最悪')) delta -= 3;
-              if (content.includes('むかつく') || content.includes('うざい')) delta -= 2;
+              if (content.includes('好き') || content.includes('嬉しい')) delta += 3;
+              if (content.includes('素敵') || content.includes('優しい')) delta += 4;
+              if (content.includes('愛してる') || content.includes('大好き')) delta += 7;
+              if (content.includes('可愛い') || content.includes('魅力的')) delta += 2;
+              if (content.includes('嫌い') || content.includes('ひどい')) delta -= 4;
+              if (content.includes('むかつく') || content.includes('うざい')) delta -= 3;
               break;
 
             case 'trust':
+            case 'trust_level':
             case 'confidence':
-              // 信頼度分析
-              if (content.includes('信頼') || content.includes('頼り') || content.includes('安心')) delta += 3;
-              if (content.includes('秘密') || content.includes('打ち明け')) delta += 2;
-              if (content.includes('裏切') || content.includes('嘘') || content.includes('疑')) delta -= 4;
-              if (content.includes('信じられない')) delta -= 3;
+              if (content.includes('信頼') || content.includes('頼り')) delta += 4;
+              if (content.includes('安心') || content.includes('守られ')) delta += 5;
+              if (content.includes('秘密') || content.includes('打ち明け')) delta += 3;
+              if (content.includes('裏切') || content.includes('嘘')) delta -= 6;
+              if (content.includes('疑') || content.includes('信じられない')) delta -= 4;
               break;
 
             case 'mood':
             case 'happiness':
             case 'emotion':
-              // 機嫌・感情分析
-              if (content.includes('楽しい') || content.includes('面白い') || content.includes('笑')) delta += 3;
-              if (content.includes('嬉しい') || content.includes('幸せ')) delta += 4;
-              if (content.includes('つまらない') || content.includes('退屈')) delta -= 2;
-              if (content.includes('悲しい') || content.includes('落ち込')) delta -= 3;
-              if (content.includes('怒') || content.includes('イライラ')) delta -= 4;
+              if (content.includes('楽しい') || content.includes('面白い')) delta += 4;
+              if (content.includes('嬉しい') || content.includes('幸せ')) delta += 5;
+              if (content.includes('ワクワク') || content.includes('興奮')) delta += 3;
+              if (content.includes('つまらない') || content.includes('退屈')) delta -= 3;
+              if (content.includes('悲しい') || content.includes('落ち込')) delta -= 4;
+              if (content.includes('怒') || content.includes('イライラ')) delta -= 5;
               break;
 
             case 'arousal':
             case 'excitement':
-              // 興奮度分析
-              if (content.includes('ドキドキ') || content.includes('興奮')) delta += 3;
-              if (content.includes('エッチ') || content.includes('いやらしい')) delta += 2;
-              if (content.includes('恥ずかし') || content.includes('照れ')) delta += 1;
+              if (content.includes('ドキドキ') || content.includes('興奮')) delta += 4;
+              if (content.includes('エッチ') || content.includes('いやらしい')) delta += 3;
+              if (content.includes('恥ずかし') || content.includes('照れ')) delta += 2;
+              if (content.includes('熱') || content.includes('火照')) delta += 3;
+              if (content.includes('ぞわぞわ') || content.includes('ゾクゾク')) delta += 4;
               break;
 
             default:
               // 汎用的な感情分析
-              if (content.includes('♡') || content.includes('❤')) delta += 1;
-              if (content.includes('😊') || content.includes('😄')) delta += 2;
-              if (content.includes('😢') || content.includes('😭')) delta -= 2;
-              if (content.includes('😡') || content.includes('💢')) delta -= 3;
+              if (content.includes('♡') || content.includes('❤')) delta += 2;
+              if (content.includes('😊') || content.includes('😄')) delta += 3;
+              if (content.includes('😢') || content.includes('😭')) delta -= 3;
+              if (content.includes('😡') || content.includes('💢')) delta -= 4;
           }
 
-          // 値を更新（範囲チェック）
-          if (delta !== 0) {
-            const newValue = Math.max(0, Math.min(maxValue, currentValue + delta));
+          // 値を更新
+          if (tracker.type === 'numeric' && delta !== 0) {
+            const maxValue = tracker.max_value || 100;
+            const minValue = tracker.min_value || 0;
+            const numValue = typeof currentValue === 'number' ? currentValue : 0;
+            newValue = Math.max(minValue, Math.min(maxValue, numValue + delta));
+            
+            if (Math.abs(newValue - numValue) >= 1) { // 1以上の変化のみ更新
+              console.log(`📊 ${tracker.name}: ${numValue} → ${newValue} (${delta > 0 ? '+' : ''}${delta})`);
+              updateTrackerValue(sessionId, tracker.name, newValue, character);
+              updatedTrackers++;
+              shouldUpdate = false; // 既に更新済み
+            }
+          }
+
+          // state, boolean, text型の更新
+          if (shouldUpdate && newValue !== undefined && newValue !== currentValue) {
+            console.log(`📊 ${tracker.name}: ${currentValue} → ${newValue} (${tracker.type})`);
             updateTrackerValue(sessionId, tracker.name, newValue, character);
+            updatedTrackers++;
           }
         });
+        
+        console.log(`🔍 トラッカー分析完了: ${updatedTrackers} 個更新`);
+        if (updatedTrackers === 0) {
+          console.log(`⚠️ 更新なし - 内容: "${content.substring(0, 50)}..."`);
+        }
       },
 
       resetSessionTrackers: (sessionId) => {

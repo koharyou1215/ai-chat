@@ -124,21 +124,31 @@ export default function CharacterImportExport({
         throw new Error('キャラクター名が必要です');
       }
 
+      // nsfw_profileの処理（オブジェクトの場合は文字列に変換、または既存の値を保持）
+      let nsfwProfile: string | object = '';
+      if (data.nsfw_profile) {
+        if (typeof data.nsfw_profile === 'object') {
+          nsfwProfile = data.nsfw_profile;
+        } else if (typeof data.nsfw_profile === 'string') {
+          nsfwProfile = data.nsfw_profile;
+        }
+      }
+
       // 様々な形式を統一形式に変換
       const character: Character = {
         'file-name': getString(data['file-name']) || fileName,
         name: getString(data.name),
         tags: getStringArray(data.tags),
         first_message: Array.isArray(data.first_message)
-? (data.first_message[0] || '') 
-          : getString(data.first_mes) || getString(data.greeting) || '',
+          ? (data.first_message[0] || '') 
+          : getString(data.first_mes) || getString(data.greeting) || getString(data.first_message) || '',
         
         // 基本フィールド
         personality: getString(data.personality) || getString(data.description),
         appearance: getString(data.appearance),
         speaking_style: getString(data.speaking_style),
         scenario: getString(data.scenario) || getString(data.world_scenario),
-        nsfw_profile: getString(data.nsfw_profile),
+        nsfw_profile: nsfwProfile,
         age: getString(data.age),
         occupation: getString(data.occupation),
         hobbies: getStringArray(data.hobbies),
@@ -147,12 +157,62 @@ export default function CharacterImportExport({
         background: getString(data.background),
         avatar_url: getString(data.avatar_url),
 
+        // ユーザー提供フォーマットの追加フィールドをサポート（すべての可能な名前パターンを試行）
+        systemPrompt: getString(data.systemPrompt) || getString(data.system_prompt) || getString(data['system-prompt']),
+        appearancePrompt: getString(data.appearancePrompt) || getString(data.appearance_prompt) || getString(data['appearance-prompt']),
+        appearanceNegativePrompt: getString(data.appearanceNegativePrompt) || getString(data.appearance_negative_prompt) || getString(data['appearance-negative-prompt']) || getString(data.negativePrompt) || getString(data.negative_prompt),
+        chatBackgroundUrl: getString(data.chatBackgroundUrl) || getString(data.chat_background_url) || getString(data['chat-background-url']),
+
         // 既存の複雑な構造がある場合は保持
         character_definition: data.character_definition as CharacterDefinition | undefined,
-        trackers: getArray(data.trackers) as CharacterTracker[],
-        example_dialogue: getArray(data.example_dialogue) as ExampleDialogue[]
+        
+        // トラッカーシステムのサポート（ユーザーフォーマット対応）
+        trackers: (() => {
+          const existingTrackers = getArray(data.trackers) as CharacterTracker[];
+          // ユーザー提供のフォーマットの場合、デフォルトトラッカーを確認
+          if (existingTrackers.length === 0 && data.trackers && Array.isArray(data.trackers)) {
+            // ユーザーフォーマットのトラッカーを正規化
+            return data.trackers.map((tracker: any, index: number) => ({
+              name: tracker.name || `tracker_${index}`,
+              display_name: tracker.display_name || tracker.displayName || tracker.name || `トラッカー${index + 1}`,
+              type: tracker.type || 'numeric',
+              initial_value: tracker.initial_value ?? tracker.initialValue ?? 50,
+              current_value: tracker.current_value ?? tracker.currentValue,
+              max_value: tracker.max_value ?? tracker.maxValue ?? 100,
+              min_value: tracker.min_value ?? tracker.minValue ?? 0,
+              initial_state: tracker.initial_state ?? tracker.initialState,
+              current_state: tracker.current_state ?? tracker.currentState,
+              possible_states: tracker.possible_states ?? tracker.possibleStates ?? [],
+              initial_boolean: tracker.initial_boolean ?? tracker.initialBoolean ?? false,
+              current_boolean: tracker.current_boolean ?? tracker.currentBoolean,
+              initial_text: tracker.initial_text ?? tracker.initialText ?? '',
+              current_text: tracker.current_text ?? tracker.currentText,
+              category: tracker.category || 'general',
+              persistent: tracker.persistent !== false, // デフォルトtrue
+              description: tracker.description || ''
+            })) as CharacterTracker[];
+          }
+          return existingTrackers;
+        })(),
+        
+        example_dialogue: getArray(data.example_dialogue) as ExampleDialogue[],
+
+        // 作成・更新日時
+        createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
+        updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : Date.now()
       };
 
+      // デバッグ用ログ（ユーザーフォーマット対応確認）
+      console.log('✅ キャラクターの正規化完了:', {
+        name: character.name,
+        hasSystemPrompt: !!character.systemPrompt,
+        hasAppearancePrompt: !!character.appearancePrompt,
+        hasAppearanceNegativePrompt: !!character.appearanceNegativePrompt,
+        hasNsfwProfile: !!character.nsfw_profile,
+        trackersCount: character.trackers?.length || 0,
+        fileName
+      });
+      
       return character;
     } catch (error) {
       console.error(`キャラクター検証エラー (${fileName}):`, error);

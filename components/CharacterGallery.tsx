@@ -195,123 +195,108 @@ export default function CharacterGallery({
           </div>
         </div>
 
-        {/* 検索・フィルター */}
-        <div className="p-3 md:p-6 border-b border-gray-200">
-          <div className="flex flex-col gap-2 md:gap-4">
-            {/* 検索 */}
-            <div className="flex-1">
+        {/* コンパクトなツールバー */}
+        <div className="p-2 md:p-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            {/* 検索バー */}
+            <div className="flex-1 min-w-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 <input
                   type="text"
-                  placeholder="検索..."
+                  placeholder="検索（名前・職業・性格）"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
                 />
               </div>
             </div>
 
-            {/* タグフィルター（モバイルでは表示数を制限） */}
-            <div className="hidden md:flex flex-wrap gap-2">
-              {allTags.slice(0, 8).map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    setSelectedTags(prev => 
-                      prev.includes(tag) 
-                        ? prev.filter(t => t !== tag)
-                        : [...prev, tag]
-                    );
-                  }}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    selectedTags.includes(tag)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-              {(allTags || []).length > 8 && (
-                <span className="text-gray-500 text-sm px-3 py-1">
-                  +{(allTags || []).length - 8} more
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* ソート・ビュー */}
-          <div className="flex items-center justify-between mt-2 md:mt-4">
-                      <div className="flex items-center gap-2 md:gap-4">
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortByChange(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
-              className="px-2 md:px-3 py-1 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base bg-white text-gray-800 appearance-none cursor-pointer"
-              style={{ minWidth: '120px' }}
-            >
-              <option value="name">名前順</option>
-              <option value="created">登録順</option>
-              <option value="updated">更新順</option>
-              <option value="recent">最近使用</option>
-              <option value="popular">人気順</option>
-            </select>
-            
-            {/* 昇順/降順切り替え */}
-            <button
-              onClick={() => handleSortOrderChange(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
-                sortOrder === 'desc' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-              title={sortOrder === 'asc' ? '降順に変更' : '昇順に変更'}
-            >
-              <ArrowUpDown size={14} className="md:w-4 md:h-4" />
-              <span className="text-xs hidden md:inline">
-                {sortOrder === 'asc' ? '昇順' : '降順'}
-              </span>
-            </button>
-          </div>
-
-            <div className="flex items-center gap-1 md:gap-2">
-              {/* バリエーション表示切り替え */}
-              <button
-                onClick={() => handleShowVariationsChange(!showVariations)}
-                className={`p-1.5 md:p-2 rounded-lg transition-colors flex items-center gap-1 ${
-                  showVariations ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
-                title={showVariations ? 'AIバリエーションを非表示' : 'AIバリエーションを表示'}
+            {/* コントロール（1行に収める） */}
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+              {/* ソート */}
+              <select
+                value={sortBy}
+                onChange={(e) => handleSortByChange(e.target.value as 'name' | 'recent' | 'popular' | 'created' | 'updated')}
+                className="px-2 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm bg-white min-w-0 w-20 sm:w-auto"
               >
-                <Layers size={14} className="md:w-4 md:h-4" />
-                <Bot size={12} className="md:w-3.5 md:h-3.5" />
-              </button>
+                <option value="name">名前</option>
+                <option value="created">作成</option>
+                <option value="updated">更新</option>
+              </select>
               
-              {/* ビューモード切り替え */}
-              <div className="flex items-center gap-1">
+              {/* 昇順/降順 */}
+              <button
+                onClick={() => handleSortOrderChange(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className={`p-2 rounded-lg transition-colors ${
+                  sortOrder === 'desc' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+                title={sortOrder === 'asc' ? '降順' : '昇順'}
+              >
+                <ArrowUpDown size={14} />
+              </button>
+
+              {/* ビューモード */}
+              <div className="flex rounded-lg border border-gray-300 bg-white overflow-hidden">
                 <button
                   onClick={() => handleViewModeChange('grid')}
-                  className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                  className={`p-2 transition-colors ${
+                    viewMode === 'grid' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'
                   }`}
+                  title="グリッド表示"
                 >
-                  <Grid size={16} className="md:w-5 md:h-5" />
+                  <Grid size={14} />
                 </button>
                 <button
                   onClick={() => handleViewModeChange('list')}
-                  className={`p-1.5 md:p-2 rounded-lg transition-colors ${
-                    viewMode === 'list' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                  className={`p-2 transition-colors ${
+                    viewMode === 'list' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100'
                   }`}
+                  title="リスト表示"
                 >
-                  <List size={16} className="md:w-5 md:h-5" />
+                  <List size={14} />
                 </button>
               </div>
             </div>
           </div>
+
+          {/* タグフィルター（折りたたみ可能） */}
+          {allTags.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-200">
+              <div className="flex flex-wrap gap-1">
+                {allTags.slice(0, 6).map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      setSelectedTags(prev => 
+                        prev.includes(tag) 
+                          ? prev.filter(t => t !== tag)
+                          : [...prev, tag]
+                      );
+                    }}
+                    className={`px-2 py-1 rounded text-xs transition-colors ${
+                      selectedTags.includes(tag)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+                {allTags.length > 6 && (
+                  <span className="text-gray-500 text-xs px-2 py-1">
+                    +{allTags.length - 6}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* キャラクター一覧 */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-6 min-h-0">
+        {/* キャラクター一覧（表示領域最大化） */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 min-h-0">
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-3 md:gap-4">
               {filteredCharacters.map((character, idx) => (
                 <CharacterCard
                   key={`${character.name}-${idx}`}
