@@ -499,6 +499,31 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                         onChange={handleAvatarFileUpload}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
+                      
+                      <div className="text-center text-gray-500 text-sm">または</div>
+                      
+                      <input
+                        type="url"
+                        value={formData.avatar_url || ''}
+                        onChange={async (e) => {
+                          const newUrl = e.target.value;
+                          setFormData(prev => ({ ...prev, avatar_url: newUrl }));
+                          
+                          // URL入力時も即座に保存（キャラクター名があれば）
+                          if (newUrl && (character?.name || formData.name)) {
+                            const charId = character?.name || formData.name;
+                            try {
+                              localStorage.setItem(`ai-chat-char-avatar:${charId}`, newUrl);
+                              console.log(`🌐 URLアバター設定を保存: ${charId} -> ${newUrl}`);
+                            } catch (e) {
+                              console.warn('URLアバター保存に失敗:', e);
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                        placeholder="アバター画像URL（https://example.com/avatar.jpg）"
+                      />
+                      
                       {formData.avatar_url && (
                         <div className="mt-2">
                           <img
@@ -506,6 +531,12 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                             alt="アバタープレビュー"
                             className="w-20 h-20 object-cover rounded-lg border"
                           />
+                          <button
+                            onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
+                            className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+                          >
+                            アバターをクリア
+                          </button>
                         </div>
                       )}
                     </div>
@@ -523,13 +554,54 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                         onChange={handleBackgroundFileUpload}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                       />
+                      
+                      <div className="text-center text-gray-500 text-sm">または</div>
+                      
+                      <input
+                        type="url"
+                        value={formData.chatBackgroundUrl || ''}
+                        onChange={async (e) => {
+                          const newUrl = e.target.value;
+                          setFormData(prev => ({ ...prev, chatBackgroundUrl: newUrl }));
+                          
+                          // URL入力時も即座に保存（キャラクター名があれば）
+                          if (newUrl && (character?.name || formData.name)) {
+                            const charName = character?.name || formData.name;
+                            try {
+                              await BackgroundManager.saveCharacterBackground(charName, newUrl);
+                              console.log(`🌐 URL背景設定を保存: ${charName} -> ${newUrl}`);
+                            } catch (e) {
+                              console.warn('URL背景保存に失敗:', e);
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                        placeholder="背景画像URL（https://example.com/image.jpg または https://example.com/video.mp4）"
+                      />
+                      
                       {formData.chatBackgroundUrl && (
                         <div className="mt-2">
-                          <img
-                            src={formData.chatBackgroundUrl}
-                            alt="背景プレビュー"
-                            className="w-32 h-20 object-cover rounded-lg border"
-                          />
+                          {formData.chatBackgroundUrl.includes('.mp4') || formData.chatBackgroundUrl.startsWith('data:video/') ? (
+                            <video
+                              src={formData.chatBackgroundUrl}
+                              className="w-32 h-20 object-cover rounded-lg border"
+                              muted
+                              loop
+                              autoPlay
+                            />
+                          ) : (
+                            <img
+                              src={formData.chatBackgroundUrl}
+                              alt="背景プレビュー"
+                              className="w-32 h-20 object-cover rounded-lg border"
+                            />
+                          )}
+                          <button
+                            onClick={() => setFormData(prev => ({ ...prev, chatBackgroundUrl: '' }))}
+                            className="mt-2 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+                          >
+                            背景をクリア
+                          </button>
                         </div>
                       )}
                     </div>

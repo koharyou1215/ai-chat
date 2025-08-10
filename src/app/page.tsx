@@ -3247,6 +3247,20 @@ export default function ChatPage() {
           onManualLoad={async () => {
             console.log('🔄 手動キャラクター読み込み開始...');
             try {
+              // 🧪 診断テスト実行
+              console.log('🧪 事前診断テスト開始...');
+              try {
+                const testResponse = await fetch('/api/test-character-load');
+                if (testResponse.ok) {
+                  const testData = await testResponse.json();
+                  console.log('🧪 診断テスト結果:', testData);
+                } else {
+                  console.warn('🧪 診断テスト失敗:', testResponse.status);
+                }
+              } catch (testError) {
+                console.warn('🧪 診断テスト例外:', testError);
+              }
+              
               // CharacterLoaderを初期化
               CharacterLoader.initialize();
               
@@ -3267,7 +3281,7 @@ export default function ChatPage() {
               alert(`キャラクター読み込み完了: ${updatedCharacters.length}件（修復処理済み）`);
             } catch (error) {
               console.error('❌ 手動キャラクター読み込みエラー:', error);
-              alert('キャラクター読み込みに失敗しました');
+              alert('キャラクター読み込みに失敗しました: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           }}
           onClose={() => setIsCharacterGalleryOpen(false)}

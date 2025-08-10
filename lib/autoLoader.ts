@@ -38,12 +38,21 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
   
   console.log(`🔄 ${filename}: 簡易形式から完全形式に変換開始`);
   
+  // タイムスタンプを設定（既存のものがあれば保持、なければ現在時刻）
+  const now = Date.now();
+  const createdAt = data.createdAt || now;
+  const updatedAt = data.updatedAt || now;
+  
   // 🚨 マーフィン・グレイスの変換前ログ 🚨
   if (filename.includes('マーフィン・グレイス')) {
     console.log('🔍🔍🔍 マーフィン・グレイス変換前データ保存:', {
       original_first_message: data.first_message,
       original_systemPrompt: data.systemPrompt,
-      original_appearanceNegativePrompt: data.appearanceNegativePrompt
+      original_appearanceNegativePrompt: data.appearanceNegativePrompt,
+      original_createdAt: data.createdAt,
+      original_updatedAt: data.updatedAt,
+      new_createdAt: createdAt,
+      new_updatedAt: updatedAt
     });
   }
   
@@ -78,6 +87,10 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     appearanceNegativePrompt: data.appearanceNegativePrompt || '',
     chatBackgroundUrl: data.chatBackgroundUrl,
     trackers: data.trackers || [],
+    
+    // タイムスタンプフィールドを追加
+    createdAt: createdAt,
+    updatedAt: updatedAt,
     
     // 完全形式のcharacter_definitionを構築
     character_definition: {
@@ -151,6 +164,8 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
       normalized_systemPrompt: normalized.systemPrompt,
       normalized_appearanceNegativePrompt: normalized.appearanceNegativePrompt,
       normalized_nsfw_profile: normalized.nsfw_profile,
+      normalized_createdAt: normalized.createdAt,
+      normalized_updatedAt: normalized.updatedAt,
       character_definition_created: !!normalized.character_definition
     });
   }
@@ -163,10 +178,16 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
  */
 export async function loadAllCharactersFromPublic(): Promise<Character[]> {
   try {
+    console.log('🌐 キャラクター自動読み込み開始');
+    console.log('🌍 環境情報:', {
+      isDev: process.env.NODE_ENV === 'development',
+      baseUrl: typeof window !== 'undefined' ? window.location.origin : 'server-side'
+    });
+    
     // public/characters/ の一覧を取得
     const response = await fetch('/api/list-characters');
     if (!response.ok) {
-      console.warn('キャラクター一覧取得失敗:', response.status);
+      console.warn('キャラクター一覧取得失敗:', response.status, response.statusText);
       return [];
     }
     
@@ -179,7 +200,7 @@ export async function loadAllCharactersFromPublic(): Promise<Character[]> {
       
       try {
         console.log(`📁 キャラクターファイル読み込み中: ${filename}`);
-        const charResponse = await fetch(`/characters/character/${filename}`);
+        const charResponse = await fetch(`/characters/${filename}`);
         console.log(`📊 レスポンス状態: ${charResponse.status} ${charResponse.statusText}`);
         
         if (charResponse.ok) {
@@ -190,7 +211,15 @@ export async function loadAllCharactersFromPublic(): Promise<Character[]> {
           const normalizedCharacter = normalizeCharacterData(characterData, filename);
           characters.push(normalizedCharacter);
         } else {
-          console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status}`);
+          console.error(`❌ キャラクター読み込み失敗: ${filename} - ${charResponse.status} ${charResponse.statusText}`);
+          
+          // 本番環境でのデバッグ情報
+          try {
+            const errorText = await charResponse.text();
+            console.error(`❌ エラー詳細: ${errorText}`);
+          } catch (e) {
+            console.error(`❌ エラー詳細取得失敗:`, e);
+          }
         }
       } catch (error) {
         console.error(`❌ キャラクター読み込みエラー: ${filename}`, error);
@@ -234,7 +263,15 @@ export const loadAllPersonas = async (): Promise<UserPersona[]> => {
           console.log(`✅ ペルソナ読み込み成功: ${filename}`, personaData.name);
           personas.push(personaData);
         } else {
-          console.error(`❌ ペルソナ読み込み失敗: ${filename} - ${personaResponse.status}`);
+          console.error(`❌ ペルソナ読み込み失敗: ${filename} - ${personaResponse.status} ${personaResponse.statusText}`);
+          
+          // 本番環境でのデバッグ情報
+          try {
+            const errorText = await personaResponse.text();
+            console.error(`❌ ペルソナエラー詳細: ${errorText}`);
+          } catch (e) {
+            console.error(`❌ ペルソナエラー詳細取得失敗:`, e);
+          }
         }
       } catch (error) {
         console.error(`❌ ペルソナ読み込みエラー: ${filename}`, error);

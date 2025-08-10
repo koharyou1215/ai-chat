@@ -113,6 +113,12 @@ export default function CharacterGallery({
     .sort((a, b) => {
       let comparison = 0;
       
+      // ソート前にタイムスタンプ情報をログ出力（アメリア以外も）
+      if ((a.name.includes('アメリア') || b.name.includes('アメリア')) || sortBy === 'recent') {
+        console.log(`🔍 全キャラソート状況: sortBy=${sortBy}, sortOrder=${sortOrder}`);
+        console.log(`🔍 ソート比較: ${a.name}(created:${a.createdAt}, updated:${a.updatedAt}) vs ${b.name}(created:${b.createdAt}, updated:${b.updatedAt})`);
+      }
+      
       switch (sortBy) {
         case 'name':
           comparison = a.name.localeCompare(b.name);
@@ -122,12 +128,8 @@ export default function CharacterGallery({
           const aRecent = Math.max(a.updatedAt || 0, a.createdAt || 0);
           const bRecent = Math.max(b.updatedAt || 0, b.createdAt || 0);
           
-          // デバッグログ（アメリアのみ）
-          if (a.name.includes('アメリア') || b.name.includes('アメリア')) {
-            console.log(`🔍 ソート比較: ${a.name}(${aRecent}) vs ${b.name}(${bRecent})`);
-            console.log(`  ${a.name}: created=${a.createdAt}, updated=${a.updatedAt}`);
-            console.log(`  ${b.name}: created=${b.createdAt}, updated=${b.updatedAt}`);
-          }
+          // デバッグログ（詳細）
+          console.log(`🔍 recent比較詳細: ${a.name}=${aRecent} vs ${b.name}=${bRecent}, diff=${aRecent-bRecent}`);
           
           comparison = aRecent - bRecent;
           break;

@@ -477,6 +477,17 @@ export class CharacterLoader {
         }
       }
 
+      // タイムスタンプ修復
+      const now = Date.now();
+      if (!char.createdAt) {
+        char.createdAt = now;
+        fixed.push('createdAt');
+      }
+      if (!char.updatedAt) {
+        char.updatedAt = now;
+        fixed.push('updatedAt');
+      }
+
       if (fixed.length > 0) {
         report.push({ name: char.name, fixed });
       }
