@@ -8,12 +8,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       text, 
+      conversationHistory,
       settings
     } = body;
 
     console.log('🔍 リクエストデータ:', {
       hasText: !!text,
       textLength: text?.length || 0,
+      hasConversationHistory: !!conversationHistory,
+      conversationHistoryLength: conversationHistory?.length || 0,
       hasSettings: !!settings,
       settingsType: typeof settings,
       settingsKeys: settings ? Object.keys(settings) : []
@@ -54,13 +57,28 @@ export async function POST(request: NextRequest) {
     }
 
     // プロンプトを構築（{{user}}をテキストに置換）
-    const finalPrompt = enhancementPrompt.replace(/\{\{user\}\}/g, text);
+    let finalPrompt = enhancementPrompt.replace(/\{\{user\}\}/g, text);
+    
+    // 会話履歴がある場合は、コンテキストとして含める
+    if (conversationHistory && conversationHistory.trim()) {
+      const basePrompt = finalPrompt;
+      finalPrompt = `以下の会話履歴を参考にして、テキストを改善してください。会話の流れや文脈に合わせて自然に強化してください。
+
+会話履歴:
+${conversationHistory}
+
+強化対象のテキスト: ${text}
+
+${basePrompt}`;
+    }
     
     console.log(`🔍 プロンプト置換確認:`, {
       originalPromptLength: enhancementPrompt.length,
       textLength: text.length,
+      conversationHistoryLength: conversationHistory?.length || 0,
       finalPromptLength: finalPrompt.length,
       hasUserPlaceholder: enhancementPrompt.includes('{{user}}'),
+      hasConversationHistory: !!conversationHistory,
       replacementOccurred: enhancementPrompt !== finalPrompt
     });
     

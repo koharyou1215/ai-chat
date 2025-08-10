@@ -8,12 +8,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       message, 
+      conversationHistory,
       settings
     } = body;
 
     console.log('🔍 リクエストデータ:', {
       hasMessage: !!message,
       messageLength: message?.length || 0,
+      hasConversationHistory: !!conversationHistory,
+      conversationHistoryLength: conversationHistory?.length || 0,
       hasSettings: !!settings,
       settingsType: typeof settings,
       settingsKeys: settings ? Object.keys(settings) : []
@@ -56,26 +59,32 @@ export async function POST(request: NextRequest) {
     // プロンプトを構築（複数のプレースホルダーパターンに対応）
     let finalPrompt = inspirationPrompt;
     
+    // 会話履歴がある場合はコンテキストとして含める
+    const contextToUse = conversationHistory && conversationHistory.trim() 
+      ? conversationHistory 
+      : message;
+    
     // 会話履歴の置換（複数パターン対応）
-    finalPrompt = finalPrompt.replace(/\{\{conversation\}\}/g, message);
-    finalPrompt = finalPrompt.replace(/\{\{user\}\}と\{\{char\}\}間の会話履歴/g, message);
-    finalPrompt = finalPrompt.replace(/会話履歴:/g, `会話履歴:\n${message}`);
+    finalPrompt = finalPrompt.replace(/\{\{conversation\}\}/g, contextToUse);
+    finalPrompt = finalPrompt.replace(/\{\{user\}\}と\{\{char\}\}間の会話履歴/g, contextToUse);
+    finalPrompt = finalPrompt.replace(/会話履歴:/g, `会話履歴:\n${contextToUse}`);
     
     console.log(`🔍 プロンプト置換確認:`, {
       originalPromptLength: inspirationPrompt.length,
       messageLength: message.length,
+      conversationHistoryLength: conversationHistory?.length || 0,
       finalPromptLength: finalPrompt.length,
       hasConversationPlaceholder: inspirationPrompt.includes('{{conversation}}'),
       hasUserCharPlaceholder: inspirationPrompt.includes('{{user}}と{{char}}間の会話履歴'),
       hasGenericHistoryPattern: inspirationPrompt.includes('会話履歴:'),
       replacementOccurred: inspirationPrompt !== finalPrompt,
-      messageSample: message.substring(0, 100) + '...'
+      contextToUseSample: contextToUse.substring(0, 100) + '...'
     });
     
     // プレースホルダーが見つからない場合は、プロンプトの末尾に会話履歴を追加
     if (inspirationPrompt === finalPrompt) {
       console.log('⚠️ プレースホルダーが見つかりませんでした。会話履歴をプロンプト末尾に追加します。');
-      finalPrompt = `${inspirationPrompt}\n\n**会話履歴:**\n${message}\n\n上記の会話履歴を分析して返信候補を生成してください。`;
+      finalPrompt = `${inspirationPrompt}\n\n**会話履歴:**\n${contextToUse}\n\n上記の会話履歴を分析して返信候補を生成してください。`;
       console.log(`🔧 フォールバック後のプロンプト長: ${finalPrompt.length}文字`);
     }
     

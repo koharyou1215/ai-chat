@@ -1157,11 +1157,55 @@ export default function ChatPage() {
         usingCurrentMessages: messages.length > 0
       });
       
-      // 直近の2メッセージに限定してプロンプトを短くする
-      const recentMessages = availableMessages.slice(-2);
-      const conversationText = recentMessages.map(msg => 
-        `${msg.role === 'user' ? 'ユーザー' : currentCharacter.name}: ${msg.content}`
-      ).join('\n');
+      // 直近の2-3個の会話ペアを取得（最大6メッセージ）
+      const getRecentConversationPairs = (messages) => {
+        if (messages.length === 0) return [];
+        
+        const conversationPairs = [];
+        let currentIndex = messages.length - 1;
+        
+        // 最大3つの会話ペア（AI-User または User-AI）を収集
+        while (conversationPairs.length < 3 && currentIndex >= 0) {
+          const currentMsg = messages[currentIndex];
+          
+          if (currentMsg.role === 'assistant' && currentIndex > 0) {
+            const prevMsg = messages[currentIndex - 1];
+            if (prevMsg.role === 'user') {
+              conversationPairs.unshift({
+                user: prevMsg.content,
+                ai: currentMsg.content
+              });
+              currentIndex -= 2; // 2つのメッセージをスキップ
+            } else {
+              currentIndex--;
+            }
+          } else if (currentMsg.role === 'user' && currentIndex < messages.length - 1) {
+            const nextMsg = messages[currentIndex + 1];
+            if (nextMsg && nextMsg.role === 'assistant') {
+              conversationPairs.unshift({
+                user: currentMsg.content,
+                ai: nextMsg.content
+              });
+              currentIndex -= 1;
+            } else {
+              currentIndex--;
+            }
+          } else {
+            currentIndex--;
+          }
+        }
+        
+        return conversationPairs;
+      };
+      
+      const conversationPairs = getRecentConversationPairs(availableMessages);
+      
+      // 会話履歴を文字列として整形
+      const conversationText = conversationPairs.length > 0 
+        ? conversationPairs.map((pair, index) => 
+            `[会話${index + 1}]\nユーザー: ${pair.user}\n${currentCharacter.name}: ${pair.ai}`
+          ).join('\n\n')
+        : '';
       
       // 会話履歴がない場合は、デフォルトメッセージを使用
       const finalMessage = conversationText.trim() || 'これまでの会話はありません。一般的な返信候補を提案してください。';
@@ -1287,9 +1331,69 @@ export default function ChatPage() {
     setIsEnhancingUserText(true);
     
     try {
+      // 現在の画面表示中のメッセージを取得
+      const currentCharacterId = currentCharacter['file-name'] || currentCharacter.name;
+      const currentSession = sessions.find(s => s.characterId === currentCharacterId);
+      const sessionMessages = currentSession?.messages || [];
+      
+      // 現在の画面のメッセージを優先使用し、フォールバックとしてセッションのメッセージを使用
+      const availableMessages = messages.length > 0 ? messages : sessionMessages;
+      
+      // 直近の2-3個の会話ペアを取得（最大6メッセージ）
+      const getRecentConversationPairs = (messages) => {
+        if (messages.length === 0) return [];
+        
+        const conversationPairs = [];
+        let currentIndex = messages.length - 1;
+        
+        // 最大3つの会話ペア（AI-User または User-AI）を収集
+        while (conversationPairs.length < 3 && currentIndex >= 0) {
+          const currentMsg = messages[currentIndex];
+          
+          if (currentMsg.role === 'assistant' && currentIndex > 0) {
+            const prevMsg = messages[currentIndex - 1];
+            if (prevMsg.role === 'user') {
+              conversationPairs.unshift({
+                user: prevMsg.content,
+                ai: currentMsg.content
+              });
+              currentIndex -= 2; // 2つのメッセージをスキップ
+            } else {
+              currentIndex--;
+            }
+          } else if (currentMsg.role === 'user' && currentIndex < messages.length - 1) {
+            const nextMsg = messages[currentIndex + 1];
+            if (nextMsg && nextMsg.role === 'assistant') {
+              conversationPairs.unshift({
+                user: currentMsg.content,
+                ai: nextMsg.content
+              });
+              currentIndex -= 1;
+            } else {
+              currentIndex--;
+            }
+          } else {
+            currentIndex--;
+          }
+        }
+        
+        return conversationPairs;
+      };
+      
+      const conversationPairs = getRecentConversationPairs(availableMessages);
+      
+      // 会話履歴を文字列として整形
+      const conversationHistory = conversationPairs.length > 0 
+        ? conversationPairs.map((pair, index) => 
+            `[会話${index + 1}]\nユーザー: ${pair.user}\n${currentCharacter.name}: ${pair.ai}`
+          ).join('\n\n')
+        : '';
+      
       console.log('🔍 文章強化詳細確認:', {
         targetTextLength: targetText.length,
         targetText: targetText.substring(0, 100) + '...',
+        conversationHistoryLength: conversationHistory.length,
+        conversationHistoryPreview: conversationHistory.substring(0, 200) + '...',
         settingsExists: !!settings,
         enhancementPromptExists: !!settings?.enhancementPrompt,
         settingsType: typeof settings,
@@ -1300,6 +1404,7 @@ export default function ChatPage() {
       
       const requestBody = {
         text: targetText,
+        conversationHistory: conversationHistory,
         settings: settings
       };
       
