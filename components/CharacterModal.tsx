@@ -52,6 +52,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       console.log('🔍 キャラクター生データ:', {
         first_message: character.first_message,
         systemPrompt: character.systemPrompt,
+        systemPromptLength: character.systemPrompt?.length || 0,
         appearanceNegativePrompt: character.appearanceNegativePrompt,
         nsfw_profile: character.nsfw_profile,
         character_definition: character.character_definition
@@ -243,37 +244,79 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     }
   };
 
-  // チャット背景画像ファイルアップロード処理
+  // チャット背景ファイルアップロード処理（画像・動画対応）
   const handleBackgroundFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        // 画像を圧縮（背景画像用は少し大きめに設定）
-        const compressionResult = await ImageCompressor.compressImage(file, {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          quality: 0.7,
-          maxSizeKB: 2000,
-          outputFormat: 'image/jpeg'
-        });
-        
-        // 圧縮された画像のBase64データを直接formDataに設定
-        setFormData(prev => ({ ...prev, chatBackgroundUrl: compressionResult.dataUrl }));
-
-        // 即時保存（既存キャラ名があれば）。新規時はonSaveで再保存
-        const charName = (character?.name || formData.name || '').trim();
-        if (charName) {
-          try {
-            await BackgroundManager.saveCharacterBackground(charName, compressionResult.dataUrl);
-          } catch (e) {
-            console.warn('背景保存に失敗:', e);
-          }
+        // MP4動画ファイルの場合
+        if (file.type === 'video/mp4') {
+          console.log('🎥 MP4動画ファイルを処理中...');
+          
+          // 動画をBase64に変換
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const videoDataUrl = e.target?.result as string;
+            
+            // 動画サイズチェック（5MB以下に制限）
+            const sizeInMB = file.size / (1024 * 1024);
+            if (sizeInMB > 5) {
+              alert('動画ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。');
+              return;
+            }
+            
+            // formDataに設定
+            setFormData(prev => ({ ...prev, chatBackgroundUrl: videoDataUrl }));
+            
+            // 即時保存
+            const charName = (character?.name || formData.name || '').trim();
+            if (charName) {
+              try {
+                await BackgroundManager.saveCharacterBackground(charName, videoDataUrl);
+              } catch (e) {
+                console.warn('動画背景保存に失敗:', e);
+              }
+            }
+            
+            console.log(`🎥 MP4動画背景設定完了: ${Math.round(sizeInMB * 100) / 100}MB`);
+          };
+          
+          reader.readAsDataURL(file);
         }
-        
-        console.log(`背景画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
+        // 画像ファイルの場合（既存処理）
+        else if (file.type.startsWith('image/')) {
+          console.log('🖼️ 画像ファイルを処理中...');
+          
+          // 画像を圧縮（背景画像用は少し大きめに設定）
+          const compressionResult = await ImageCompressor.compressImage(file, {
+            maxWidth: 1920,
+            maxHeight: 1080,
+            quality: 0.7,
+            maxSizeKB: 2000,
+            outputFormat: 'image/jpeg'
+          });
+          
+          // 圧縮された画像のBase64データを直接formDataに設定
+          setFormData(prev => ({ ...prev, chatBackgroundUrl: compressionResult.dataUrl }));
+
+          // 即時保存（既存キャラ名があれば）。新規時はonSaveで再保存
+          const charName = (character?.name || formData.name || '').trim();
+          if (charName) {
+            try {
+              await BackgroundManager.saveCharacterBackground(charName, compressionResult.dataUrl);
+            } catch (e) {
+              console.warn('背景保存に失敗:', e);
+            }
+          }
+          
+          console.log(`🖼️ 背景画像圧縮: ${Math.round(compressionResult.originalSize/1024)}KB → ${Math.round(compressionResult.compressedSize/1024)}KB (${compressionResult.compressionRatio}% 削減)`);
+        }
+        else {
+          alert('対応していないファイル形式です。画像ファイル(.jpg, .png, .webp)またはMP4動画ファイルを選択してください。');
+        }
       } catch (error) {
-        console.error('背景画像の処理に失敗しました:', error);
-        alert('画像の処理に失敗しました。別の画像を試してください。');
+        console.error('背景ファイルの処理に失敗しました:', error);
+        alert('ファイルの処理に失敗しました。別のファイルを試してください。');
       }
     }
   };
@@ -298,10 +341,15 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
       processedNsfwProfile = typeof formData.nsfw_profile === 'string' ? formData.nsfw_profile : '';
     }
 
+    const now = Date.now();
+
     const characterData: Character = {
       ...formData,
       first_message: formData.first_message?.trim() || '',
-      nsfw_profile: processedNsfwProfile as string | Record<string, unknown>
+      nsfw_profile: processedNsfwProfile as string | Record<string, unknown>,
+      // タイムスタンプを設定
+      createdAt: character?.createdAt || now, // 既存キャラは作成日時を保持
+      updatedAt: now // 更新日時は常に現在時刻
     } as Character;
 
     // 最終保存の確実化（アイコン/背景）

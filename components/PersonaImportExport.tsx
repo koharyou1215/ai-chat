@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Upload, Download, FileText, Package, AlertCircle, CheckCircle, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Upload, Download, FileText, Package, AlertCircle, CheckCircle, X, FolderOpen } from 'lucide-react';
 import { UserPersona } from '../types/character';
 
 interface PersonaImportExportProps {
@@ -17,12 +17,14 @@ export default function PersonaImportExport({
   onImport, 
   allPersonas 
 }: PersonaImportExportProps) {
-  const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
+  const [activeTab, setActiveTab] = useState<'import' | 'export' | 'autoload'>('import');
   const [importStatus, setImportStatus] = useState<{
     type: 'success' | 'error' | 'info' | null;
     message: string;
   }>({ type: null, message: '' });
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+  const [availableFiles, setAvailableFiles] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,8 +103,11 @@ export default function PersonaImportExport({
       const persona: UserPersona = {
         id: (typeof obj.id === 'string' ? obj.id : '') || `persona_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: obj.name,
-        likes: Array.isArray(obj.likes) ? obj.likes : (obj.likes ? [String(obj.likes)] : []),
-        dislikes: Array.isArray(obj.dislikes) ? obj.dislikes : (obj.dislikes ? [String(obj.dislikes)] : []),
+        description: (typeof obj.description === 'string' ? obj.description : ''),
+        role: (typeof obj.role === 'string' ? obj.role : ''),
+        traits: Array.isArray(obj.traits) ? obj.traits.filter(t => typeof t === 'string') : [],
+        likes: Array.isArray(obj.likes) ? obj.likes.filter(l => typeof l === 'string') : (obj.likes ? [String(obj.likes)] : []),
+        dislikes: Array.isArray(obj.dislikes) ? obj.dislikes.filter(d => typeof d === 'string') : (obj.dislikes ? [String(obj.dislikes)] : []),
         other_settings: (typeof obj.other_settings === 'string' ? obj.other_settings : '') || 
                        (typeof obj.settings === 'string' ? obj.settings : '') ||
                        (typeof obj.description === 'string' ? obj.description : '')
@@ -172,7 +177,91 @@ export default function PersonaImportExport({
   };
 
   const clearSelection = () => {
+    setSelectedFiles([]);
     setSelectedPersonas([]);
+  };
+
+  // 公開フォルダからペルソナファイルを読み込む
+  const loadPersonasFromPublic = async () => {
+    try {
+      setImportStatus({ type: 'info', message: '公開フォルダからペルソナを読み込み中...' });
+      
+      const response = await fetch('/api/personas/list');
+      if (!response.ok) {
+        throw new Error('ペルソナファイル一覧の取得に失敗しました');
+      }
+      
+      const fileList = await response.json();
+      const importedPersonas: UserPersona[] = [];
+      const errors: string[] = [];
+      
+      for (const fileName of selectedFiles.length > 0 ? selectedFiles : fileList) {
+        try {
+          const fileResponse = await fetch(`/personas/${fileName}`);
+          if (!fileResponse.ok) {
+            errors.push(`${fileName}: ファイルの読み込みに失敗しました`);
+            continue;
+          }
+          
+          const data = await fileResponse.json();
+          const validatedPersona = validateAndNormalizePersona(data, fileName);
+          
+          if (validatedPersona) {
+            importedPersonas.push(validatedPersona);
+          } else {
+            errors.push(`${fileName}: 無効なペルソナデータです`);
+          }
+        } catch (error) {
+          errors.push(`${fileName}: ${error instanceof Error ? error.message : '読み込みエラー'}`);
+        }
+      }
+      
+      if (importedPersonas.length > 0) {
+        onImport(importedPersonas);
+        setImportStatus({
+          type: 'success',
+          message: `${importedPersonas.length}個のペルソナを読み込みました${errors.length > 0 ? `（${errors.length}個のエラー）` : ''}`
+        });
+      } else {
+        setImportStatus({
+          type: 'error',
+          message: errors.length > 0 ? errors.join('\n') : '読み込めるペルソナが見つかりませんでした'
+        });
+      }
+    } catch (error) {
+      setImportStatus({
+        type: 'error',
+        message: `読み込みエラー: ${error instanceof Error ? error.message : '不明なエラー'}`
+      });
+    }
+  };
+
+  // 公開フォルダのファイル一覧を取得
+  const loadAvailableFiles = async () => {
+    try {
+      const response = await fetch('/api/personas/list');
+      if (response.ok) {
+        const fileList = await response.json();
+        setAvailableFiles(fileList.filter((file: string) => file.endsWith('.json')));
+      }
+    } catch (error) {
+      console.error('ファイル一覧の取得に失敗:', error);
+    }
+  };
+
+  // モーダルが開かれたときにファイル一覧を読み込む
+  React.useEffect(() => {
+    if (isOpen && activeTab === 'autoload') {
+      loadAvailableFiles();
+    }
+  }, [isOpen, activeTab]);
+
+  const toggleFileSelection = (fileName: string) => {
+    setSelectedFiles(prev => 
+      prev.includes(fileName)
+        ? prev.filter(name => name !== fileName)
+        : [...prev, fileName]
+    );
   };
 
   if (!isOpen) return null;
@@ -205,7 +294,18 @@ export default function PersonaImportExport({
             }`}
           >
             <Upload size={20} className="inline mr-2" />
-            インポート
+            ファイルインポート
+          </button>
+          <button
+            onClick={() => setActiveTab('autoload')}
+            className={`flex-1 py-4 px-6 font-medium transition-colors ${
+              activeTab === 'autoload'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <FolderOpen size={20} className="inline mr-2" />
+            自動読み込み
           </button>
           <button
             onClick={() => setActiveTab('export')}
@@ -252,17 +352,102 @@ export default function PersonaImportExport({
 
               {/* サンプル形式 */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">JSON形式例</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">推奨JSON形式例</h3>
                 <div className="bg-gray-50 rounded-lg p-4 overflow-x-auto">
                   <pre className="text-sm text-gray-700">
 {`{
   "name": "田中太郎",
   "description": "明るく好奇心旺盛な大学生",
-  "likes": ["アニメ", "ゲーム", "ラーメン"],
-  "dislikes": ["早起き", "勉強"],
-  "other_settings": "関西弁で話す、ツッコミが上手"
+  "role": "情報工学専攻の大学生", 
+  "traits": ["好奇心旺盛", "楽観的", "内向的"],
+  "likes": ["プログラミング", "アニメ鑑賞", "ラーメン"],
+  "dislikes": ["早起き", "人混み", "締切"],
+  "other_settings": "関西弁で話す、ツッコミが上手..."
 }`}
                   </pre>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === 'autoload' ? (
+            <div className="space-y-6">
+              {/* 公開フォルダからの読み込み */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">公開フォルダから読み込み</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-blue-800 text-sm">
+                    <strong>📁 public/personas/</strong> フォルダ内のJSONファイルから自動的にペルソナを読み込みます
+                  </p>
+                </div>
+                
+                {/* ファイル一覧 */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">利用可能なファイル:</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedFiles(availableFiles)}
+                        className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        全選択
+                      </button>
+                      <button
+                        onClick={() => setSelectedFiles([])}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        選択解除
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
+                    {availableFiles.length > 0 ? (
+                      availableFiles.map((fileName) => (
+                        <label
+                          key={fileName}
+                          className={`flex items-center gap-3 p-3 border-b border-gray-100 last:border-b-0 cursor-pointer transition-colors ${
+                            selectedFiles.includes(fileName)
+                              ? 'bg-blue-50 border-blue-200'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedFiles.includes(fileName)}
+                            onChange={() => toggleFileSelection(fileName)}
+                            className="w-4 h-4 text-blue-600 rounded"
+                          />
+                          <FileText size={16} className="text-gray-500" />
+                          <span className="flex-1 text-gray-800">{fileName}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <FileText size={48} className="mx-auto mb-3 text-gray-300" />
+                        <p>publicフォルダにペルソナファイルが見つかりません</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          /public/personas/ にJSONファイルを配置してください
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-gray-600">
+                    {selectedFiles.length > 0 
+                      ? `${selectedFiles.length}個のファイルが選択されています`
+                      : '選択なしの場合、全ファイルが読み込まれます'
+                    }
+                  </p>
+                </div>
+                
+                {/* 読み込みボタン */}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={loadPersonasFromPublic}
+                    className="inline-flex items-center gap-3 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <FolderOpen size={20} />
+                    ペルソナを読み込み
+                  </button>
                 </div>
               </div>
             </div>
@@ -336,9 +521,15 @@ export default function PersonaImportExport({
                       />
                       <div className="flex-1">
                         <div className="font-medium text-gray-800">{persona.name}</div>
-                        <div className="text-sm text-gray-600 truncate">
-                          {persona.other_settings || '設定なし'}
+                        <div className="text-sm text-gray-600">
+                          {persona.description || persona.role || '設定なし'}
                         </div>
+                        {persona.traits && persona.traits.length > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            特徴: {persona.traits.slice(0, 3).join(', ')}
+                            {persona.traits.length > 3 && '...'}
+                          </div>
+                        )}
                       </div>
                     </label>
                   ))}

@@ -38,15 +38,15 @@ export default function CharacterGallery({
   });
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'popular' | 'created' | 'updated'>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('character-gallery-sort-by') as 'name' | 'recent' | 'popular' | 'created' | 'updated' || 'name';
+      return localStorage.getItem('character-gallery-sort-by') as 'name' | 'recent' | 'popular' | 'created' | 'updated' || 'recent';
     }
-    return 'name';
+    return 'recent';
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('character-gallery-sort-order') as 'asc' | 'desc' || 'asc';
+      return localStorage.getItem('character-gallery-sort-order') as 'asc' | 'desc' || 'desc';
     }
-    return 'asc';
+    return 'desc';
   });
   const [showVariations, setShowVariations] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -118,15 +118,27 @@ export default function CharacterGallery({
           comparison = a.name.localeCompare(b.name);
           break;
         case 'recent':
-          // 最近使用された順（仮実装）
-          comparison = 0;
+          // 最新の更新または作成時間で比較
+          const aRecent = Math.max(a.updatedAt || 0, a.createdAt || 0);
+          const bRecent = Math.max(b.updatedAt || 0, b.createdAt || 0);
+          
+          // デバッグログ（アメリアのみ）
+          if (a.name.includes('アメリア') || b.name.includes('アメリア')) {
+            console.log(`🔍 ソート比較: ${a.name}(${aRecent}) vs ${b.name}(${bRecent})`);
+            console.log(`  ${a.name}: created=${a.createdAt}, updated=${a.updatedAt}`);
+            console.log(`  ${b.name}: created=${b.createdAt}, updated=${b.updatedAt}`);
+          }
+          
+          comparison = aRecent - bRecent;
           break;
         case 'popular':
-          // 人気順（仮実装）
-          comparison = 0;
+          // 人気順（使用回数または評価で比較、仮実装では作成順）
+          const aPopular = a.createdAt || 0;
+          const bPopular = b.createdAt || 0;
+          comparison = aPopular - bPopular;
           break;
         case 'created':
-          // 登録順
+          // 作成順
           const aCreated = a.createdAt || 0;
           const bCreated = b.createdAt || 0;
           comparison = aCreated - bCreated;

@@ -1,12 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { Download, Upload, CloudOff, FileText, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Download, Upload, CloudOff, FileText, AlertCircle, Clock } from 'lucide-react'
 
 export default function DataBackup() {
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [message, setMessage] = useState('')
+  const [lastBackup, setLastBackup] = useState<string | null>(null)
+  const [showBackupReminder, setShowBackupReminder] = useState(false)
+
+  // コンポーネントマウント時に最後のバックアップ日時をチェック
+  useEffect(() => {
+    const lastBackupDate = localStorage.getItem('last-backup-date')
+    setLastBackup(lastBackupDate)
+    
+    // 7日以上バックアップがない場合はリマインダーを表示
+    if (lastBackupDate) {
+      const daysSinceBackup = (Date.now() - new Date(lastBackupDate).getTime()) / (1000 * 60 * 60 * 24)
+      setShowBackupReminder(daysSinceBackup > 7)
+    } else {
+      setShowBackupReminder(true) // 初回の場合
+    }
+  }, [])
 
   const handleExport = async () => {
     setIsExporting(true)
@@ -15,17 +31,25 @@ export default function DataBackup() {
     try {
       // ローカルストレージから全データを取得
       const allData = {
-        characters: localStorage.getItem('characters') || '[]',
-        personas: localStorage.getItem('personas') || '[]',
-        memos: localStorage.getItem('memos') || '[]',
-        settings: localStorage.getItem('appSettings') || '{}',
-        history: localStorage.getItem('chatHistory') || '[]'
+        // 主要データ（Zustand persist）
+        'ai-chat-store': localStorage.getItem('ai-chat-store') || '{}',
+        // キャラクターデータ
+        'ai-chat-characters': localStorage.getItem('ai-chat-characters') || '[]',
+        'ai-chat-public-characters': localStorage.getItem('ai-chat-public-characters') || '[]',
+        // トラッカーデータ
+        'ai-chat-tracker-values': localStorage.getItem('ai-chat-tracker-values') || '{}',
+        // その他の設定（もしあれば）
+        'appSettings': localStorage.getItem('appSettings') || '{}',
+        'characters': localStorage.getItem('characters') || '[]',
+        'personas': localStorage.getItem('personas') || '[]',
+        'memos': localStorage.getItem('memos') || '[]',
+        'chatHistory': localStorage.getItem('chatHistory') || '[]'
       }
 
       // JSONファイルとしてダウンロード
       const exportData = {
         timestamp: new Date().toISOString(),
-        version: "1.0.0",
+        version: "2.0.0",
         device: navigator.userAgent,
         data: allData
       }
@@ -43,6 +67,12 @@ export default function DataBackup() {
       URL.revokeObjectURL(url)
 
       setMessage('✅ データエクスポート完了！ファイルがダウンロードされました。')
+      
+      // バックアップ日時を記録
+      const now = new Date().toISOString()
+      localStorage.setItem('last-backup-date', now)
+      setLastBackup(now)
+      setShowBackupReminder(false)
     } catch (error) {
       console.error('エクスポートエラー:', error)
       setMessage('❌ エクスポートに失敗しました')
@@ -70,7 +100,8 @@ export default function DataBackup() {
       const confirm = window.confirm(
         '既存のデータが上書きされます。続行しますか？\n' +
         `バックアップ日時: ${importData.timestamp || '不明'}\n` +
-        `バージョン: ${importData.version || '不明'}`
+        `バージョン: ${importData.version || '不明'}\n\n` +
+        '⚠️ 重要：この操作は元に戻せません。事前に現在のデータをバックアップすることをお勧めします。'
       )
       
       if (!confirm) {
@@ -78,13 +109,22 @@ export default function DataBackup() {
         return
       }
 
-      // データを復元
+      // データを復元（すべてのキーをループして復元）
       const { data } = importData
-      if (data.characters) localStorage.setItem('characters', data.characters)
-      if (data.personas) localStorage.setItem('personas', data.personas)
-      if (data.memos) localStorage.setItem('memos', data.memos)
-      if (data.settings) localStorage.setItem('appSettings', data.settings)
-      if (data.history) localStorage.setItem('chatHistory', data.history)
+      
+      // 現在のlocalStorageをクリア（ai-chat関連のキーのみ）
+      const keysToRemove = Object.keys(localStorage).filter(key => 
+        key.startsWith('ai-chat-') || 
+        ['characters', 'personas', 'memos', 'appSettings', 'chatHistory'].includes(key)
+      )
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      
+      // 新しいデータを復元
+      Object.entries(data).forEach(([key, value]) => {
+        if (value && typeof value === 'string') {
+          localStorage.setItem(key, value)
+        }
+      })
 
       setMessage('✅ データインポート完了！ページを再読み込みしてください。')
       
@@ -114,11 +154,41 @@ export default function DataBackup() {
         <div className="flex gap-2">
           <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
           <div className="text-sm text-blue-800">
-            <div className="font-medium mb-1">Supabaseクラウド同期の代替機能</div>
-            <div>データをファイルとして保存・復元できます。他のデバイスでも同じデータを使用できます。</div>
+            <div className="font-medium mb-1">💾 重要：データの永続化について</div>
+            <div className="space-y-1">
+              <p>• データはブラウザのローカルストレージに保存されます</p>
+              <p>• <strong>サーバーやブラウザを変更すると全データが失われます</strong></p>
+              <p>• 定期的にバックアップを取ることを強く推奨します</p>
+              <p>• バックアップファイルがあれば他のデバイスでも同じデータを使用できます</p>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* バックアップリマインダー */}
+      {showBackupReminder && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+          <div className="flex gap-2">
+            <Clock className="w-5 h-5 text-orange-600 mt-0.5" />
+            <div className="text-sm text-orange-800">
+              <div className="font-medium mb-1">📅 バックアップ推奨</div>
+              <div>
+                {lastBackup 
+                  ? `最後のバックアップから7日以上経過しています（${new Date(lastBackup).toLocaleDateString()}）`
+                  : 'まだバックアップが作成されていません'
+                }。
+                データ保護のため、定期的なバックアップをお勧めします。
+              </div>
+              <button
+                onClick={() => setShowBackupReminder(false)}
+                className="mt-2 text-xs text-orange-600 hover:text-orange-800 underline"
+              >
+                リマインダーを非表示
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* エクスポート */}
@@ -129,6 +199,11 @@ export default function DataBackup() {
           </div>
           <p className="text-sm text-gray-600 mb-4">
             現在のデータをJSONファイルとしてダウンロードします
+            {lastBackup && (
+              <span className="block text-xs text-gray-500 mt-1">
+                最後のバックアップ: {new Date(lastBackup).toLocaleString()}
+              </span>
+            )}
           </p>
           <button
             onClick={handleExport}
@@ -199,11 +274,16 @@ export default function DataBackup() {
           使用方法
         </h4>
         <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-          <li>「データをダウンロード」でバックアップファイルを保存</li>
-          <li>他のデバイスでバックアップファイルを開く</li>
-          <li>「ファイルを選択」でバックアップファイルをインポート</li>
-          <li>データが復元され、ページが自動リロードされます</li>
+          <li><strong>定期バックアップ</strong>：重要な設定後に「データをダウンロード」を実行</li>
+          <li><strong>安全な保存</strong>：バックアップファイルをクラウドストレージ等に保存</li>
+          <li><strong>他デバイス移行</strong>：新しいデバイスで「ファイルを選択」からインポート</li>
+          <li><strong>復旧</strong>：データが失われた場合はバックアップファイルから復元</li>
+          <li><strong>確認</strong>：インポート後、ページが自動リロードされデータが復元されます</li>
         </ol>
+        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+          <strong>⚠️ 注意</strong>：サーバーのポートを変更したり、異なるブラウザを使用するとデータが失われます。<br />
+          作業前には必ずバックアップを作成してください。
+        </div>
       </div>
     </div>
   )

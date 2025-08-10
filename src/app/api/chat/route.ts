@@ -111,7 +111,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function buildSystemPrompt(character: { name: string; character_definition: any }, persona?: { name: string; likes?: string[]; dislikes?: string[]; other_settings?: string }): string {
+function buildSystemPrompt(character: { name: string; character_definition: any }, persona?: { 
+  name: string; 
+  description?: string; 
+  role?: string; 
+  traits?: string[]; 
+  likes?: string[]; 
+  dislikes?: string[]; 
+  other_settings?: string 
+}): string {
   if (!character) return '';
   
   const { character_definition } = character;
@@ -139,11 +147,14 @@ function buildSystemPrompt(character: { name: string; character_definition: any 
 **初期状況**: ${character_definition.scenario.initial_situation}
 **ユーザーとの関係**: ${character_definition.scenario.relationship_with_user}
 
-${persona ? `\n## {{user}}の情報
-**{{user}}のタイプ**: ${persona.name}
-${persona.likes && persona.likes.length > 0 ? `**{{user}}の好きなもの**: ${persona.likes.join(', ')}` : ''}
-${persona.dislikes && persona.dislikes.length > 0 ? `**{{user}}の嫌いなもの**: ${persona.dislikes.join(', ')}` : ''}
-${persona.other_settings ? `**{{user}}のその他の特徴**: ${persona.other_settings}` : ''}
+${persona ? `\n## ユーザー設定（{{user}}）
+- 名前: ${persona.name}
+- 説明: ${persona.description || '設定なし'}
+- 役割: ${persona.role || '設定なし'}
+- 特徴: ${persona.traits && persona.traits.length > 0 ? persona.traits.join(', ') : '設定なし'}
+- 好きなもの: ${persona.likes && persona.likes.length > 0 ? persona.likes.join(', ') : '設定なし'}
+- 嫌いなもの: ${persona.dislikes && persona.dislikes.length > 0 ? persona.dislikes.join(', ') : '設定なし'}
+- その他の設定: ${persona.other_settings || '設定なし'}
 
 上記の{{user}}情報を考慮して、{{char}}として{{user}}に合わせた返答をしてください。` : ''}
 

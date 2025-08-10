@@ -5,7 +5,13 @@
       "Bash(npm run dev:*)",
       "Bash(find:*)",
       "Bash(node:*)",
-      "Bash(claude --version)"
+      "Bash(claude --version)",
+      "Bash(npm run lint)",
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(rm:*)",
+      "Bash(del /F /S /Q .next)",
+      "Bash(powershell:*)"
     ],
     "deny": []
   }

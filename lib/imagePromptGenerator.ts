@@ -1,190 +1,294 @@
-import { Character } from '../types/character';
+import { Message } from '../src/hooks/useChatState';
 
-export interface ImagePromptResult {
-  prompt: string;
-  negativePrompt: string;
-  emotion: string;
-  scenario: string;
+interface GeneratedPrompt {
+  enhancedPrompt: string;
+  contextPrompt: string;
 }
 
+interface ContextElements {
+  emotions: string[];
+  actions: string[];
+  poses: string[];
+  situation: string[];
+  expressions: string[];
+}
+
+/**
+ * 会話履歴を分析して画像生成プロンプトを生成
+ */
 export class ImagePromptGenerator {
   /**
-   * シンプルな画像プロンプト生成（キャラクター設定 + 品質 + 基本会話情報のみ）
+   * 会話履歴から動的なプロンプトを生成
    */
-  static generateImagePrompt(
-    character: Character,
-    aiResponse: string,
-    conversationContext?: string[],
-    settings?: { customQualityTags?: string; [key: string]: unknown }
-  ): ImagePromptResult {
-    console.log('🎨 シンプル画像生成モード');
+  generateFromHistory(
+    messages: Message[], 
+    basePrompt: string, 
+    qualityPrompt: string,
+    contextPromptWeight: number = 1.3
+  ): GeneratedPrompt {
+    if (!messages || messages.length === 0) {
+      return {
+        enhancedPrompt: this.combinePrompts(basePrompt, qualityPrompt, ''),
+        contextPrompt: ''
+      };
+    }
+
+    // 最新の数メッセージから文脈を抽出（重要度が高い）
+    const recentMessages = messages.slice(-6);
     
-    // 1. キャラクターの基本外見プロンプト
-    const characterPrompt = this.buildBaseCharacterPrompt(character);
+    // キャラクターの動作・感情・状況を分析
+    const contextElements = this.analyzeContext(recentMessages);
     
-    // 2. 設定画面の品質プロンプト
-    const qualityTags = settings?.customQualityTags || 'masterpiece, best quality, highly detailed, beautiful lighting, anime style, high resolution, 8k';
+    // 動的プロンプトを生成（強調タグ付き）
+    const contextPrompt = this.buildContextPrompt(contextElements, contextPromptWeight);
     
-    // 3. 会話履歴からの最小限の感情分析のみ
-    const emotion = this.analyzeBasicEmotion(aiResponse);
-    
-    // 最終プロンプト構築（シンプル）
-    const prompt = emotion.prompt 
-      ? `${characterPrompt}, ${emotion.prompt}, ${qualityTags}`
-      : `${characterPrompt}, ${qualityTags}`;
-    
-    // ネガティブプロンプト（キャラクター定義のみ）
-    const negativePrompt = this.buildSimpleNegativePrompt(character);
-    
-    console.log('📝 生成されたプロンプト:', {
-      character: characterPrompt.substring(0, 50) + '...',
-      emotion: emotion.name,
-      quality: qualityTags.substring(0, 30) + '...',
-      negative: negativePrompt.substring(0, 50) + '...'
-    });
+    // 最終プロンプトを結合
+    const enhancedPrompt = this.combinePrompts(basePrompt, qualityPrompt, contextPrompt);
     
     return {
-      prompt,
-      negativePrompt,
-      emotion: emotion.name,
-      scenario: '基本'
+      enhancedPrompt,
+      contextPrompt
     };
   }
 
   /**
-   * 基本的な感情分析（簡素版）
+   * 会話から文脈要素を抽出
    */
-  private static analyzeBasicEmotion(text: string): { name: string; prompt: string } {
-    const basicEmotions = [
-      {
-        keywords: ['嬉しい', '楽しい', '笑', 'うふふ', 'わーい', '😊', '😄'],
-        name: '喜び',
-        prompt: 'happy expression, gentle smile'
-      },
-      {
-        keywords: ['悲しい', '泣', 'しょんぼり', '😢', '😭'],
-        name: '悲しみ',
-        prompt: 'sad expression, downcast look'
-      },
-      {
-        keywords: ['恥ずかし', '照れ', '赤面', '😳', '💕'],
-        name: '恥ずかしさ',
-        prompt: 'blushing, shy expression'
-      },
-      {
-        keywords: ['驚', 'びっくり', 'えっ', '😲', '😱'],
-        name: '驚き',
-        prompt: 'surprised expression, wide eyes'
-      }
-    ];
+  private analyzeContext(messages: Message[]): ContextElements {
+    const elements: ContextElements = {
+      emotions: [],
+      actions: [],
+      poses: [],
+      situation: [],
+      expressions: []
+    };
 
-    for (const emotion of basicEmotions) {
-      if (emotion.keywords.some(keyword => text.includes(keyword))) {
-        return emotion;
+    messages.forEach(message => {
+      if (message.role === 'assistant') {
+        const content = message.content.toLowerCase();
+        
+        // 感情キーワードを抽出
+        elements.emotions.push(...this.extractEmotions(content));
+        
+        // 動作・ポーズキーワードを抽出
+        elements.actions.push(...this.extractActions(content));
+        elements.poses.push(...this.extractPoses(content));
+        
+        // 表情キーワードを抽出
+        elements.expressions.push(...this.extractExpressions(content));
+        
+        // 状況キーワードを抽出
+        elements.situation.push(...this.extractSituation(content));
       }
-    }
+    });
 
-    return { name: '自然', prompt: '' };
+    // 重複を除去して最新のものを優先
+    return {
+      emotions: [...new Set(elements.emotions)].slice(-3),
+      actions: [...new Set(elements.actions)].slice(-3),
+      poses: [...new Set(elements.poses)].slice(-2),
+      expressions: [...new Set(elements.expressions)].slice(-2),
+      situation: [...new Set(elements.situation)].slice(-2)
+    };
   }
 
   /**
-   * シンプルなネガティブプロンプト（キャラクター定義のみ）
+   * 感情キーワードを抽出
    */
-  private static buildSimpleNegativePrompt(character?: Character): string {
-    // キャラクター固有のネガティブプロンプトのみ使用
-    if (character?.appearanceNegativePrompt) {
-      console.log('📝 キャラクター固有ネガティブプロンプト使用:', character.appearanceNegativePrompt);
-      return character.appearanceNegativePrompt;
-    }
-    
-    if (character?.character_definition?.appearance?.negativePrompt) {
-      console.log('📝 character_definition内ネガティブプロンプト使用:', character.character_definition.appearance.negativePrompt);
-      return character.character_definition.appearance.negativePrompt;
-    }
+  private extractEmotions(content: string): string[] {
+    const emotionPatterns = {
+      'happy, joyful': ['嬉しい', '楽しい', '幸せ', '喜ん', 'わくわく', 'うきうき'],
+      'sad, melancholy': ['悲しい', '落ち込', '憂鬱', '沈ん', 'しょんぼり'],
+      'angry, furious': ['怒', '腹立', 'むかつ', 'いらいら', 'ぷんぷん'],
+      'embarrassed, shy': ['恥ずかし', '照れ', '赤面', 'もじもじ'],
+      'surprised, shocked': ['驚', 'びっくり', '衝撃', '愕然'],
+      'nervous, anxious': ['緊張', '不安', 'ドキドキ', 'そわそわ'],
+      'confident, proud': ['自信', '誇らし', '堂々', '得意'],
+      'confused, puzzled': ['困惑', '混乱', 'きょとん', '首をかしげ'],
+      'excited, energetic': ['興奮', '元気', 'テンション', 'ハイテンション'],
+      'calm, peaceful': ['落ち着', '穏やか', '静か', 'リラックス']
+    };
 
-    console.log('📝 ネガティブプロンプトなし');
-    return '';
+    const found: string[] = [];
+    Object.entries(emotionPatterns).forEach(([emotion, patterns]) => {
+      if (patterns.some(pattern => content.includes(pattern))) {
+        found.push(emotion);
+      }
+    });
+
+    return found;
+  }
+
+  /**
+   * 動作キーワードを抽出
+   */
+  private extractActions(content: string): string[] {
+    const actionPatterns = {
+      'walking, moving': ['歩', '移動', '進ん', 'とことこ'],
+      'sitting down': ['座', '腰を下ろ', 'ちょこん'],
+      'standing up': ['立', '立ち上が', 'すっく'],
+      'running, rushing': ['走', '駆け', '急い', 'だだだ'],
+      'reaching out, extending hand': ['手を伸ば', '差し出', '手を差し'],
+      'hugging, embracing': ['抱き', 'ハグ', '抱擁'],
+      'waving hand': ['手を振', '振っ', 'ひらひら'],
+      'nodding': ['うなず', '頷', 'こくこく'],
+      'shaking head': ['首を振', '首を横に'],
+      'pointing': ['指差', '指を向け', 'びしっ'],
+      'looking around': ['見回', '辺りを見', 'きょろきょろ'],
+      'touching, caressing': ['触れ', '撫で', '優しく'],
+      'dancing, swaying': ['踊', '揺れ', 'くるくる'],
+      'cooking, preparing food': ['料理', '作っ', '調理'],
+      'reading': ['読ん', '本を', '読書'],
+      'working, studying': ['勉強', '作業', '仕事']
+    };
+
+    const found: string[] = [];
+    Object.entries(actionPatterns).forEach(([action, patterns]) => {
+      if (patterns.some(pattern => content.includes(pattern))) {
+        found.push(action);
+      }
+    });
+
+    return found;
   }
 
   /**
    * キャラクターの基本外見プロンプトを構築
    */
-  private static buildBaseCharacterPrompt(character: Character): string {
-    const appearance = character.character_definition?.appearance;
-    
-    // 1. ルートレベルの英文プロンプトを最優先使用
-    if (character.appearancePrompt) {
-      console.log('🎨 ルートレベルの外見プロンプト使用:', character.appearancePrompt);
-      return character.appearancePrompt;
-    }
-    
-    // 2. character_definition内の英文プロンプトをチェック
-    if (appearance?.prompt) {
-      console.log('🎨 character_definition内の外見プロンプト使用:', appearance.prompt);
-      return appearance.prompt;
-    }
-    
-    // フォールバック: 従来の日本語描写から構築
-    if (!appearance) {
-      return `beautiful anime girl, {{char}}`;
-    }
+  private extractPoses(content: string): string[] {
+    const posePatterns = {
+      'arms crossed': ['腕を組', '腕組み'],
+      'hands on hips': ['腰に手', '手を腰に'],
+      'arms spread wide': ['腕を広げ', '両手を広げ'],
+      'leaning forward': ['身を乗り出', '前のめり'],
+      'leaning back': ['もたれ', '背もたれ'],
+      'kneeling down': ['膝をつ', 'ひざまず'],
+      'lying down': ['横にな', '寝そべ', '寝転'],
+      'crouching': ['しゃがん', 'うずくま'],
+      'hands behind back': ['手を後ろに', '背中に手'],
+      'hands in pockets': ['ポケット', '手をポケット'],
+      'covering face': ['顔を覆', '手で顔を'],
+      'stretching': ['伸び', 'ストレッチ'],
+      'bowing, bending': ['お辞儀', '頭を下げ', '腰を曲げ']
+    };
 
-    const parts = [];
-    
-    // 基本描写
-    if (appearance.description) {
-      parts.push(appearance.description);
-    }
-    
-    // 髪の毛
-    if (appearance.hair) {
-      parts.push(appearance.hair);
-    }
-    
-    // 目
-    if (appearance.eyes) {
-      parts.push(appearance.eyes);
-    }
-    
-    // 服装
-    if (appearance.clothing) {
-      parts.push(appearance.clothing);
-    }
-    
-    return parts.join(', ');
+    const found: string[] = [];
+    Object.entries(posePatterns).forEach(([pose, patterns]) => {
+      if (patterns.some(pattern => content.includes(pattern))) {
+        found.push(pose);
+      }
+    });
+
+    return found;
   }
 
   /**
-   * 時間帯による照明調整
+   * 表情キーワードを抽出
    */
-  static getTimeBasedLighting(): string {
-    const hour = new Date().getHours();
-    
-    if (hour >= 6 && hour < 12) {
-      return 'morning light, soft sunlight, bright atmosphere';
-    } else if (hour >= 12 && hour < 17) {
-      return 'afternoon light, warm sunlight, clear lighting';
-    } else if (hour >= 17 && hour < 20) {
-      return 'evening light, golden hour, warm atmosphere';
-    } else {
-      return 'night lighting, soft artificial light, cozy atmosphere';
-    }
+  private extractExpressions(content: string): string[] {
+    const expressionPatterns = {
+      'smiling, grinning': ['笑顔', '微笑', 'にこにこ', 'にっこり', 'にやにや'],
+      'frowning, scowling': ['しかめ', '眉をひそ', 'むすっ'],
+      'wide-eyed, surprised look': ['目を見開', '大きな目', 'まん丸な目'],
+      'winking': ['ウィンク', 'ウインク', '片目を'],
+      'pouting, sulking': ['ふくれ', 'ぷくー', '頬を膨ら'],
+      'blushing, red face': ['赤面', '頬を染め', '顔を赤く'],
+      'crying, tears': ['涙', '泣', 'うるうる'],
+      'yawning, sleepy': ['あくび', '眠そう', 'うとうと'],
+      'tongue out': ['舌を出', 'べー', 'ぺろっ'],
+      'serious expression': ['真剣', '険し', '厳し'],
+      'gentle smile': ['優しい笑顔', '穏やか', 'ほんわか'],
+      'mischievous grin': ['いたずら', 'にやり', 'にんまり']
+    };
+
+    const found: string[] = [];
+    Object.entries(expressionPatterns).forEach(([expression, patterns]) => {
+      if (patterns.some(pattern => content.includes(pattern))) {
+        found.push(expression);
+      }
+    });
+
+    return found;
   }
 
   /**
-   * 季節による環境調整
+   * 状況キーワードを抽出
    */
-  static getSeasonalEnvironment(): string {
-    const month = new Date().getMonth() + 1;
-    
-    if (month >= 3 && month <= 5) {
-      return 'spring atmosphere, cherry blossoms, fresh green';
-    } else if (month >= 6 && month <= 8) {
-      return 'summer atmosphere, bright sunshine, vivid colors';
-    } else if (month >= 9 && month <= 11) {
-      return 'autumn atmosphere, fallen leaves, warm colors';
-    } else {
-      return 'winter atmosphere, snow, cool lighting';
+  private extractSituation(content: string): string[] {
+    const situationPatterns = {
+      'in kitchen': ['キッチン', '台所', '料理'],
+      'in bedroom': ['ベッドルーム', '寝室', 'ベッド'],
+      'outdoors, in garden': ['屋外', '庭', '外で', '青空'],
+      'at school, classroom': ['学校', '教室', '授業'],
+      'in library': ['図書館', '本棚', '静か'],
+      'at cafe': ['カフェ', '喫茶', 'コーヒー'],
+      'in bathroom': ['お風呂', '浴室', 'バスルーム'],
+      'on beach': ['海', 'ビーチ', '砂浜'],
+      'in rain': ['雨', '傘', '濡れ'],
+      'during sunset': ['夕焼け', '夕陽', '夕日'],
+      'at night': ['夜', '夜中', '深夜', '星空'],
+      'in morning': ['朝', '朝日', '朝食'],
+      'indoors, cozy': ['部屋', '室内', '家の中'],
+      'festival, celebration': ['祭り', 'お祭り', '祝い']
+    };
+
+    const found: string[] = [];
+    Object.entries(situationPatterns).forEach(([situation, patterns]) => {
+      if (patterns.some(pattern => content.includes(pattern))) {
+        found.push(situation);
+      }
+    });
+
+    return found;
+  }
+
+  /**
+   * 文脈プロンプトを構築（強調タグ付き）
+   */
+  private buildContextPrompt(elements: ContextElements, weight: number): string {
+    const prompts: string[] = [];
+    const weightTag = weight.toFixed(1);
+
+    // 感情プロンプト
+    if (elements.emotions.length > 0) {
+      prompts.push(`(${elements.emotions.join(', ')}:${weightTag})`);
     }
+
+    // 表情プロンプト
+    if (elements.expressions.length > 0) {
+      prompts.push(`(${elements.expressions.join(', ')}:${weightTag})`);
+    }
+
+    // 動作プロンプト
+    if (elements.actions.length > 0) {
+      prompts.push(`(${elements.actions.join(', ')}:${weightTag})`);
+    }
+
+    // ポーズプロンプト
+    if (elements.poses.length > 0) {
+      prompts.push(`(${elements.poses.join(', ')}:${weightTag})`);
+    }
+
+    // 状況プロンプト
+    if (elements.situation.length > 0) {
+      prompts.push(`(${elements.situation.join(', ')}:${weightTag})`);
+    }
+
+    return prompts.join(', ');
+  }
+
+  /**
+   * プロンプトを結合
+   */
+  private combinePrompts(basePrompt: string, qualityPrompt: string, contextPrompt: string): string {
+    const parts = [basePrompt, qualityPrompt];
+    
+    if (contextPrompt) {
+      parts.push(contextPrompt);
+    }
+
+    return parts.filter(p => p.trim()).join(', ');
   }
 }
+
+export default ImagePromptGenerator;

@@ -16,6 +16,9 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
   const [formData, setFormData] = useState<UserPersona>({
     id: '',
     name: '',
+    description: '',
+    role: '',
+    traits: [],
     likes: [],
     dislikes: [],
     other_settings: ''
@@ -23,6 +26,7 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
 
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
+  const [newTrait, setNewTrait] = useState('');
 
   useEffect(() => {
     if (initialPersona) {
@@ -35,6 +39,9 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
       setFormData({
         id,
         name: '',
+        description: '',
+        role: '',
+        traits: [],
         likes: [],
         dislikes: [],
         other_settings: ''
@@ -52,20 +59,20 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
     onClose();
   };
 
-  const addItem = (type: 'likes' | 'dislikes', value: string, setValue: (val: string) => void) => {
+  const addItem = (type: 'likes' | 'dislikes' | 'traits', value: string, setValue: (val: string) => void) => {
     if (value.trim()) {
       setFormData(prev => ({
         ...prev,
-        [type]: [...prev[type], value.trim()]
+        [type]: [...(prev[type] || []), value.trim()]
       }));
       setValue('');
     }
   };
 
-  const removeItem = (type: 'likes' | 'dislikes', index: number) => {
+  const removeItem = (type: 'likes' | 'dislikes' | 'traits', index: number) => {
     setFormData(prev => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
+      [type]: (prev[type] || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -114,20 +121,107 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
                 <User size={20} />
                 基本情報
               </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Persona名 *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    placeholder="例: 冒険好きの学生"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    あなたのPersonaに名前を付けてください
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    説明
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    placeholder="例: プログラミングが好きな大学生"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    あなたの簡単な説明を入力してください
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    役割・肩書き
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.role || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                    placeholder="例: エンジニア、学生、研究者"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    あなたの職業や役割を入力してください
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* 特徴タグ */}
+            <section>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Tag size={20} />
+                特徴キーワード
+              </h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Persona名 *
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  あなたの特徴
                 </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
-                  placeholder="例: 冒険好きの学生"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  あなたのPersonaに名前を付けてください
-                </p>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTrait}
+                      onChange={(e) => setNewTrait(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addItem('traits', newTrait, setNewTrait)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800"
+                      placeholder="特徴を入力（例: 内向的、完璧主義、チャレンジ精神）"
+                    />
+                    <button
+                      onClick={() => addItem('traits', newTrait, setNewTrait)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      追加
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {(formData.traits || []).map((trait, index) => (
+                      <div
+                        key={index}
+                        className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg flex items-center justify-between"
+                      >
+                        <span className="flex-1">{trait}</span>
+                        <button
+                          onClick={() => removeItem('traits', index)}
+                          className="text-blue-600 hover:text-blue-800 p-1"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    {(formData.traits || []).length === 0 && (
+                      <div className="text-gray-500 text-sm text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+                        特徴キーワードを追加してください
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -238,7 +332,7 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
             <section>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Tag size={20} />
-                詳細設定
+                その他の設定
               </h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -271,6 +365,20 @@ export default function PersonaModal({ isOpen, onClose, initialPersona, onSave }
                 <div>
                   <span className="font-medium text-gray-700">名前：</span>
                   <span className="text-gray-600">{formData.name || '未設定'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">説明：</span>
+                  <span className="text-gray-600">{formData.description || '設定なし'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">役割：</span>
+                  <span className="text-gray-600">{formData.role || '設定なし'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">特徴：</span>
+                  <span className="text-gray-600">
+                    {(formData.traits || []).length > 0 ? (formData.traits || []).join(', ') : '設定なし'}
+                  </span>
                 </div>
                 <div>
                   <span className="font-medium text-gray-700">好きなもの：</span>

@@ -16,7 +16,11 @@ export async function POST(request: NextRequest) {
       modelId = process.env.RUNWARE_MODEL_ID || "your_runware_model_id_here",
       aspectRatio = "square",
       safetyChecker = "off",
-      settings // settingsオブジェクトもここで取得
+      settings, // settingsオブジェクトもここで取得
+      runwareModelId: clientRunwareModelId, // 設定画面から直接送信される値
+      runwareLoraIds: clientRunwareLoraIds, // 設定画面から直接送信される値
+      runwareApiKey: clientRunwareApiKey, // 設定画面から直接送信される値
+      conversationContext // 会話履歴
     } = requestBodyJson;
     
     console.log('[/api/generate-image] リクエストボディ:', {
@@ -86,7 +90,8 @@ export async function POST(request: NextRequest) {
     // 設定画面を優先で取得 - Runware
     const envRunwareApiKey = process.env.RUNWARE_API_KEY;
     const settingsRunwareApiKey = settings?.runwareApiKey; // settingsから取得
-    const runwareApiKey = settingsRunwareApiKey || envRunwareApiKey;
+    // 設定画面から直接送信された値を最優先、次にsettings、最後に環境変数
+    const runwareApiKey = clientRunwareApiKey || settingsRunwareApiKey || envRunwareApiKey;
     
     // デバッグ用：環境変数の詳細確認
     console.log('Runware Environment variables debug:', {
@@ -100,8 +105,8 @@ export async function POST(request: NextRequest) {
     
     const envRunwareModelId = process.env.RUNWARE_MODEL_ID;
     const settingsRunwareModelId = settings?.runwareModelId; // settingsから取得（キャメルケースに修正）
-    // 設定画面のモデルを優先、設定がない場合のみ環境変数を使用
-    const runwareModelId = settingsRunwareModelId || envRunwareModelId;
+    // 設定画面から直接送信された値を最優先、次にsettings、最後に環境変数
+    const runwareModelId = clientRunwareModelId || settingsRunwareModelId || envRunwareModelId;
 
     console.log('[/api/generate-image] Runware API Key check:', {
       hasSettingsApiKey: !!settingsRunwareApiKey,
@@ -114,6 +119,14 @@ export async function POST(request: NextRequest) {
       isProduction: process.env.NODE_ENV === 'production',
       modelId: runwareModelId
     });
+
+    // Stable Diffusion APIキーの事前定義（スコープ全体で使用するため）
+    const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
+    const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey;
+    const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
+    
+    // ローカルStable DiffusionのURL
+    const localSdUrl = process.env.LOCAL_SD_URL || settings?.localSdUrl;
 
     // 設定で指定されたエンジンを優先使用（明示的なRunwareデフォルト）
     const preferredEngine = settings?.imageEngine || 'runware';
@@ -189,9 +202,6 @@ export async function POST(request: NextRequest) {
 
     // Stable Diffusion使用 (設定で指定またはRunwareフォールバック)
     if (preferredEngine === 'sd' || !runwareApiKey || !runwareModelId) {
-      const envStableDiffusionApiKey = process.env.STABLE_DIFFUSION_API_KEY;
-      const settingsStableDiffusionApiKey = settings?.stableDiffusionApikey; // settingsから取得
-      const stableDiffusionApiKey = settingsStableDiffusionApiKey || envStableDiffusionApiKey;
 
       console.log('[/api/generate-image] Stable Diffusion API Key check:', {
         hasSettingsApiKey: !!settingsStableDiffusionApiKey,
@@ -240,7 +250,6 @@ export async function POST(request: NextRequest) {
     }
 
     // ローカルStable Diffusionを試行
-    const localSdUrl = process.env.LOCAL_SD_URL || settings?.localSdUrl; // settingsから取得
     console.log('[/api/generate-image] ローカルSD URL:', localSdUrl);
     
     // プレースホルダーURLや無効なURLを除外

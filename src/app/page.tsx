@@ -37,6 +37,7 @@ import CharacterModal from '../../components/CharacterModal';
 import CharacterSelector from '../../components/CharacterSelector';
 import PersonaModal from '../../components/PersonaModal';
 import PersonaSelector from '../../components/PersonaSelector';
+import PersonaImportExport from '../../components/PersonaImportExport';
 import { MessageMemoButton } from '../../components/ChatMemoProvider';
 import ChatSummaryModal from '../../components/ChatSummaryModal';
 import { MessageEditorModal } from '../../components/MessageEditorModal';
@@ -1027,6 +1028,7 @@ export default function ChatPage() {
           runwareModelId: settings.runwareModelId,
           runwareLoraIds: settings.runwareLoraIds,
           runwareApiKey: settings.runwareApiKey,
+          settings: settings, // 設定オブジェクト全体を送信
         }),
       });
 
@@ -1080,6 +1082,7 @@ export default function ChatPage() {
           runwareModelId: settings.runwareModelId,
           runwareLoraIds: settings.runwareLoraIds,
           runwareApiKey: settings.runwareApiKey,
+          settings: settings, // 設定オブジェクト全体を送信
         }),
       });
 
@@ -1749,7 +1752,8 @@ export default function ChatPage() {
           } else {
             bgElement.innerHTML = '';
             bgElement.style.background = `url(${background})`;
-            bgElement.style.backgroundSize = 'cover';
+            bgElement.style.backgroundSize = 'contain'; // coverからcontainに変更で全体表示
+            bgElement.style.backgroundRepeat = 'no-repeat'; // 繰り返し防止
             bgElement.style.backgroundPosition = 'center';
             console.log('🖼️ 画像背景を適用:', characterName);
           }
@@ -1975,11 +1979,10 @@ export default function ChatPage() {
           steps: currentCharacter?.imageSteps,
           cfg_scale: currentCharacter?.imageCfgScale,
           sampler: currentCharacter?.imageSampler,
-          // imageEngine: settings.imageEngine, // 個別ではなく settings オブジェクト全体を渡すため削除
-          // Runware固有のモデルIDとLORA IDをsettingsから渡す
-          // runwareModelId: settings.runwareModelId, // settings オブジェクトに含まれているため削除
-          // runwareLoraIds: settings.runwareLoraIds, // settings オブジェクトに含まれているため削除
-
+          // 設定画面の値を直接送信（優先度を上げるため）
+          runwareModelId: settings.runwareModelId,
+          runwareLoraIds: settings.runwareLoraIds,
+          runwareApiKey: settings.runwareApiKey,
         })
       });
 
@@ -3055,6 +3058,17 @@ export default function ChatPage() {
           }}
         />
       )}
+      {isPersonaImportExportOpen && (
+        <PersonaImportExport
+          isOpen={isPersonaImportExportOpen}
+          onClose={() => setIsPersonaImportExportOpen(false)}
+          onImport={(importedPersonas) => {
+            importedPersonas.forEach(persona => addUserPersona(persona));
+            setIsPersonaImportExportOpen(false);
+          }}
+          allPersonas={userPersonas}
+        />
+      )}
       {isAuthModalOpen && (
         <AuthModal
           isOpen={isAuthModalOpen}
@@ -3239,6 +3253,10 @@ export default function ChatPage() {
               // publicキャラクターを手動で読み込み
               await CharacterLoader.loadPublicCharacters();
               
+              // 🔧 不足フィールド自動修復を実行
+              console.log('🔧 キャラクター不足フィールド修復開始...');
+              await CharacterLoader.repairAll();
+              
               // 全キャラクターを取得して更新
               const updatedCharacters = CharacterLoader.getAllCharacters();
               setAllCharacters(updatedCharacters);
@@ -3246,7 +3264,7 @@ export default function ChatPage() {
               console.log('✅ 手動キャラクター読み込み完了:', updatedCharacters.length, '件');
               console.log('📋 読み込まれたキャラクター:', updatedCharacters.map(c => c.name));
               
-              alert(`キャラクター読み込み完了: ${updatedCharacters.length}件`);
+              alert(`キャラクター読み込み完了: ${updatedCharacters.length}件（修復処理済み）`);
             } catch (error) {
               console.error('❌ 手動キャラクター読み込みエラー:', error);
               alert('キャラクター読み込みに失敗しました');

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { AppSettings } from '../types/app'; // AppSettingsのパスを修正
+import { AppSettings } from '../../../types/app'; // AppSettingsのパスを修正
 import LoRASettings from '../LoRASettings';
 
 interface ApiSettingsProps {
@@ -332,6 +332,30 @@ export default function ApiSettings({ formSettings, setFormSettings }: ApiSettin
             />
             <div className="text-xs text-gray-500 mt-1">
               画像生成時に自動追加される品質向上タグ
+            </div>
+          </div>
+
+          {/* 会話文脈の重要度設定 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              📝 会話文脈重要度 (強調レベル)
+            </label>
+            <div className="flex items-center space-x-4">
+              <input
+                type="range"
+                min="1.0"
+                max="2.0"
+                step="0.1"
+                value={formSettings.contextPromptWeight || 1.3}
+                onChange={(e) => setFormSettings((prev: AppSettings) => ({ ...prev, contextPromptWeight: parseFloat(e.target.value) }))}
+                className="flex-1"
+              />
+              <div className="min-w-[3rem] text-center font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                {formSettings.contextPromptWeight || 1.3}
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              会話から分析された感情・行動・シナリオがプロンプトにどの程度強く反映されるかを調整 (1.0=通常、2.0=最大強調)
             </div>
           </div>
 

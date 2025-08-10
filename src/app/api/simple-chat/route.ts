@@ -5,82 +5,374 @@ import { ExampleDialogue } from '../../../../types/character';
 import { DEFAULT_SYSTEM_PROMPT } from '../../../../lib/defaultSystemPrompt';
 import { GeminiApiManager } from '../../../../lib/geminiApiManager';
 
-// トラッカー更新の自動検出
+// 汎用トラッカー自動検出システム - 拡張版
 function autoDetectTrackerChanges(aiResponse: string, trackers: any[]): any[] {
   const updates: any[] = [];
   const response = aiResponse.toLowerCase();
+  const originalResponse = aiResponse; // 大文字小文字を区別する検索用
   
   console.log('🔍 自動検出開始:', response.substring(0, 100));
   
+  // 数値型トラッカーの検出ルール（大幅拡張）
+  const numericRules = [
+    // 好感度・愛情系
+    {
+      patterns: ['affection', '好感度', 'love', 'fondness', 'like', 'crush'],
+      positive: {
+        keywords: ['嬉しい', 'ありがと', '素敵', '可愛い', 'きゃぴ', '☆', '♡', '好き', '愛', '素晴らしい', '最高', 'いいね', '楽しい', '幸せ', 'ときめ', 'ドキドキ', '微笑', '頬を赤らめ', '恥ずかしそう'],
+        change: [3, 12] // +3~12
+      },
+      negative: {
+        keywords: ['悲しい', 'がっかり', '冷たい', '嫌', '怒', '不快', '最悪', 'つまらない', '退屈', 'イライラ', '憎い', '許せない'],
+        change: [-15, -3] // -15~-3
+      }
+    },
+    // 信頼度系
+    {
+      patterns: ['trust', '信頼', 'confidence', 'faith', 'belief'],
+      positive: {
+        keywords: ['信じ', '頼りになる', '安心', '任せ', '頼む', '信用', '安全', '守って', '助けて', '大丈夫', '心配ない', '信頼'],
+        change: [2, 10]
+      },
+      negative: {
+        keywords: ['疑', '怪しい', '不安', '心配', '危険', '騙', '嘘', '裏切', '信用できない', '怖い'],
+        change: [-12, -2]
+      }
+    },
+    // 気分・機嫌系
+    {
+      patterns: ['mood', '気分', '機嫌', 'temper', 'spirit'],
+      positive: {
+        keywords: ['元気', '明るい', 'ワクワク', '興奮', '楽しみ', '上機嫌', '最高', '調子いい', 'いい感じ'],
+        change: [2, 8]
+      },
+      negative: {
+        keywords: ['疲れ', 'だるい', '眠い', '調子悪い', 'イライラ', 'ムカつく', '機嫌悪い', '憂鬱'],
+        change: [-10, -2]
+      }
+    },
+    // 興味・関心系
+    {
+      patterns: ['interest', '興味', 'curiosity', '関心', 'fascination'],
+      positive: {
+        keywords: ['面白い', '興味深い', '気になる', '知りたい', '教えて', '詳しく', '続きを', '素晴らしい'],
+        change: [3, 8]
+      },
+      negative: {
+        keywords: ['つまらない', '興味ない', 'どうでもいい', '飽きた', '退屈', 'もういい'],
+        change: [-8, -2]
+      }
+    },
+    // 没入度・集中度系
+    {
+      patterns: ['immersion', '没入', 'focus', '集中', 'engagement', 'role'],
+      positive: {
+        keywords: ['集中', '夢中', '没頭', '真剣', '本気', '演技', '役', 'なりきり', '完璧', '上手', 'リアル'],
+        change: [3, 10]
+      },
+      negative: {
+        keywords: ['集中できない', '気が散る', 'つまらない', '冷める', '現実', '普通', '適当'],
+        change: [-8, -2]
+      }
+    },
+    // 依存度・執着系
+    {
+      patterns: ['dependence', '依存', 'attachment', '執着', 'obsession'],
+      positive: {
+        keywords: ['離れたくない', 'ずっと', '必要', 'もっと', '欲しい', '求める', '切望', '渇望', '一緒に'],
+        change: [2, 8]
+      },
+      negative: {
+        keywords: ['離れる', '距離', '独立', '一人で', '必要ない', '満足', '十分'],
+        change: [-6, -2]
+      }
+    },
+    // 恥ずかしさ・羞恥系
+    {
+      patterns: ['shyness', '恥ずかし', 'embarrass', 'blush', '羞恥'],
+      positive: {
+        keywords: ['恥ずかし', '赤面', '頬を染め', '照れ', 'もじもじ', '恥じらい', 'ドキドキ', '緊張'],
+        change: [2, 8]
+      },
+      negative: {
+        keywords: ['堂々', '平気', '慣れた', '普通', '何ともない', '冷静'],
+        change: [-6, -2]
+      }
+    },
+    // 興奮・覚醒系
+    {
+      patterns: ['excitement', '興奮', 'arousal', '覚醒', 'stimulation'],
+      positive: {
+        keywords: ['興奮', 'ドキドキ', '鼓動', '熱い', '火照', '息づか', 'ゾクゾク', '刺激', 'うっとり'],
+        change: [3, 10]
+      },
+      negative: {
+        keywords: ['冷静', '落ち着', '平常', '冷める', '静か', '普通'],
+        change: [-8, -3]
+      }
+    },
+    // 体調・状態系（媚薬効果など）
+    {
+      patterns: ['effect', '効果', 'condition', '状態', 'influence', 'aphrodisiac', '媚薬'],
+      positive: {
+        keywords: ['効いて', '効果', '敏感', '感覚', '鋭敏', '変化', '影響', '作用', '薬', '魔法', 'じんわり', 'ふわふわ'],
+        change: [2, 8]
+      },
+      negative: {
+        keywords: ['効かない', '普通', '変わらない', '元通り', '回復', '正常'],
+        change: [-6, -2]
+      }
+    },
+    // 体験・経験系
+    {
+      patterns: ['experience', '体験', 'memory', '記憶', 'impression'],
+      positive: {
+        keywords: ['初めて', '新しい', '特別', '印象的', '忘れられない', '素晴らしい', '感動', '驚き'],
+        change: [2, 6]
+      },
+      negative: {
+        keywords: ['慣れた', 'いつもの', '普通', '退屈', 'つまらない'],
+        change: [-4, -1]
+      }
+    },
+    // 距離感・親密度系
+    {
+      patterns: ['distance', '距離', 'intimacy', '親密', 'closeness', '近さ'],
+      positive: {
+        keywords: ['近づく', '寄り添', '触れ', '抱きしめ', '密着', '一緒', 'そば', '隣'],
+        change: [3, 8]
+      },
+      negative: {
+        keywords: ['離れる', '距離', '遠ざか', '一人', '別々', '避ける'],
+        change: [-6, -2]
+      }
+    }
+  ];
+
+  // 状態型トラッカーの検出ルール（拡張版）
+  const stateRules = [
+    {
+      patterns: ['mood', '気分', '機嫌', 'feeling', 'emotion'],
+      states: {
+        '嬉しい': ['嬉しい', '喜', '楽しい', '幸せ', '最高', 'ハッピー', 'きゃぴ', '☆', '♡', 'わーい', 'やった'],
+        '悲しい': ['悲しい', '落ち込', '憂鬱', '沈ん', 'ブルー', '泣き', 'しょんぼり', '寂し'],
+        '怒り': ['怒', 'イライラ', 'ムカつ', '腹立', 'プンプン', '激怒', '憤慨'],
+        '驚き': ['驚', 'びっくり', 'えっ', '！？', '衝撃', 'ショック', 'まさか', '信じられない'],
+        '恥ずかし': ['恥ずかし', '照れ', '赤面', 'もじもじ', '頬を染め', '恥じらい'],
+        '興奮': ['興奮', 'ドキドキ', 'ワクワク', '熱い', '鼓動', '心臓', '脈拍'],
+        '普通': ['普通', '平気', '冷静', '落ち着', '安定', '穏やか'],
+        '困惑': ['困惑', '戸惑', '混乱', 'わからない', '理解できない', '不思議']
+      }
+    },
+    {
+      patterns: ['relationship', '関係', 'relation'],
+      states: {
+        '初対面': ['初めて', 'はじめまして', '初対面', '知らない', '会ったばかり'],
+        '知り合い': ['知り合い', '顔見知り', '会ったことが'],
+        '友人': ['友達', '友人', '仲間', 'フレンド'],
+        '親友': ['親友', '大切な友達', '特別な友達', '無二の友'],
+        '恋人': ['恋人', '彼氏', '彼女', '愛する人', '恋愛関係'],
+        'パートナー': ['パートナー', '運命の人', '伴侶', '生涯の', '永遠の']
+      }
+    },
+    {
+      patterns: ['activity', '活動', '状況', 'situation', 'current'],
+      states: {
+        '会話中': ['話', '会話', 'おしゃべり', '対話', '談話'],
+        '休息中': ['休憩', '休息', 'リラックス', 'のんびり', '寝転', 'ゴロゴロ'],
+        '作業中': ['作業', '仕事', '勉強', '集中', '忙し', '取り組'],
+        '移動中': ['歩', '移動', '向かう', '行く', '進む', '歩い'],
+        '食事中': ['食べ', '食事', '飲み', '味わ', '食す'],
+        '娯楽中': ['遊び', 'ゲーム', '娯楽', '楽しんで', 'エンタメ'],
+        '探索中': ['探し', '探索', '調べ', '発見', '見つけ'],
+        '戦闘中': ['戦闘', '戦い', 'バトル', '攻撃', '守備'],
+        '学習中': ['学習', '覚え', '習得', 'マスター', '練習'],
+        '買い物中': ['買い物', 'ショッピング', '購入', '選ん'],
+        '待機中': ['待機', '待っ', 'スタンバイ', '準備']
+      }
+    },
+    {
+      patterns: ['restraint', '拘束', 'bound', 'tied', 'restriction'],
+      states: {
+        '自由': ['自由', '解放', '束縛なし', '動ける', '制約なし'],
+        '軽度拘束': ['軽く', '少し', '軽度', '軽い拘束'],
+        '手足拘束': ['手足', '四肢', '縛られ', 'tied'],
+        '手足拘束＋目隠し': ['目隠し', '見えない', 'blindfold', '暗闇'],
+        '完全固定': ['完全', '身動き', '固定', '動けない']
+      }
+    },
+    {
+      patterns: ['vision', '視界', 'sight', 'eyes', '目'],
+      states: {
+        '正常': ['見える', '視界良好', '明るい', 'クリア'],
+        '目隠し': ['目隠し', '見えない', '真っ暗', '暗闇', 'blind'],
+        'ぼやけ': ['ぼやけ', '霞む', '不鮮明', 'ピンぼけ'],
+        '眩し': ['眩し', '光', '明る過ぎ', '眼が']
+      }
+    }
+  ];
+
+  // ブール型トラッカーの検出ルール（拡張版）
+  const booleanRules = [
+    {
+      patterns: ['aware', '気づ', 'realize', '理解', 'understand', 'knows', 'conscious'],
+      true_keywords: ['気づく', '理解', 'わかる', '分かる', '知る', '発見', '判明', '明らか', '把握', '認識', '察し', '悟る'],
+      false_keywords: ['気づかない', 'わからない', '分からない', '知らない', '無知', '無自覚', '見当つかない', '不明']
+    },
+    {
+      patterns: ['blindfold', '目隠し', 'blind', 'eyes_covered', 'sight'],
+      true_keywords: ['目隠し', '見えない', '真っ暗', '暗闇', 'blindfold', 'blind', '視界なし', '盲目'],
+      false_keywords: ['目隠しを外', '見える', '明るい', '視界', '目を開け', '光', '見た', '視認']
+    },
+    {
+      patterns: ['restrain', '拘束', 'bound', 'tied', 'restrict'],
+      true_keywords: ['拘束', '縛', '束縛', '手足', '動けない', 'tied', 'bound', '固定', '制限'],
+      false_keywords: ['自由', '解放', '外す', '動ける', 'free', '解除', 'リリース', '開放']
+    },
+    {
+      patterns: ['active', '活動', 'functioning', '機能', 'working'],
+      true_keywords: ['活動中', '機能している', '動作', '稼働', '有効', 'オン', '起動'],
+      false_keywords: ['停止', '無効', '機能停止', 'オフ', '休止', '非活動']
+    },
+    {
+      patterns: ['memory', '記憶', 'remember', '覚え', 'recall'],
+      true_keywords: ['覚えて', '記憶', '思い出', '覚え', '忘れない', 'remember'],
+      false_keywords: ['忘れ', '記憶なし', '思い出せない', '覚えていない', 'forget']
+    },
+    {
+      patterns: ['secret', '秘密', 'hidden', '隠し', 'private'],
+      true_keywords: ['秘密', '隠し', '内緒', 'secret', 'private', '非公開', '秘匿'],
+      false_keywords: ['公開', '明かす', '暴露', '告白', 'open', '表に']
+    },
+    {
+      patterns: ['complete', '完了', 'finished', '終了', 'done'],
+      true_keywords: ['完了', '終了', '完成', 'done', 'finished', '達成', '済み'],
+      false_keywords: ['未完了', '途中', '進行中', '未達成', '未完成', 'ongoing']
+    },
+    {
+      patterns: ['trust', '信頼', 'believe', '信じ'],
+      true_keywords: ['信じる', '信頼', 'believe', '確信', '信用', '頼り'],
+      false_keywords: ['疑う', '信じない', '不信', '疑問', '疑い', 'doubt']
+    }
+  ];
+
+  // 数値型トラッカーの処理
   trackers.forEach(tracker => {
     if (!tracker || !tracker.name) return;
     
     if (tracker.type === 'numeric') {
-      let change = 0;
+      let totalChange = 0;
       
-      // 好感度系の検出
-      if (tracker.name.includes('affection') || tracker.name.includes('好感度')) {
-        if (response.includes('嬉しい') || response.includes('ありがと') || response.includes('素敵')) {
-          change = Math.floor(Math.random() * 10) + 5; // +5~15
-        } else if (response.includes('悲しい') || response.includes('がっかり') || response.includes('冷たい')) {
-          change = -(Math.floor(Math.random() * 15) + 5); // -5~-20
+      numericRules.forEach(rule => {
+        const matchesPattern = rule.patterns.some(pattern => 
+          tracker.name.toLowerCase().includes(pattern) ||
+          tracker.display_name?.toLowerCase().includes(pattern)
+        );
+        
+        if (matchesPattern) {
+          // ポジティブな変化をチェック
+          const positiveMatch = rule.positive.keywords.some(keyword => 
+            response.includes(keyword) || originalResponse.includes(keyword)
+          );
+          if (positiveMatch) {
+            const change = Math.floor(Math.random() * (rule.positive.change[1] - rule.positive.change[0] + 1)) + rule.positive.change[0];
+            totalChange += change;
+          }
+          
+          // ネガティブな変化をチェック
+          const negativeMatch = rule.negative.keywords.some(keyword => 
+            response.includes(keyword) || originalResponse.includes(keyword)
+          );
+          if (negativeMatch) {
+            const change = Math.floor(Math.random() * (Math.abs(rule.negative.change[0]) - Math.abs(rule.negative.change[1]) + 1)) + Math.abs(rule.negative.change[1]);
+            totalChange -= change;
+          }
         }
-      }
+      });
       
-      // 信頼度系の検出
-      if (tracker.name.includes('trust') || tracker.name.includes('信頼')) {
-        if (response.includes('信じ') || response.includes('頼りになる') || response.includes('安心')) {
-          change = Math.floor(Math.random() * 8) + 3; // +3~10
-        } else if (response.includes('疑') || response.includes('怪しい') || response.includes('不安')) {
-          change = -(Math.floor(Math.random() * 10) + 5); // -5~-15
-        }
-      }
-      
-      if (change !== 0) {
+      if (totalChange !== 0) {
         const currentValue = tracker.current_value ?? tracker.initial_value ?? 0;
         const newValue = Math.max(
           tracker.min_value || 0, 
-          Math.min(tracker.max_value || 100, currentValue + change)
+          Math.min(tracker.max_value || 100, currentValue + totalChange)
         );
         
-        updates.push({
-          name: tracker.name,
-          type: 'numeric',
-          value: newValue,
-          change: change > 0 ? `+${change}` : `${change}`
-        });
-        console.log(`📊 ${tracker.name}: ${currentValue} → ${newValue} (${change > 0 ? '+' : ''}${change})`);
+        if (newValue !== currentValue) {
+          updates.push({
+            name: tracker.name,
+            type: 'numeric',
+            value: newValue,
+            change: totalChange > 0 ? `+${totalChange}` : `${totalChange}`
+          });
+          console.log(`📊 ${tracker.display_name || tracker.name}: ${currentValue} → ${newValue} (${totalChange > 0 ? '+' : ''}${totalChange})`);
+        }
       }
     } else if (tracker.type === 'state') {
-      // 気分系の検出
-      if (tracker.name.includes('mood') || tracker.name.includes('気分')) {
-        let newState = '';
+      // 状態型の処理
+      stateRules.forEach(rule => {
+        const matchesPattern = rule.patterns.some(pattern => 
+          tracker.name.toLowerCase().includes(pattern) ||
+          tracker.display_name?.toLowerCase().includes(pattern)
+        );
         
-        if (response.includes('嬉しい') || response.includes('楽しい') || response.includes('幸せ')) {
-          newState = '嬉しい';
-        } else if (response.includes('悲しい') || response.includes('落ち込ん')) {
-          newState = '悲しい';
-        } else if (response.includes('怒') || response.includes('イライラ')) {
-          newState = '怒り';
-        } else if (response.includes('驚') || response.includes('びっくり')) {
-          newState = '驚き';
-        } else if (response.includes('普通') || response.includes('平気')) {
-          newState = '普通';
-        }
-        
-        if (newState && tracker.possible_states?.includes(newState)) {
-          const currentState = tracker.current_state ?? tracker.initial_state ?? '普通';
-          if (currentState !== newState) {
-            updates.push({
-              name: tracker.name,
-              type: 'state',
-              value: newState,
-              change: `${currentState}→${newState}`
-            });
-            console.log(`📊 ${tracker.name}: ${currentState} → ${newState}`);
+        if (matchesPattern && rule.states) {
+          for (const [stateName, keywords] of Object.entries(rule.states)) {
+            const matches = keywords.some(keyword => 
+              response.includes(keyword) || originalResponse.includes(keyword)
+            );
+            
+            if (matches && tracker.possible_states?.includes(stateName)) {
+              const currentState = tracker.current_state ?? tracker.initial_state ?? '';
+              if (currentState !== stateName) {
+                updates.push({
+                  name: tracker.name,
+                  type: 'state',
+                  value: stateName,
+                  change: `${currentState}→${stateName}`
+                });
+                console.log(`📊 ${tracker.display_name || tracker.name}: ${currentState} → ${stateName}`);
+                break; // 最初にマッチした状態を採用
+              }
+            }
           }
         }
-      }
+      });
+    } else if (tracker.type === 'boolean') {
+      // ブール型の処理
+      booleanRules.forEach(rule => {
+        const matchesPattern = rule.patterns.some(pattern => 
+          tracker.name.toLowerCase().includes(pattern) ||
+          tracker.display_name?.toLowerCase().includes(pattern)
+        );
+        
+        if (matchesPattern) {
+          const trueMatch = rule.true_keywords.some(keyword => 
+            response.includes(keyword) || originalResponse.includes(keyword)
+          );
+          const falseMatch = rule.false_keywords.some(keyword => 
+            response.includes(keyword) || originalResponse.includes(keyword)
+          );
+          
+          const currentValue = tracker.current_boolean ?? tracker.initial_boolean ?? false;
+          let newValue = currentValue;
+          
+          if (trueMatch && !currentValue) {
+            newValue = true;
+          } else if (falseMatch && currentValue) {
+            newValue = false;
+          }
+          
+          if (newValue !== currentValue) {
+            updates.push({
+              name: tracker.name,
+              type: 'boolean',
+              value: newValue,
+              change: `${currentValue}→${newValue}`
+            });
+            console.log(`📊 ${tracker.display_name || tracker.name}: ${currentValue} → ${newValue}`);
+          }
+        }
+      });
     }
   });
   
