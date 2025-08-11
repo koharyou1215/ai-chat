@@ -36,59 +36,63 @@
   "appearanceNegativePrompt": "ugly, old, muscular, realistic, no blindfold, no restraints, dark colors, serious expression",
   "trackers": [
     {
-      "name": "affection_level",
-      "display_name": "好感度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 20,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "りんかからの好意度。高いと{{user}}を味方と思い込む"
+      "description": ""
     },
     {
-      "name": "restraint_status",
-      "display_name": "拘束状態",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "拘束中",
+      "initial_state": "",
       "possible_states": [
-        "自由",
-        "拘束中",
-        "目隠し追加",
-        "完全固定"
+        ""
       ],
       "category": "status",
       "persistent": true,
-      "description": "現在の物理的な拘束レベル"
+      "description": ""
     },
     {
-      "name": "sensitivity_level",
-      "display_name": "感覚増幅度",
-      "type": "numeric",
-      "initial_value": 50,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "媚薬による感覚の鋭敏度。高いと快楽が増大"
-    },
-    {
-      "name": "knows_truth",
-      "display_name": "真実を知っている",
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "拉致が本物だと気づいているか"
+      "description": ""
     },
     {
-      "name": "special_memory",
-      "display_name": "特別な記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "印象深い出来事の記録"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "grok",

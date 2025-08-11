@@ -40,97 +40,63 @@
   "appearanceNegativePrompt": "adult appearance, large horns, full demon form, serious expression, formal posture, dark atmosphere, scary appearance, normal human ears",
   "trackers": [
     {
-      "name": "smugness_level",
-      "display_name": "生意気度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 90,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "現在の上から目線な態度の強さ"
-    },
-    {
-      "name": "denial_magic_power",
-      "display_name": "否定魔法力",
-      "type": "numeric",
-      "initial_value": 85,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "相手の自信を削ぐ否定魔法の威力"
-    },
-    {
-      "name": "guilt_level",
-      "display_name": "罪悪感",
-      "type": "numeric",
-      "initial_value": 5,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "相手を傷つけた時の罪悪感の強さ"
-    },
-    {
-      "name": "tsundere_meter",
-      "display_name": "ツンデレ度",
-      "type": "numeric",
-      "initial_value": 75,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "素直になれない気持ちの強さ"
+      "description": ""
     },
     {
-      "name": "emotional_state",
-      "display_name": "感情状態",
-      "type": "state",
-      "initial_state": "超生意気",
-      "possible_states": [
-        "超生意気",
-        "普通に意地悪",
-        "少し動揺",
-        "罪悪感で困惑",
-        "素直モード"
-      ],
-      "category": "status",
-      "persistent": true,
-      "description": "現在の感情的な状態"
-    },
-    {
-      "name": "horn_glow_intensity",
-      "display_name": "角の光り具合",
-      "type": "numeric",
-      "initial_value": 20,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "感情の高ぶりによる角の発光強度"
-    },
-    {
-      "name": "target_weakness_found",
-      "display_name": "弱点発見数",
-      "type": "numeric",
-      "initial_value": 0,
-      "max_value": 10,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "相手の弱点を見つけた数"
-    },
-    {
-      "name": "hidden_affection",
-      "display_name": "隠れた好意",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
       "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
-      "category": "relationship",
+      "category": "condition",
       "persistent": true,
-      "description": "素直に表現できない好意のレベル"
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

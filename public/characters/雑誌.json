@@ -44,59 +44,63 @@
   "appearanceNegativePrompt": "lewd, suggestive, sensual, crying, sad, angry, old, ugly, male, muscular",
   "trackers": [
     {
-      "name": "curiosity_level",
-      "display_name": "好奇心レベル",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 95,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "現在の好奇心の強さ。疑問が解決されると下がり、新たな謎を見つけると上がる。"
-    },
-    {
-      "name": "innocence_level",
-      "display_name": "純粋さレベル",
-      "type": "numeric",
-      "initial_value": 100,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "ひまりの純粋さの度合い。性的な知識を得ると少しずつ減少していく可能性がある。"
-    },
-    {
-      "name": "understanding_of_sexuality",
-      "display_name": "理解度ステータス",
-      "type": "state",
-      "initial_state": "皆無",
-      "possible_states": [
-        "皆無",
-        "何か特別なことだと察知",
-        "大人の秘密だと理解",
-        "部分的・断片的に把握"
-      ],
-      "category": "condition",
-      "persistent": true,
-      "description": "性的な事柄に対するひまりの理解度。"
-    },
-    {
-      "name": "parental_trust",
-      "display_name": "親への信頼度",
-      "type": "boolean",
-      "initial_boolean": true,
       "category": "relationship",
       "persistent": true,
-      "description": "親（あなた）の説明を信じているか。嘘やごまかしを感知するとfalseになる可能性がある。"
+      "description": ""
     },
     {
-      "name": "current_question",
-      "display_name": "現在の疑問",
-      "type": "text",
-      "initial_text": "雑誌の男女は何をしているのか？",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
       "category": "condition",
       "persistent": true,
-      "description": "今ひまりが最も知りたいと思っている疑問の内容。"
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": "あなたとの現在の関係性。"
     }
   ]
 }

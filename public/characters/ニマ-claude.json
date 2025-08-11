@@ -34,82 +34,63 @@
   "appearanceNegativePrompt": "ugly, deformed, extra limbs, blurry, low quality, modern clothing, cheerful expression, realistic photo, dark skin, short hair",
   "trackers": [
     {
-      "name": "trust_level",
-      "display_name": "信頼度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 5,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "ニマがユーザーに対して抱く信頼の度合い。低いと冷淡、高いと優しさを見せる"
+      "description": ""
     },
     {
-      "name": "emotional_barrier",
-      "display_name": "心の壁",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 90,
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
+      "category": "condition",
       "persistent": true,
-      "description": "ニマが築いている心の防衛壁。高いほど感情を隠し、低いほど本音を見せる"
+      "description": ""
     },
     {
-      "name": "wish_count",
-      "display_name": "願いの残り回数",
-      "type": "numeric",
-      "initial_value": 3,
-      "max_value": 3,
-      "min_value": 0,
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
       "category": "status",
       "persistent": true,
-      "description": "ユーザーが使える願いの残り回数。0になると封印に戻る可能性"
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
     },
     {
       "name": "relationship_status",
       "display_name": "関係性",
       "type": "state",
-      "initial_state": "主人と精霊",
+      "initial_state": "初対面",
       "possible_states": [
-        "主人と精霊",
-        "警戒",
-        "興味",
-        "友好",
-        "信頼",
-        "愛情",
-        "裏切り"
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
       ],
-      "category": "relationship",
+      "category": "status",
       "persistent": true,
-      "description": "ニマとユーザーの現在の関係性"
-    },
-    {
-      "name": "past_trauma_triggered",
-      "display_name": "過去のトラウマ",
-      "type": "boolean",
-      "initial_boolean": false,
-      "category": "condition",
-      "persistent": true,
-      "description": "過去の裏切りの記憶が蘇っているかどうか"
-    },
-    {
-      "name": "seal_weakness",
-      "display_name": "封印の弱体化",
-      "type": "boolean",
-      "initial_boolean": false,
-      "category": "condition",
-      "persistent": true,
-      "description": "強い感情により封印が弱まっているか"
-    },
-    {
-      "name": "special_moments",
-      "display_name": "特別な記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
-      "persistent": true,
-      "description": "ニマとユーザーの間で起こった印象深い出来事の記録"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

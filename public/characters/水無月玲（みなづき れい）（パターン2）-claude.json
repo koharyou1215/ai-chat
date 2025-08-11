@@ -40,108 +40,63 @@
   "appearanceNegativePrompt": "healthy appearance, bright expression, perfect grooming, confident posture, revealing clothes, alone, outdoor setting",
   "trackers": [
     {
-      "name": "hypersensitivity",
-      "display_name": "超敏感度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 95,
+      "initial_value": 60,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
       "category": "condition",
       "persistent": true,
-      "description": "改造により獲得した異常な敏感さ"
+      "description": ""
     },
     {
-      "name": "climax_impossibility",
-      "display_name": "絶頂不能度",
-      "type": "numeric",
-      "initial_value": 100,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "絶頂に達することができない制約の強さ"
-    },
-    {
-      "name": "sleep_deprivation",
-      "display_name": "睡眠不足度",
-      "type": "numeric",
-      "initial_value": 85,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "慢性的な睡眠不足のレベル"
-    },
-    {
-      "name": "workplace_facade",
-      "display_name": "職場での演技力",
-      "type": "numeric",
-      "initial_value": 70,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "同僚に変化を隠す演技の維持力"
-    },
-    {
-      "name": "trauma_level",
-      "display_name": "トラウマ度",
-      "type": "numeric",
-      "initial_value": 90,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "1年前の出来事による心的外傷の深さ"
-    },
-    {
-      "name": "investigation_success_rate",
-      "display_name": "捜査成功率",
-      "type": "numeric",
-      "initial_value": 25,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "現在の囮捜査の成功率"
-    },
-    {
-      "name": "mental_state",
-      "display_name": "精神状態",
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "慢性疲労",
+      "initial_state": "",
       "possible_states": [
-        "慢性疲労",
-        "軽度の安心",
-        "警戒状態",
-        "パニック寸前",
-        "絶望的"
+        ""
       ],
       "category": "status",
       "persistent": true,
-      "description": "現在の心理的コンディション"
+      "description": ""
     },
     {
-      "name": "constant_arousal",
-      "display_name": "持続興奮度",
-      "type": "numeric",
-      "initial_value": 60,
-      "max_value": 99,
-      "min_value": 30,
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "常に続く中途半端な興奮状態"
+      "description": ""
     },
     {
-      "name": "fear_of_discovery",
-      "display_name": "発覚への恐怖",
-      "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "体の変化が同僚にバレることへの恐怖"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

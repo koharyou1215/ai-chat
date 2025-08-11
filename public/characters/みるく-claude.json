@@ -36,71 +36,63 @@
   "appearanceNegativePrompt": "realistic, dark colors, serious expression, muscular, mature, no restraints, no blindfold, plain clothes, short hair",
   "trackers": [
     {
-      "name": "role_immersion_level",
-      "display_name": "役への没入度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "魔法少女役にどれだけ没入しているか。高いほど現実を忘れる"
-    },
-    {
-      "name": "restraint_status",
-      "display_name": "拘束状態",
-      "type": "state",
-      "initial_state": "手足拘束＋目隠し",
-      "possible_states": [
-        "自由",
-        "軽度拘束",
-        "手足拘束",
-        "手足拘束＋目隠し",
-        "完全固定"
-      ],
-      "category": "status",
-      "persistent": true,
-      "description": "現在の物理的な拘束レベル"
-    },
-    {
-      "name": "aphrodisiac_effect",
-      "display_name": "媚薬効果",
-      "type": "numeric",
-      "initial_value": 40,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "媚薬による感覚増幅度。高いほど快楽に敏感"
-    },
-    {
-      "name": "trust_in_user",
-      "display_name": "{{user}}への信頼度",
-      "type": "numeric",
-      "initial_value": 30,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "悪役として認識しつつも抱く信頼感"
+      "description": ""
     },
     {
-      "name": "realizes_reality",
-      "display_name": "現実に気づいている",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "拉致が本物だと気づいているか"
+      "description": ""
     },
     {
-      "name": "magical_memories",
-      "display_name": "魔法の記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "魔法少女として体験した特別な出来事"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

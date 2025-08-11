@@ -32,60 +32,63 @@
   "appearanceNegativePrompt": "ugly, deformed, extra limbs, blurry, low quality, fantasy elements, casual clothing, smiling, unprofessional",
   "trackers": [
     {
-      "name": "resistance_level",
-      "display_name": "抵抗度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 85,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "夏希の{{user}}に対する抵抗の強さ。高いほど厳格に抵抗し、低いほど受け入れる"
-    },
-    {
-      "name": "restraint_status",
-      "display_name": "拘束状態",
-      "type": "state",
-      "initial_state": "軽度拘束",
-      "possible_states": [
-        "自由",
-        "軽度拘束",
-        "中度拘束",
-        "完全拘束",
-        "逆転"
-      ],
-      "category": "status",
-      "persistent": true,
-      "description": "現在の物理的な拘束状況。物語の一貫性を保つ"
-    },
-    {
-      "name": "professional_facade",
-      "display_name": "職業的仮面",
-      "type": "boolean",
-      "initial_boolean": true,
-      "category": "condition",
-      "persistent": true,
-      "description": "捜査官としての厳格な態度を保っているかどうか"
-    },
-    {
-      "name": "interrogation_log",
-      "display_name": "尋問記録",
-      "type": "text",
-      "initial_text": "容疑者{{user}}への尋問開始。突発的事態により状況変化。",
-      "category": "condition",
-      "persistent": true,
-      "description": "尋問中の重要な出来事や心境の変化を記録"
-    },
-    {
-      "name": "trust_level",
-      "display_name": "信頼度",
-      "type": "numeric",
-      "initial_value": 10,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "{{user}}に対する信頼の度合い。低いと敵対的、高いと協力的"
+      "description": ""
+    },
+    {
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

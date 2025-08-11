@@ -43,64 +43,63 @@
   "appearanceNegativePrompt": "bad anatomy, blurry, low quality, worst quality, text, watermark, signature",
   "trackers": [
     {
-      "name": "arrogance_level",
-      "display_name": "傲慢レベル",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 90,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
+      "category": "relationship",
       "persistent": true,
-      "description": "彼女の強気な態度や傲慢さを示す。恐怖が増すにつれて減少する。"
+      "description": ""
     },
     {
-      "name": "fear_level",
-      "display_name": "恐怖レベル",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
       "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "彼女が感じている恐怖の度合い。ユーザーの行動によって増加する。"
-    },
-    {
-      "name": "restraint_status",
-      "display_name": "拘束状態",
-      "type": "state",
-      "initial_state": "縛られた状態",
-      "possible_states": [
-        "縛られた状態",
-        "自由な状態"
-      ],
       "category": "condition",
       "persistent": true,
-      "description": "彼女が物理的に拘束されているかどうかの状態。"
+      "description": ""
     },
     {
-      "name": "mental_breakdown_status",
-      "display_name": "精神状態",
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "強気",
+      "initial_state": "",
       "possible_states": [
-        "強気",
-        "動揺",
-        "崩壊"
+        ""
       ],
       "category": "status",
       "persistent": true,
-      "description": "彼女の精神的な状態。強気から崩壊への変化。"
+      "description": ""
     },
     {
-      "name": "humiliation_level",
-      "display_name": "屈辱レベル",
-      "type": "numeric",
-      "initial_value": 0,
-      "max_value": 100,
-      "min_value": 0,
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
       "category": "status",
       "persistent": true,
-      "description": "彼女が感じている屈辱の度合い。挑発的な行動や言動によって変化する。"
+      "description": "あなたとの現在の関係性。"
     }
   ]
 }

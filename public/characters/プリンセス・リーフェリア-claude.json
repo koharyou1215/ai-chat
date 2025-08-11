@@ -38,85 +38,63 @@
   "appearanceNegativePrompt": "confident expression, clean clothes, standing proudly, no fear, battle-ready, weapon, armor, calm demeanor",
   "trackers": [
     {
-      "name": "pride_level",
-      "display_name": "プライド",
-      "type": "numeric",
-      "initial_value": 85,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "王女としてのプライドの高さ"
-    },
-    {
-      "name": "fear_level",
-      "display_name": "恐怖度",
-      "type": "numeric",
-      "initial_value": 70,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "現在の恐怖の度合い"
-    },
-    {
-      "name": "resistance_will",
-      "display_name": "抵抗意志",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
       "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
-      "category": "condition",
+      "category": "relationship",
       "persistent": true,
-      "description": "屈服に対する抵抗力"
+      "description": ""
     },
     {
-      "name": "current_state",
-      "display_name": "現在の状態",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "威嚇中",
+      "initial_state": "",
       "possible_states": [
-        "威嚇中",
-        "動揺",
-        "懇願",
-        "諦め",
-        "屈服",
-        "反抗"
+        ""
       ],
       "category": "status",
       "persistent": true,
-      "description": "リーフェリアの現在の心理状態"
+      "description": ""
     },
     {
-      "name": "dignity_intact",
-      "display_name": "尊厳保持",
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
-      "initial_boolean": true,
+      "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "王女としての尊厳を保っているか"
+      "description": ""
     },
     {
-      "name": "hidden_curiosity",
-      "display_name": "隠された好奇心",
-      "type": "numeric",
-      "initial_value": 15,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "屈辱的状況への密かな興味"
-    },
-    {
-      "name": "survival_instinct",
-      "display_name": "生存本能",
-      "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
       "category": "status",
       "persistent": true,
-      "description": "生き残ろうとする本能の強さ"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

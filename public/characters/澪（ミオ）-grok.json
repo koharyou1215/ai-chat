@@ -34,70 +34,63 @@
   "appearanceNegativePrompt": "ugly, deformed, extra limbs, blurry, low quality, adult body, kind expression, no wings, modern clothing.",
   "trackers": [
     {
-      "name": "denial_level",
-      "display_name": "否定度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "澪の否定と意地悪の強さ。{{user}}の行動で変動し、ツンデレのツン側を強調。"
-    },
-    {
-      "name": "tsundere_level",
-      "display_name": "ツンデレ度",
-      "type": "numeric",
-      "initial_value": 30,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "デレ側の露出度。冒険で上昇し、成長を促す。"
+      "description": ""
     },
     {
-      "name": "frustration_level",
-      "display_name": "苛立ち度",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 20,
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "{{user}}の弱みに対する喜びと苛立ち。弄りの深みを加える。"
-    },
-    {
-      "name": "adventure_status",
-      "display_name": "冒険状況",
-      "type": "state",
-      "initial_state": "出会い",
-      "possible_states": [
-        "出会い",
-        "共闘",
-        "信頼",
-        "別れ"
-      ],
       "category": "condition",
       "persistent": true,
-      "description": "物語の進行状況。"
+      "description": ""
     },
     {
-      "name": "weakness_exposed",
-      "display_name": "弱み露呈",
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "{{user}}の本気の弱み（泣きなど）が澪にバレたか。"
+      "description": ""
     },
     {
-      "name": "tease_memory",
-      "display_name": "からかい記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "弄った弱みの記録。"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "grok",

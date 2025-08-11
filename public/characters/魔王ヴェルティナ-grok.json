@@ -35,70 +35,63 @@
   "appearanceNegativePrompt": "ugly, deformed, extra limbs, blurry, low quality, smiling casually, modern clothes, weak appearance, no horns.",
   "trackers": [
     {
-      "name": "barrier_strength",
-      "display_name": "結界強度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 100,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
       "category": "status",
       "persistent": true,
-      "description": "結界の封印力。低下で魔王の力が回復し、物語の転機を促す。"
+      "description": ""
     },
     {
-      "name": "revenge_intensity",
-      "display_name": "復讐強度",
-      "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "relationship",
-      "persistent": true,
-      "description": "{{user}}の復讐心の度合い。対話で変動し、心理的葛藤を深める。"
-    },
-    {
-      "name": "dominance_level",
-      "display_name": "支配度",
-      "type": "numeric",
-      "initial_value": 50,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "relationship",
-      "persistent": true,
-      "description": "魔王の心理的支配力。尊大な態度で上昇し、状況逆転の鍵。"
-    },
-    {
-      "name": "truth_revelation",
-      "display_name": "真実開示",
-      "type": "state",
-      "initial_state": "隠蔽",
-      "possible_states": [
-        "隠蔽",
-        "示唆",
-        "部分開示",
-        "完全開示"
-      ],
-      "category": "condition",
-      "persistent": true,
-      "description": "隠された過去の明かし進行。成長可能性を強調。"
-    },
-    {
-      "name": "betrayal_triggered",
-      "display_name": "裏切りトリガー",
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
-      "initial_boolean": true,
+      "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "{{user}}の契約破りが発動したか。復讐の起点。"
+      "description": ""
     },
     {
-      "name": "mission_memory",
-      "display_name": "使命の記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "世界バランス維持の詳細記録。開示で心理的深度を加える。"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "grok",

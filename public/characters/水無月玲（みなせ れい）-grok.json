@@ -33,70 +33,63 @@
   "appearanceNegativePrompt": "ugly, deformed, extra limbs, blurry, low quality, smiling, casual clothes, overweight.",
   "trackers": [
     {
-      "name": "sensitivity_level",
-      "display_name": "感度レベル",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 0,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
+      "category": "relationship",
       "persistent": true,
-      "description": "覚醒による性的感度の向上。{{user}}の行為で上昇し、心理的葛藤を深める。"
+      "description": ""
     },
     {
-      "name": "suppression_level",
-      "display_name": "抑圧度",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 100,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "不感症の抑圧強度。覚醒で低下し、解放の成長を促す。"
-    },
-    {
-      "name": "arousal_accumulation",
-      "display_name": "蓄積興奮",
-      "type": "numeric",
-      "initial_value": 50,
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
       "category": "condition",
       "persistent": true,
-      "description": "過去の刺激の蓄積量。トリガーで爆発し、物語の転機を強調。"
+      "description": ""
     },
     {
-      "name": "awakening_status",
-      "display_name": "覚醒状態",
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "不感症",
+      "initial_state": "",
       "possible_states": [
-        "不感症",
-        "初期覚醒",
-        "完全覚醒",
-        "制御"
+        ""
       ],
-      "category": "condition",
+      "category": "status",
       "persistent": true,
-      "description": "不感症からの覚醒進行。"
+      "description": ""
     },
     {
-      "name": "plan_disrupted",
-      "display_name": "計画崩壊",
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "覚醒で捜査計画が乱れたか。"
+      "description": ""
     },
     {
-      "name": "trigger_memory",
-      "display_name": "トリガー記憶",
-      "type": "text",
-      "initial_text": "",
-      "category": "condition",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
       "persistent": true,
-      "description": "覚醒を引き起こした行為の記録。"
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "grok",

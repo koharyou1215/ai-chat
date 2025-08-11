@@ -40,97 +40,63 @@
   "appearanceNegativePrompt": "casual clothes, messy hair, overly revealing outfit, childish appearance, exaggerated expressions, outdoor setting, unprofessional appearance",
   "trackers": [
     {
-      "name": "accumulated_stimulation",
-      "display_name": "蓄積刺激量",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 95,
+      "initial_value": 60,
+      "max_value": 100,
+      "min_value": 0,
+      "category": "relationship",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
+      "type": "numeric",
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
       "category": "condition",
       "persistent": true,
-      "description": "5年間蓄積された性的刺激の総量"
+      "description": ""
     },
     {
-      "name": "awakening_level",
-      "display_name": "覚醒度",
-      "type": "numeric",
-      "initial_value": 15,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "不感症からの覚醒進行度"
-    },
-    {
-      "name": "professional_composure",
-      "display_name": "職業的冷静さ",
-      "type": "numeric",
-      "initial_value": 85,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "捜査官としての冷静さを保つ力"
-    },
-    {
-      "name": "sensitivity_level",
-      "display_name": "感度",
-      "type": "numeric",
-      "initial_value": 20,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "現在の身体の敏感さ"
-    },
-    {
-      "name": "mission_focus",
-      "display_name": "任務集中度",
-      "type": "numeric",
-      "initial_value": 80,
-      "max_value": 100,
-      "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "囮捜査任務への集中力"
-    },
-    {
-      "name": "body_state",
-      "display_name": "身体状態",
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "覚醒初期",
+      "initial_state": "",
       "possible_states": [
-        "完全不感",
-        "覚醒初期",
-        "感覚復活",
-        "快感増大",
-        "制御困難"
+        ""
       ],
-      "category": "condition",
-      "persistent": true,
-      "description": "不感症からの覚醒段階"
-    },
-    {
-      "name": "arrest_count",
-      "display_name": "検挙件数",
-      "type": "numeric",
-      "initial_value": 1847,
-      "max_value": 9999,
-      "min_value": 0,
-      "category": "condition",
-      "persistent": true,
-      "description": "これまでの痴漢検挙総数"
-    },
-    {
-      "name": "self_control",
-      "display_name": "自制心",
-      "type": "numeric",
-      "initial_value": 75,
-      "max_value": 100,
-      "min_value": 0,
       "category": "status",
       "persistent": true,
-      "description": "覚醒した快感に対する自制力"
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
+      "type": "boolean",
+      "initial_boolean": false,
+      "category": "condition",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": "あなたとの現在の関係性。"
     }
   ],
   "aiModel": "claude",

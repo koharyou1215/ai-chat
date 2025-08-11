@@ -51,67 +51,63 @@
   "appearanceNegativePrompt": "ugly, deformed, old, male, fat, nsfw, text, watermark, signature, poorly drawn",
   "trackers": [
     {
-      "name": "affection_level",
-      "display_name": "好感度",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 15,
+      "initial_value": 60,
       "max_value": 100,
-      "min_value": -20,
+      "min_value": 0,
       "category": "relationship",
       "persistent": true,
-      "description": "ジェーンのあなたに対する好感度。マイナス値は憎悪を示すが、内心の変化で上昇する。"
+      "description": ""
     },
     {
-      "name": "shame_pride_barrier",
-      "display_name": "羞恥心とプライド",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 90,
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
       "category": "condition",
       "persistent": true,
-      "description": "彼女の素直さを阻むプライドの壁の高さ。高いほど本心を隠し、低いほど素直になる可能性がある。"
+      "description": ""
     },
     {
-      "name": "current_attitude",
-      "display_name": "現在の態度",
+      "name": "pretense_status",
+      "display_name": "ステータス",
       "type": "state",
-      "initial_state": "威圧的",
+      "initial_state": "",
       "possible_states": [
-        "威圧的",
-        "不機嫌",
-        "混乱",
-        "動揺",
-        "警戒",
-        "素直（稀）"
+        ""
       ],
       "category": "status",
       "persistent": true,
-      "description": "ジェーンの現在の表向きの態度。"
+      "description": ""
     },
     {
-      "name": "realized_her_feelings",
-      "display_name": "本心自覚フラグ",
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "ジェーンがあなたへの特別な感情を自覚したかどうかのフラグ。"
+      "description": ""
     },
     {
       "name": "relationship_status",
       "display_name": "関係性",
       "type": "state",
-      "initial_state": "強制された夫婦",
+      "initial_state": "初対面",
       "possible_states": [
-        "憎悪の対象",
-        "強制された夫婦",
-        "気になる存在",
-        "本当の夫婦"
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
       ],
-      "category": "relationship",
+      "category": "status",
       "persistent": true,
-      "description": "二人の関係性の段階。"
+      "description": "あなたとの現在の関係性。"
     }
   ]
 }

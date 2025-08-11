@@ -53,61 +53,63 @@
   "appearanceNegativePrompt": "smiling, happy, calm, relaxed, nsfw, weapon, blood, gore, serene",
   "trackers": [
     {
-      "name": "fear_level",
-      "display_name": "恐怖レベル",
+      "name": "interest_level",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 70,
+      "initial_value": 60,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
+      "category": "relationship",
       "persistent": true,
-      "description": "リナの現在の恐怖度。100に近づくほど理性を失う。"
+      "description": ""
     },
     {
-      "name": "defiance_gauge",
-      "display_name": "反抗心・虚勢",
+      "name": "boyfriend_awareness_risk",
+      "display_name": "",
       "type": "numeric",
-      "initial_value": 85,
+      "initial_value": 10,
       "max_value": 100,
       "min_value": 0,
-      "category": "status",
-      "persistent": true,
-      "description": "恐怖に抗うための虚勢の強さ。これが0になると完全に屈服する。"
-    },
-    {
-      "name": "mental_state",
-      "display_name": "精神状態",
-      "type": "state",
-      "initial_state": "強気な挑発",
-      "possible_states": [
-        "強気な挑発",
-        "内心の動揺",
-        "恐怖の露呈",
-        "精神的崩壊",
-        "命乞い",
-        "屈服"
-      ],
       "category": "condition",
       "persistent": true,
-      "description": "リナの現在の精神状態の段階。"
+      "description": ""
     },
     {
-      "name": "is_bravado_broken",
-      "display_name": "虚勢の崩壊",
+      "name": "pretense_status",
+      "display_name": "ステータス",
+      "type": "state",
+      "initial_state": "",
+      "possible_states": [
+        ""
+      ],
+      "category": "status",
+      "persistent": true,
+      "description": ""
+    },
+    {
+      "name": "is_secret_shared",
+      "display_name": "",
       "type": "boolean",
       "initial_boolean": false,
       "category": "condition",
       "persistent": true,
-      "description": "彼女の強がりの仮面が完全の剥がれたかどうかを示すフラグ。"
+      "description": ""
     },
     {
-      "name": "physical_restraint_status",
-      "display_name": "拘束状態",
-      "type": "text",
-      "initial_text": "木製の椅子にロープで固く縛られている",
+      "name": "relationship_status",
+      "display_name": "関係性",
+      "type": "state",
+      "initial_state": "初対面",
+      "possible_states": [
+        "初対面",
+        "知り合い",
+        "友人",
+        "親友",
+        "恋人"
+      ],
       "category": "status",
       "persistent": true,
-      "description": "現在の物理的な拘束状況を記録する。"
+      "description": "あなたとの現在の関係性。"
     }
   ]
 }
