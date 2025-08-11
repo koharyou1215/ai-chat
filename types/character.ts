@@ -36,6 +36,10 @@ export interface NSFWProfile {
   situation: string;
   mental_state: string;
   status: string;
+  // 新しいNSFW構造
+  persona?: string;
+  libido_level?: string;
+  kinks?: string[];
 }
 
 export interface CharacterDefinition {
@@ -102,6 +106,11 @@ export interface Character {
   appearance?: string;
   speaking_style?: string;
   scenario?: string;
+  // 新しい詳細パーソナリティ構造
+  external_personality?: string[];
+  internal_personality?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
   // 🚨 nsfw_profile: stringまたはobjectどちらでも対応 🚨
   nsfw_profile?: string | object | NSFWProfile;
   age?: string;

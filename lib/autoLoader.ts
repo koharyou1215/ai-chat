@@ -81,6 +81,12 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     // 🚨 nsfw_profile: 必ず保持 🚨
     nsfw_profile: data.nsfw_profile,
     
+    // 🚨 新しいパーソナリティフィールドを保持 🚨
+    external_personality: data.external_personality || [],
+    internal_personality: data.internal_personality || [],
+    strengths: data.strengths || [],
+    weaknesses: data.weaknesses || [],
+    
     // 🚨 新フィールドを必ず保持 🚨
     systemPrompt: data.systemPrompt || '',
     appearancePrompt: data.appearancePrompt || '',
@@ -96,10 +102,10 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     character_definition: {
       personality: {
         summary: data.personality || '',
-        external: data.personality || '',
-        internal: data.personality || '',
-        strengths: [],
-        weaknesses: []
+        external: data.external_personality?.join(', ') || data.personality || '',
+        internal: data.internal_personality?.join(', ') || data.personality || '',
+        strengths: data.strengths || [],
+        weaknesses: data.weaknesses || []
       },
       background: data.background || '',
       appearance: {

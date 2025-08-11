@@ -36,13 +36,23 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     systemPrompt: '',
     appearancePrompt: '',
     appearanceNegativePrompt: '',
-    chatBackgroundUrl: ''
+    chatBackgroundUrl: '',
+    // 新しいパーソナリティフィールド
+    external_personality: [],
+    internal_personality: [],
+    strengths: [],
+    weaknesses: []
   });
 
   const [newTag, setNewTag] = useState('');
   const [newHobby, setNewHobby] = useState('');
   const [newLike, setNewLike] = useState('');
   const [newDislike, setNewDislike] = useState('');
+  // 新しいパーソナリティフィールド用の状態
+  const [newExternalPersonality, setNewExternalPersonality] = useState('');
+  const [newInternalPersonality, setNewInternalPersonality] = useState('');
+  const [newStrength, setNewStrength] = useState('');
+  const [newWeakness, setNewWeakness] = useState('');
   
 
 
@@ -111,6 +121,12 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
         hobbies: Array.isArray(character.hobbies) ? character.hobbies : [],
         likes: Array.isArray(character.likes) ? character.likes : [],
         dislikes: Array.isArray(character.dislikes) ? character.dislikes : [],
+        
+        // 新しいパーソナリティフィールド
+        external_personality: Array.isArray(character.external_personality) ? character.external_personality : [],
+        internal_personality: Array.isArray(character.internal_personality) ? character.internal_personality : [],
+        strengths: Array.isArray(character.strengths) ? character.strengths : [],
+        weaknesses: Array.isArray(character.weaknesses) ? character.weaknesses : [],
         
         // 新しいフォーマット（CharacterDefinition）から読み込み
         personality: characterDef?.personality?.summary || character.personality || '',
@@ -379,7 +395,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
 
 
 
-  const addArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes', value: string, setValue: (val: string) => void) => {
+  const addArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes' | 'external_personality' | 'internal_personality' | 'strengths' | 'weaknesses', value: string, setValue: (val: string) => void) => {
     if (value.trim()) {
       setFormData(prev => ({
         ...prev,
@@ -389,7 +405,7 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
     }
   };
 
-  const removeArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes', index: number) => {
+  const removeArrayItem = (type: 'tags' | 'hobbies' | 'likes' | 'dislikes' | 'external_personality' | 'internal_personality' | 'strengths' | 'weaknesses', index: number) => {
     setFormData(prev => ({
       ...prev,
       [type]: prev[type].filter((_, i) => i !== index)
@@ -819,6 +835,178 @@ export default function CharacterModal({ isOpen, onClose, character, onSave }: C
                             <button
                               onClick={() => removeArrayItem('dislikes', index)}
                               className="text-red-600 hover:text-red-800"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 外面的パーソナリティ */}
+                <div className="lg:col-span-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      外面的パーソナリティ
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={newExternalPersonality}
+                          onChange={(e) => setNewExternalPersonality(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('external_personality', newExternalPersonality, setNewExternalPersonality)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-sm"
+                          placeholder="他人から見た性格特徴"
+                        />
+                        <button
+                          onClick={() => addArrayItem('external_personality', newExternalPersonality, setNewExternalPersonality)}
+                          className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        {(formData.external_personality || []).map((trait, index) => (
+                          <div
+                            key={index}
+                            className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm flex items-center justify-between"
+                          >
+                            {trait}
+                            <button
+                              onClick={() => removeArrayItem('external_personality', index)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 内面的パーソナリティ */}
+                <div className="lg:col-span-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      内面的パーソナリティ
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={newInternalPersonality}
+                          onChange={(e) => setNewInternalPersonality(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('internal_personality', newInternalPersonality, setNewInternalPersonality)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-sm"
+                          placeholder="内心の本当の性格"
+                        />
+                        <button
+                          onClick={() => addArrayItem('internal_personality', newInternalPersonality, setNewInternalPersonality)}
+                          className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        {(formData.internal_personality || []).map((trait, index) => (
+                          <div
+                            key={index}
+                            className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm flex items-center justify-between"
+                          >
+                            {trait}
+                            <button
+                              onClick={() => removeArrayItem('internal_personality', index)}
+                              className="text-purple-600 hover:text-purple-800"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 強み */}
+                <div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      強み
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={newStrength}
+                          onChange={(e) => setNewStrength(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('strengths', newStrength, setNewStrength)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-sm"
+                          placeholder="キャラクターの強み"
+                        />
+                        <button
+                          onClick={() => addArrayItem('strengths', newStrength, setNewStrength)}
+                          className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        {(formData.strengths || []).map((strength, index) => (
+                          <div
+                            key={index}
+                            className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm flex items-center justify-between"
+                          >
+                            {strength}
+                            <button
+                              onClick={() => removeArrayItem('strengths', index)}
+                              className="text-green-600 hover:text-green-800"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 弱み */}
+                <div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      弱み
+                    </label>
+                    <div className="space-y-2">
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={newWeakness}
+                          onChange={(e) => setNewWeakness(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && addArrayItem('weaknesses', newWeakness, setNewWeakness)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 text-sm"
+                          placeholder="キャラクターの弱み"
+                        />
+                        <button
+                          onClick={() => addArrayItem('weaknesses', newWeakness, setNewWeakness)}
+                          className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        {(formData.weaknesses || []).map((weakness, index) => (
+                          <div
+                            key={index}
+                            className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm flex items-center justify-between"
+                          >
+                            {weakness}
+                            <button
+                              onClick={() => removeArrayItem('weaknesses', index)}
+                              className="text-orange-600 hover:text-orange-800"
                             >
                               <X size={12} />
                             </button>
