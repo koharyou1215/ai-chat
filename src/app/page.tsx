@@ -569,19 +569,15 @@ export default function ChatPage() {
             setInitialMessage(targetCharacter);
           }
           
-          // 背景の適用（優先順位: chatBackgroundUrl > background > 保存済み背景 > デフォルト）
+          // 背景の適用（優先順位: chatBackgroundUrl > 保存済み背景 > デフォルト）
           console.log('🎨 キャラクター背景の適用開始:', targetCharacter.name);
           
           if (targetCharacter.chatBackgroundUrl) {
             console.log('✅ chatBackgroundUrlを使用して背景を適用');
             BackgroundManager.saveCharacterBackground(targetCharacter.name, targetCharacter.chatBackgroundUrl);
             loadCharacterBackground(targetCharacter.name);
-          } else if (targetCharacter.background) {
-            console.log('✅ backgroundを使用して背景を適用');
-            BackgroundManager.saveCharacterBackground(targetCharacter.name, targetCharacter.background);
-            loadCharacterBackground(targetCharacter.name);
           } else {
-            console.log('ℹ️ キャラクター固有背景なし - 保存済み背景またはデフォルトを使用');
+            console.log('ℹ️ chatBackgroundUrlなし - 保存済み背景またはデフォルトを使用');
             loadCharacterBackground(targetCharacter.name);
           }
         }
@@ -1827,15 +1823,12 @@ export default function ChatPage() {
     try {
       console.log('🔍 背景読み込み開始:', characterName);
       
-      // 指定されたキャラクターのデータを取得
-      const targetCharacter = allCharacters.find(c => c.name === characterName);
-      
       // キャラクター固有の背景設定を確認
       const characterBackground = BackgroundManager.getCharacterBackground(characterName);
       console.log('📁 BackgroundManager背景:', characterBackground);
       
       // キャラクターデータのchatBackgroundUrlも確認
-      const characterBgUrl = targetCharacter?.chatBackgroundUrl;
+      const characterBgUrl = currentCharacter?.chatBackgroundUrl;
       console.log('👤 キャラクターchatBackgroundUrl:', characterBgUrl);
       
       // グローバル背景設定も確認
@@ -2196,8 +2189,6 @@ export default function ChatPage() {
     
     if (character.chatBackgroundUrl) {
       console.log('✅ chatBackgroundUrlを使用して背景を適用');
-      // BackgroundManagerに保存してから読み込み
-      BackgroundManager.saveCharacterBackground(character.name, character.chatBackgroundUrl);
       loadCharacterBackground(character.name);
     } else if (character.background) {
       console.log('✅ backgroundを使用して背景を適用');

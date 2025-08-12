@@ -228,19 +228,38 @@ export class CharacterLoader {
           const charResponse = await fetch(`/characters/${filename}`);
 
           if (charResponse.ok) {
-            const characterData = await charResponse.json();
+            const responseText = await charResponse.text();
             
+            // JSON解析のエラーハンドリング強化
+            if (!responseText || responseText.trim() === '') {
+              console.warn(`⚠️ 空のファイル: ${filename}`);
+              continue;
+            }
             
-            
-            
-            // 簡易形式のキャラクターファイルを完全形式に変換
-            const { normalizeCharacterData } = await import('./autoLoader');
-            const normalizedCharacter = normalizeCharacterData(characterData, filename);
-            
-            
-            
-            
-            newPublicCharacters.push(normalizedCharacter);
+            try {
+              const characterData = JSON.parse(responseText);
+              
+              // 基本的なデータ検証
+              if (!characterData || typeof characterData !== 'object') {
+                console.warn(`⚠️ 無効なデータ形式: ${filename}`);
+                continue;
+              }
+              
+              if (!characterData.name) {
+                console.warn(`⚠️ 名前が未設定: ${filename}`);
+                continue;
+              }
+              
+              // 簡易形式のキャラクターファイルを完全形式に変換
+              const { normalizeCharacterData } = await import('./autoLoader');
+              const normalizedCharacter = normalizeCharacterData(characterData, filename);
+              
+              newPublicCharacters.push(normalizedCharacter);
+            } catch (jsonError) {
+              console.error(`❌ JSON解析エラー: ${filename}`, jsonError);
+              console.error('問題のあるファイル内容の先頭:', responseText.substring(0, 200));
+              continue;
+            }
           } else {
             console.error(`❌ キャラクター読み込み失敗 (全パス): ${filename} - ${charResponse.status}`);
           }

@@ -8,7 +8,12 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     hasCharacterDefinition: !!data.character_definition,
     systemPrompt: data.systemPrompt,
     appearanceNegativePrompt: data.appearanceNegativePrompt,
-    first_message: data.first_message
+    first_message: data.first_message,
+    // 🚨 新フィールドのデバッグ追加 🚨
+    external_personality: data.external_personality,
+    internal_personality: data.internal_personality,
+    strengths: data.strengths,
+    weaknesses: data.weaknesses
   });
   
   // 🚨 マーフィン・グレイスの詳細ログ 🚨
@@ -18,6 +23,19 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
       systemPrompt: data.systemPrompt,
       appearanceNegativePrompt: data.appearanceNegativePrompt,
       nsfw_profile: data.nsfw_profile,
+      hasCharacterDefinition: !!data.character_definition,
+      dataKeys: Object.keys(data)
+    });
+  }
+  
+  // 🚨 高位のサキュバスの詳細ログ 🚨
+  if (filename.includes('高位のサキュバスgemini') || filename.includes('リリス')) {
+    console.log('🔍🔍🔍 高位のサキュバス詳細入力データ:', {
+      name: data.name,
+      external_personality: data.external_personality,
+      internal_personality: data.internal_personality,
+      strengths: data.strengths,
+      weaknesses: data.weaknesses,
       hasCharacterDefinition: !!data.character_definition,
       dataKeys: Object.keys(data)
     });
@@ -60,9 +78,8 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     "file-name": filename,
     name: data.name || 'Unknown',
     tags: data.tags || [],
-    // 🚨 first_message: 必ず保持 🚨
-    first_message: Array.isArray(data.first_message) 
-      ? (data.first_message[0] || '') 
+    first_message: Array.isArray(data.first_message)
+      ? (data.first_message[0] || '')
       : (data.first_message || ''),
     age: data.age,
     occupation: data.occupation,
@@ -70,97 +87,32 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
     likes: data.likes || [],
     dislikes: data.dislikes || [],
     avatar_url: data.avatar_url || '',
-    // 生い立ち・背景設定（物語的な背景も含む）
     background: data.background || '',
-    
-    // 簡易フィールドをそのまま保持
     personality: data.personality,
     appearance: data.appearance,
     speaking_style: data.speaking_style,
     scenario: data.scenario,
-    // 🚨 nsfw_profile: 必ず保持 🚨
     nsfw_profile: data.nsfw_profile,
-    
-    // 🚨 新しいパーソナリティフィールドを保持 🚨
-    external_personality: data.external_personality || [],
-    internal_personality: data.internal_personality || [],
-    strengths: data.strengths || [],
-    weaknesses: data.weaknesses || [],
-    
-    // 🚨 新フィールドを必ず保持 🚨
+    // 新フィールドはstring型で安全にセット
+    external_personality: typeof data.external_personality === 'string'
+      ? data.external_personality
+      : (Array.isArray(data.external_personality) ? (data.external_personality as any[]).join('\n') : ''),
+    internal_personality: typeof data.internal_personality === 'string'
+      ? data.internal_personality
+      : (Array.isArray(data.internal_personality) ? (data.internal_personality as any[]).join('\n') : ''),
+    strengths: typeof data.strengths === 'string'
+      ? data.strengths
+      : (Array.isArray(data.strengths) ? (data.strengths as any[]).join('\n') : ''),
+    weaknesses: typeof data.weaknesses === 'string'
+      ? data.weaknesses
+      : (Array.isArray(data.weaknesses) ? (data.weaknesses as any[]).join('\n') : ''),
     systemPrompt: data.systemPrompt || '',
     appearancePrompt: data.appearancePrompt || '',
     appearanceNegativePrompt: data.appearanceNegativePrompt || '',
     chatBackgroundUrl: data.chatBackgroundUrl,
     trackers: data.trackers || [],
-    
-    // タイムスタンプフィールドを追加
-    createdAt: createdAt,
-    updatedAt: updatedAt,
-    
-    // 完全形式のcharacter_definitionを構築
-    character_definition: {
-      personality: {
-        summary: data.personality || '',
-        external: data.external_personality?.join(', ') || data.personality || '',
-        internal: data.internal_personality?.join(', ') || data.personality || '',
-        strengths: data.strengths || [],
-        weaknesses: data.weaknesses || []
-      },
-      background: data.background || '',
-      appearance: {
-        description: data.appearance || '',
-        hair: '',
-        eyes: '',
-        clothing: '',
-        underwear: '',
-        other_features: ''
-      },
-      speaking_style: {
-        base: data.speaking_style || '',
-        first_person: '私',
-        second_person: 'あなた',
-        quirks: '',
-        nsfw_variation: ''
-      },
-      scenario: {
-        worldview: '',
-        initial_situation: data.scenario || '',
-        relationship_with_user: ''
-      },
-      // 🚨 nsfw_profile の character_definition への設定 - 新旧両形式対応 🚨
-      nsfw_profile: data.nsfw_profile ? (() => {
-        if (typeof data.nsfw_profile === 'string') {
-          // 旧形式: 文字列 → situation フィールドに設定
-          return {
-            situation: data.nsfw_profile,
-            mental_state: '',
-            status: ''
-          };
-        } else if (typeof data.nsfw_profile === 'object' && data.nsfw_profile !== null) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const nsfwObj = data.nsfw_profile as any;
-          
-          // 新形式: オブジェクト → 既存フィールドがあれば使用、なければ新形式から生成
-          if (nsfwObj.situation || nsfwObj.mental_state || nsfwObj.status) {
-            // 旧オブジェクト形式
-            return {
-              situation: nsfwObj.situation || '',
-              mental_state: nsfwObj.mental_state || '',
-              status: nsfwObj.status || ''
-            };
-          } else {
-            // 新オブジェクト形式 → 適切にマッピング
-            return {
-              situation: nsfwObj.persona || nsfwObj.libido_level || '',
-              mental_state: nsfwObj.involuntary_reactions || '',
-              status: nsfwObj.orgasm_details || ''
-            };
-          }
-        }
-        return undefined;
-      })() : undefined
-    }
+    createdAt: data.createdAt || Date.now(),
+    updatedAt: data.updatedAt || Date.now(),
   };
   
   // 🚨 マーフィン・グレイスの変換後ログ 🚨
@@ -175,7 +127,6 @@ export function normalizeCharacterData(data: Character, filename: string): Chara
       character_definition_created: !!normalized.character_definition
     });
   }
-  
   return normalized;
 }
 
