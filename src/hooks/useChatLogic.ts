@@ -2,10 +2,18 @@
  * チャット機能のロジックを管理するフック
  */
 import { useCallback } from 'react';
-import { Message, ChatSummary } from './useChatState';
+import { useMemoStore } from '../stores/memoStore';
+import { Message as BaseMessage, ChatSummary } from './useChatState';
 import { Character } from '../../types/character';
 import { apiRequest } from '../../lib/apiUtils';
 import { withErrorHandling } from '../../lib/errorUtils';
+
+type Message = BaseMessage | {
+  id: string;
+  role: 'system';
+  content: string;
+  timestamp: number;
+};
 
 interface UseChatLogicProps {
   messages: Message[];
@@ -24,12 +32,15 @@ export function useChatLogic({
   currentCharacter,
   settings
 }: UseChatLogicProps) {
+  // メモストアからAIメモリを取得
+  const { memos } = useMemoStore();
 
   /**
    * メッセージ送信
    */
   const sendMessage = useCallback(async (messageText: string) => {
     if (!messageText.trim() || !currentCharacter) return;
+
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -43,16 +54,31 @@ export function useChatLogic({
     setMessages(newMessages);
     setIsLoading(true);
 
+    // 重要なAIメモリをsystemロールとして先頭に合成
+    let aiMemoryMessages: Message[] = [];
+    if (currentCharacter) {
+      const aiMemos = memos.filter(m => m.characterId === currentCharacter.name && m.isAiMemory);
+      aiMemoryMessages = aiMemos.map(memo => ({
+        id: memo.id,
+        role: 'system',
+        content: memo.content || memo.note || '',
+        timestamp: memo.updatedAt || memo.createdAt || Date.now()
+      }) as Message);
+    }
+
+    // systemメッセージ＋通常メッセージを合成
+    const promptMessages = [...aiMemoryMessages, ...newMessages].map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
     try {
       const result = await withErrorHandling(async () => {
         const response = await apiRequest({
           url: '/api/simple-chat',
           method: 'POST',
           body: {
-            messages: newMessages.map(msg => ({
-              role: msg.role,
-              content: msg.content
-            })),
+            messages: promptMessages,
             character: currentCharacter,
             settings: {
               model: settings.model || 'openai/gpt-4o-mini',
@@ -71,15 +97,15 @@ export function useChatLogic({
       });
 
       if (result.success) {
+        const data = result.data as { content?: string; message?: string };
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: result.data.content || result.data.message || '',
+          content: data.content || data.message || '',
           timestamp: Date.now()
         };
-
         setMessages([...newMessages, assistantMessage]);
-      } else {
+      } else if ('error' in result) {
         console.error('チャット送信エラー:', result.error);
         // エラーメッセージを表示
         const errorMessage: Message = {
@@ -93,7 +119,7 @@ export function useChatLogic({
     } finally {
       setIsLoading(false);
     }
-  }, [messages, setMessages, setIsLoading, currentCharacter, settings]);
+  }, [messages, setMessages, setIsLoading, currentCharacter, settings, memos]);
 
   /**
    * 最後のメッセージを再生成

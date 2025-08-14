@@ -28,6 +28,7 @@ export default function MemoModal({
 }: MemoModalProps) {
   // 案B: メモ内容欄は廃止し、AI要約テキストを編集可能フィールドで保持
   const [summary, setSummary] = useState('');
+  const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [isAiMemory, setIsAiMemory] = useState(false);
@@ -36,21 +37,27 @@ export default function MemoModal({
   useEffect(() => {
     if (existingMemo) {
       setSummary(existingMemo.note || '');
+      setContent(existingMemo.content || '');
       setTags(existingMemo.tags);
       setIsAiMemory(existingMemo.isAiMemory || false);
       setImportance(existingMemo.importance || 1);
     } else {
       setSummary('');
+      setContent(messageContent || '');
       setTags([]);
       setIsAiMemory(false);
       setImportance(1);
     }
     setNewTag('');
-  }, [existingMemo, isOpen]);
+  }, [existingMemo, isOpen, messageContent]);
 
   const handleSave = () => {
     if (!summary.trim()) {
       alert('要約テキストが空です。「AIで要約」ボタンで作成するか、手入力してください。');
+      return;
+    }
+    if (!content.trim()) {
+      alert('メモ本文が空です。本文を入力してください。');
       return;
     }
 
@@ -64,7 +71,7 @@ export default function MemoModal({
       messageId,
       sessionId,
       characterId,
-      content: messageContent,
+      content: content.trim(),
       note: summary.trim(), // 保存するのは要約テキスト
       tags: tags,
       createdAt: existingMemo?.createdAt || Date.now(),
@@ -154,9 +161,20 @@ export default function MemoModal({
                   AIで要約
                 </button>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {messageContent}
+
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  メモ本文（編集可）*
+                </label>
+                <textarea
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 min-h-[60px]"
+                  placeholder="メモしたい本文を入力（例：AIの発言や重要な内容など）"
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  保存時はこの本文がメモとして記録されます（最大500文字）
                 </p>
               </div>
 
