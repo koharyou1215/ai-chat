@@ -29,9 +29,9 @@ const QuickSettingsModal: React.FC<QuickSettingsModalProps> = ({
     'anthropic/claude-sonnet-4',
     'x-ai/grok-4',
     'deepseek/deepseek-chat-v3-0324',
-    'mistralai/devstral-medium',
+    'mistralai/mistral-medium-3.1',
     'qwen/qwen3-30b-a3b-instruct-2507', // 追加
-    'qwen/qwen3-235b-a22b-thinking-2507',
+    'z-ai/glm-4.5',
     'moonshotai/kimi-k2',
     'openai/gpt-5-chat', // 'thedrummer/anubis-70b-v1.1', // 文字化け報告により一時的に無効化
     'openai/gpt-5-mini',
